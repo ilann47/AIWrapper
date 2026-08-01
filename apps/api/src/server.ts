@@ -42,6 +42,7 @@ export function buildServer(deps: ServerDependencies) {
   app.post("/admin/cycles",async(request:any,reply)=>{if(!await administrator(request,reply))return;return reply.code(201).send(await deps.createCycle(request.body))});
   app.post("/admin/cycles/:id/reset",async(request:any,reply)=>{if(!await administrator(request,reply))return;return reply.code(201).send(await deps.resetCycle(request.params.id))});
   app.get("/admin/export",async(request:any,reply)=>{if(!await administrator(request,reply))return;const format=request.query?.format==="csv"?"csv":"json";return reply.type(format==="csv"?"text/csv":"application/json").send(await deps.exportUsage(format))});
+  app.get("/v1/me",async(request,reply)=>{const auth=await principal(request,reply);if(!auth)return;return{userId:auth.userId,profileId:auth.profileId,role:auth.role}});
   app.get("/v1/me/usage",async(request,reply)=>{const auth=await principal(request,reply);if(!auth)return;return deps.usageFor(auth.userId)});
 
   app.get("/v1/sessions",async(request,reply)=>{const auth=await principal(request,reply);if(!auth)return;return{data:await deps.listSessions(auth)}});
