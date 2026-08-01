@@ -1,128 +1,75 @@
-# AIWrapper Lab
+# AIWrapper Platform
 
-Laboratório de gateway multiusuário com autenticação por chave, cotas ponderadas, duas janelas móveis, rate limit, SQLite, auditoria e dashboard.
+Multi-user OpenAI-compatible gateway backed by persistent Codex App Server processes. It authenticates individual clients, isolates ChatGPT OAuth state by `CODEX_HOME`, reserves quota before execution, streams real SSE, records an auditable PostgreSQL ledger and exposes an RBAC-protected React dashboard.
 
-O projeto funciona por padrão com um modelo simulado e pode encaminhar chamadas para uma conta da OpenAI Platform configurada por API key. Ele não distribui sessões OAuth pessoais nem tenta contornar limites do provedor.
+## Architecture and provenance
 
-## Recursos
+- Fastify API: `/v1/chat/completions`, `/v1/responses`, `/v1/models`, `/v1/me/usage`, admin API, health/readiness and Prometheus metrics.
+- Persistent `codex app-server --stdio`: one supervised runtime per active profile, thread reuse support, cancellation and bounded pool eviction.
+- PostgreSQL: users, keys, profiles, sessions, immutable cycles, budgets, requests, reservations and audit.
+- Redis: distributed lease primitive and deployment-ready queue coordination.
+- React/Vite dashboard, maintenance worker, Prometheus and Grafana.
 
-- API compatível com o formato básico de `POST /v1/chat/completions`.
-- API keys individuais armazenadas somente como SHA-256.
-- Cota móvel primária de 5 horas e secundária de 7 dias.
-- Unidades ponderadas: entrada + saída × 4.
-- Rate limit por usuário.
-- SQLite com ledger de consumo e auditoria.
-- Dashboard administrativo em `/`.
-- Backend `mock` pronto para testes sem custo.
-- Backend `openai` para uso autorizado da OpenAI Platform.
-- Backend local `codex`, que reutiliza o login OAuth oficial do Codex CLI.
-- Docker Compose com bind somente em `127.0.0.1`.
+See `docs/TARGET_ARCHITECTURE.md`, `docs/REFERENCE_REUSE_MATRIX.md`, `THIRD_PARTY.md` and `NOTICE`.
 
-## Início rápido
+## Local installation (Windows)
+
+Requirements: Node 22+, pnpm 10+, PostgreSQL 16+, Redis 7+ and the official Codex CLI.
 
 ```powershell
-Copy-Item .env.example .env
-python -m pip install -e ".[dev]"
-python -m uvicorn app.main:app --reload
-```
-
-Abra `http://127.0.0.1:8000`.
-
-Em `localhost`, o painel administrativo não pede chave por padrão. Ele mostra o estado da conta autenticada pelo `codex login`. A chave administrativa continua obrigatória quando o cliente não é loopback. Controle isso com `AIWRAPPER_LOCAL_ADMIN_NO_KEY`.
-
-Crie um usuário:
-
-```powershell
-$headers = @{ Authorization = "Bearer dev-admin-key" }
-$body = @{ name = "ilan"; primary_limit = 100000; secondary_limit = 500000; rpm = 30 } | ConvertTo-Json
-Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/admin/users -Headers $headers -ContentType application/json -Body $body
-```
-
-Guarde a `api_key`: ela é retornada somente na criação.
-
-Faça uma chamada:
-
-```powershell
-$headers = @{ Authorization = "Bearer aiw_SUA_CHAVE" }
-$body = @{ model = "lab-model"; messages = @(@{ role = "user"; content = "Olá" }) } | ConvertTo-Json -Depth 5
-Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/v1/chat/completions -Headers $headers -ContentType application/json -Body $body
-```
-
-Consulte a cota:
-
-```powershell
-Invoke-RestMethod -Uri http://127.0.0.1:8000/v1/me/usage -Headers $headers
-```
-
-## Backend OpenAI Platform
-
-No `.env`:
-
-```dotenv
-AIWRAPPER_BACKEND=openai
-AIWRAPPER_UPSTREAM_API_KEY=sk-...
-AIWRAPPER_UPSTREAM_BASE_URL=https://api.openai.com/v1
-```
-
-O gateway utiliza uma credencial de serviço no servidor. Nunca entregue essa credencial aos clientes. Para produção, use um cofre de segredos, TLS, PostgreSQL e um proxy reverso.
-
-## Backend Codex com OAuth do ChatGPT
-
-Autentique o CLI oficial uma vez:
-
-```powershell
+cd C:\Users\ilan.wendling\claude\AIWrapper
+corepack enable
+pnpm install
+$env:DATABASE_URL='postgres://aiwrapper:aiwrapper@127.0.0.1:5432/aiwrapper'
+$env:API_KEY_PEPPER='replace-with-at-least-32-random-characters'
+pnpm db:migrate
 codex login
-codex login status
+pnpm db:bootstrap owner "$env:USERPROFILE\.codex"
+pnpm dev:api
 ```
 
-Depois configure o `.env`:
+The bootstrap command prints the owner key once. In another terminal run `pnpm dev:web`; sign in with that key. The ChatGPT OAuth tokens remain inside the selected `CODEX_HOME` and are never returned by the API.
 
-```dotenv
-AIWRAPPER_BACKEND=codex
-AIWRAPPER_CODEX_PATH=codex
-AIWRAPPER_CODEX_MODEL=
-AIWRAPPER_CODEX_WORKDIR=C:\Users\ilan.wendling\claude\AIWrapper
-AIWRAPPER_CODEX_TIMEOUT=300
-```
+## Docker deployment
 
-Reinicie o servidor. Cada chamada será executada com `codex exec --json --ephemeral --sandbox read-only`. A sessão OAuth permanece no armazenamento oficial do Codex e nunca é retornada pela API.
-
-Verifique a integração com a chave administrativa:
+Codex OAuth login must be made available to the API container through a protected profile volume. Generate secrets, then start the stack:
 
 ```powershell
-Invoke-RestMethod -Uri http://127.0.0.1:8000/admin/codex/status -Headers @{ Authorization = "Bearer dev-admin-key" }
+$env:API_KEY_PEPPER=[Convert]::ToBase64String((1..48|ForEach-Object{Get-Random -Maximum 256}))
+$env:GRAFANA_ADMIN_PASSWORD='change-this'
+docker compose up --build -d
+docker compose exec api node dist/packages/db/src/bootstrap.js owner /profiles/owner
 ```
 
-Mantenha o serviço ligado somente ao loopback. Esse backend usa a conta ChatGPT autenticada no computador e deve ser tratado como laboratório local de proprietário único.
+Services bind dashboard, Prometheus and Grafana only to loopback. Put `infra/reverse-proxy/nginx.conf` behind TLS or use a private Tailscale network. Do not publish Codex/ChatGPT OAuth access to untrusted users.
 
-## Endpoints
-
-| Método | Caminho | Autenticação | Função |
-|---|---|---|---|
-| GET | `/health` | nenhuma | Saúde e backend ativo |
-| POST | `/admin/users` | chave admin | Cria usuário e chave |
-| GET | `/admin/users` | chave admin | Usuários e consumo |
-| GET | `/admin/codex/status` | chave admin | Estado do login oficial do Codex |
-| GET | `/v1/models` | chave de usuário | Modelos disponíveis |
-| POST | `/v1/chat/completions` | chave de usuário | Executa uma solicitação |
-| GET | `/v1/me/usage` | chave de usuário | Cota do usuário atual |
-
-## Modelo de cota
-
-As duas janelas são independentes. Uma solicitação é bloqueada quando qualquer janela se esgota. O reset informado é uma aproximação conservadora do início da janela móvel; o ledger continua sendo a fonte de verdade.
-
-```text
-weighted_units = input_tokens + output_tokens * 4
-```
-
-No backend simulado, tokens são estimados por comprimento. No backend OpenAI, são usados os números retornados pelo upstream.
-
-## Testes
+## Example API request
 
 ```powershell
+$headers=@{Authorization='Bearer aiw_KEY_RETURNED_ONCE'}
+$body=@{model='gpt-5.6-sol';stream=$false;messages=@(@{role='user';content='Olá'})}|ConvertTo-Json -Depth 8
+Invoke-RestMethod http://127.0.0.1:8080/v1/chat/completions -Method Post -Headers $headers -ContentType application/json -Body $body
+```
+
+For SSE set `stream=true`. Client disconnects issue `turn/interrupt`; successful terminal events reconcile reserved quota with actual App Server token usage.
+
+## Validation
+
+```powershell
+pnpm typecheck
+pnpm test
+pnpm --dir apps/web build
 python -m pytest -q
 ```
 
-## Referências
+## Real limitations
 
-Os repositórios estudados ficam em `references/` e são ignorados pelo Git do projeto. Consulte [THIRD_PARTY.md](THIRD_PARTY.md). Nenhum código deles foi incorporado diretamente nesta implementação inicial.
+- This gateway can enforce only traffic passing through it. It cannot partition or police direct ChatGPT/Codex use on the same personal account.
+- ChatGPT subscription limits are not a fixed public token budget. Percentage budgets are an internal allocation and need calibration against provider-visible limits.
+- Provider registry interfaces and routing are present; only the Codex/ChatGPT App Server adapter is wired into request execution by default. OpenAI, Azure, OpenRouter and Ollama require configured adapters and their own credentials.
+- Tool declarations are accepted by the OpenAI schemas, while App Server native tool activity is streamed and audited. Full OpenAI function-call round-tripping is not yet equivalent across every provider.
+- The React dashboard currently implements authenticated overview, aggregate usage and audit polling; advanced editors use the admin API and are not all exposed as forms.
+
+## Legacy migration
+
+The previous Python/SQLite MVP remains in the repository for rollback. `docs/MIGRATION_PLAN.md` documents the cutover. PostgreSQL is authoritative for the new platform; do not run both writers against the same traffic.

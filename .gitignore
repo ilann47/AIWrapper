@@ -5,4 +5,11 @@ __pycache__/
 data/*.db
 .env
 references/
-
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo

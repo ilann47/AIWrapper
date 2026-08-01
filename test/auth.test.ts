@@ -1,0 +1,3 @@
+import { describe, expect, it } from "vitest";
+import { createApiKey, verifyApiKey } from "../packages/auth/src/api-keys.js";
+describe("API keys adapted from codex-multi-auth",()=>{it("creates one-time secret and verifies keyed digest",()=>{const pepper="x".repeat(32),created=createApiKey("u",pepper);expect(created.secret.startsWith("aiw_")).toBe(true);expect(created.record.digest).not.toContain(created.secret);expect(verifyApiKey(created.secret,created.record,pepper)).toBe(true);expect(verifyApiKey(created.secret+"x",created.record,pepper)).toBe(false)});it("rejects revoked keys",()=>{const pepper="x".repeat(32),created=createApiKey("u",pepper);created.record.status="revoked";expect(verifyApiKey(created.secret,created.record,pepper)).toBe(false)})});

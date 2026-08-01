@@ -1,0 +1,2 @@
+import{randomBytes}from"node:crypto";import{describe,expect,it}from"vitest";import{SecretBox}from"../packages/auth/src/secrets.js";
+describe("secret encryption",()=>{it("round trips without plaintext",()=>{const b=new SecretBox(randomBytes(32)),e=b.encrypt("credential");expect(e).not.toContain("credential");expect(b.decrypt(e)).toBe("credential")});it("rejects tampering",()=>{const b=new SecretBox(randomBytes(32)),parts=b.encrypt("credential").split(".");parts[2]=(parts[2]![0]==="A"?"B":"A")+parts[2]!.slice(1);expect(()=>b.decrypt(parts.join("."))).toThrow()})});

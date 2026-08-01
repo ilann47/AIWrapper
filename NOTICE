@@ -1,0 +1,24 @@
+AIWrapper - third-party notices
+
+This product contains software derived from the following MIT-licensed projects:
+
+Codex-Wrapper, Copyright its contributors
+https://github.com/circlemouth/Codex-Wrapper
+
+codex-multi-auth, Copyright its contributors
+https://github.com/ndycode/codex-multi-auth
+
+codex-profiles, Copyright its contributors
+https://github.com/Ducksss/codex-profiles
+
+OpenCodex, Copyright its contributors
+https://github.com/lidge-jun/opencodex
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies.
+The Software is provided "AS IS", without warranty of any kind.
+
+See each upstream LICENSE in references/ for the complete notice and
+docs/REFERENCE_REUSE_MATRIX.md for file-level provenance.
