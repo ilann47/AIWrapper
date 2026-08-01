@@ -1,0 +1,10 @@
+services:
+  aiwrapper:
+    build: .
+    ports: ["127.0.0.1:8000:8000"]
+    environment:
+      AIWRAPPER_ADMIN_KEY: ${AIWRAPPER_ADMIN_KEY:-dev-admin-key}
+      AIWRAPPER_BACKEND: ${AIWRAPPER_BACKEND:-mock}
+      AIWRAPPER_UPSTREAM_API_KEY: ${AIWRAPPER_UPSTREAM_API_KEY:-}
+    volumes: ["./data:/app/data"]
+
