@@ -30,4 +30,4 @@ All four projects were added with `git subtree`, not copied as unattributed snap
 
 ## Reproducible line report
 
-Run `node scripts/upstream-diff-report.mjs`. It compares every copied Codex-Wrapper file with its pinned source and writes `docs/generated/UPSTREAM_DIFF_REPORT.md`.
+Run `pnpm provenance:update`. The generator is adapted from codex-multi-auth's vendor provenance tooling and writes `provenance/manifest.json`, `provenance/diffs/*.diff` and `docs/generated/PROVENANCE_EVIDENCE.md`. Validate all hashes with `pnpm provenance:verify`.

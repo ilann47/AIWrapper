@@ -1,0 +1,151 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\codex-multi-auth\\scripts\\verify-vendor-provenance.mjs" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\scripts\\provenance\\verify.mjs"
+index dfb44b7d..99e63486 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\codex-multi-auth\\scripts\\verify-vendor-provenance.mjs"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\scripts\\provenance\\verify.mjs"	
+@@ -1,117 +1,35 @@
+ #!/usr/bin/env node
++/** Adapted from codex-multi-auth/scripts/verify-vendor-provenance.mjs (MIT, 89ca9696). */
+ import { createHash } from "node:crypto";
+-import { readFile, readdir } from "node:fs/promises";
++import { readFile } from "node:fs/promises";
++import { resolve } from "node:path";
+ 
+-const manifest = JSON.parse(
+-	await readFile(new URL("../vendor/provenance.json", import.meta.url), "utf8"),
+-);
+-
+-if (!manifest || !Array.isArray(manifest.components)) {
+-	throw new Error("vendor/provenance.json is missing a valid components array");
+-}
+-
+-/**
+- * Recursively list every file under a directory, as repo-relative POSIX paths.
+- * @param {string} relRoot repo-relative root (e.g. "vendor/codex-ai-plugin")
+- * @returns {Promise<string[]>}
+- */
+-async function listFilesUnder(relRoot) {
+-	/** @type {string[]} */
+-	const out = [];
+-	/** @param {string} rel */
+-	async function walk(rel) {
+-		const dirUrl = new URL(`../${rel}`, import.meta.url);
+-		const entries = await readdir(dirUrl, { withFileTypes: true });
+-		for (const entry of entries) {
+-			const childRel = `${rel}/${entry.name}`;
+-			if (entry.isDirectory()) {
+-				await walk(childRel);
+-			} else if (entry.isFile()) {
+-				out.push(childRel);
+-			} else if (entry.isSymbolicLink()) {
+-				// install-scripts-01: a symlink under a vendored root could point an
+-				// unlisted artifact (or escape the tree) past the manifest check.
+-				// Fail closed instead of silently skipping it.
+-				throw new Error(
+-					`Symbolic links are not allowed in vendored content: ${childRel}`,
+-				);
+-			} else {
+-				// Any other dirent type (FIFO, socket, block/char device) is unexpected
+-				// in vendored source — reject rather than ignore.
+-				throw new Error(`Unsupported vendored entry type: ${childRel}`);
+-			}
+-		}
+-	}
+-	await walk(relRoot);
+-	return out;
+-}
++const root = resolve(import.meta.dirname, "..", "..");
++const manifest = JSON.parse(await readFile(new URL("../../provenance/manifest.json", import.meta.url), "utf8"));
++if (!manifest || !Array.isArray(manifest.components)) throw new Error("provenance/manifest.json is missing a valid components array");
+ 
++let count = 0;
+ for (const component of manifest.components) {
+-	if (
+-		!component ||
+-		!Array.isArray(component.files) ||
+-		component.files.length === 0
+-	) {
+-		throw new Error(
+-			`Component provenance entry is invalid: ${JSON.stringify(component)}`,
+-		);
+-	}
+-	for (const file of component.files) {
+-		if (!file?.path || !file?.sha256) {
+-			throw new Error(`Invalid file provenance entry in ${component.name}`);
+-		}
+-		let content;
+-		try {
+-			content = await readFile(new URL(`../${file.path}`, import.meta.url));
+-		} catch (error) {
+-			const code =
+-				error && typeof error === "object"
+-					? /** @type {{ code?: string }} */ (error).code
+-					: undefined;
+-			if (code === "ENOENT") {
+-				throw new Error(
+-					`Vendor file not found in ${component.name}: ${file.path} (${code})`,
+-				);
+-			}
+-			throw error;
+-		}
+-		const actual = createHash("sha256").update(content).digest("hex");
+-		if (actual !== file.sha256) {
+-			throw new Error(
+-				`Vendor provenance mismatch for ${file.path}: expected ${file.sha256}, got ${actual}`,
+-			);
+-		}
+-	}
+-
+-	// install-scripts-01: verifying only the manifest's listed files lets a rogue
+-	// file added to a vendored dir pass silently. Enumerate the component root and
+-	// fail if any on-disk file is not in the manifest (extra/unlisted file).
+-	if (component.root) {
+-		const manifestPaths = new Set(
+-			component.files.map((/** @type {{ path: string }} */ f) => f.path),
+-		);
+-		let onDisk;
+-		try {
+-			onDisk = await listFilesUnder(component.root);
+-		} catch (error) {
+-			const code =
+-				error && typeof error === "object"
+-					? /** @type {{ code?: string }} */ (error).code
+-					: undefined;
+-			throw new Error(
+-				`Failed to enumerate vendor root for ${component.name} (${component.root}): ${code ?? error}`,
+-			);
+-		}
+-		const extras = onDisk.filter((path) => !manifestPaths.has(path));
+-		if (extras.length > 0) {
+-			throw new Error(
+-				`Unlisted vendor file(s) in ${component.name}: ${extras.join(", ")}. ` +
+-					`Every file under ${component.root} must be declared in vendor/provenance.json.`,
+-			);
+-		}
+-	}
++  if (!component?.id || !component?.functionality || !Array.isArray(component.files) || component.files.length === 0) throw new Error(`Invalid provenance component: ${JSON.stringify(component)}`);
++  for (const file of component.files) {
++    for (const required of ["source", "destination", "sourceCommit", "license", "sourceSha256", "sha256", "diff", "diffSha256", "lines"]) if (file[required] === undefined) throw new Error(`Missing ${required} in ${component.id}`);
++    const content = await readFile(resolve(root, file.destination));
++    const actual = createHash("sha256").update(content).digest("hex");
++    if (actual !== file.sha256) throw new Error(`Provenance mismatch for ${file.destination}; run pnpm provenance:update`);
++    const source = await readFile(resolve(root, file.source));
++    const sourceActual = createHash("sha256").update(source).digest("hex");
++    if (sourceActual !== file.sourceSha256) throw new Error(`Upstream source mismatch for ${file.source}; pin or regenerate provenance`);
++    const diff = await readFile(resolve(root, file.diff));
++    const diffActual = createHash("sha256").update(diff).digest("hex");
++    if (diffActual !== file.diffSha256) throw new Error(`Stored diff mismatch for ${file.diff}; run pnpm provenance:update`);
++    if (typeof file.lines.reusePercent !== "number" || file.lines.reusePercent < 0 || file.lines.reusePercent > 100) throw new Error(`Invalid reuse percentage for ${file.destination}`);
++    if (file.lines.source > file.lines.destination * 2 && file.lines.reusePercent < 50) {
++      const audit = component.parityAudit;
++      if (!audit || !Array.isArray(audit.retained) || !Array.isArray(audit.lost) || typeof audit.decision !== "string" || audit.decision.length < 20) {
++        throw new Error(`Low-reuse replacement ${component.id} requires retained/lost/decision parity audit`);
++      }
++    }
++    count += 1;
++  }
+ }
+-
+-console.log(
+-	`Vendor provenance ok: ${manifest.components.length} component(s), ${manifest.components.reduce((/** @type {number} */ sum, /** @type {{ files?: unknown[] }} */ component) => sum + (Array.isArray(component.files) ? component.files.length : 0), 0)} file(s) verified`,
+-);
++console.log(`Provenance ok: ${manifest.components.length} component(s), ${count} mapping(s) verified`);

@@ -1,0 +1,185 @@
+{
+  "generatorUpstream": {
+    "project": "ndycode/codex-multi-auth",
+    "commit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
+    "license": "MIT",
+    "files": ["upstream/codex-multi-auth/scripts/update-vendor-provenance.mjs", "upstream/codex-multi-auth/scripts/verify-vendor-provenance.mjs"]
+  },
+  "components": [
+    {
+      "id": "codex-wrapper-service",
+      "functionality": "OpenAI proxy, Codex execution, streaming, model registry and middleware",
+      "project": "circlemouth/Codex-Wrapper",
+      "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+      "license": "MIT",
+      "classification": "copied-and-adapted",
+      "kind": "directory",
+      "source": "upstream/Codex-Wrapper",
+      "destination": "services/codex-wrapper"
+    },
+    {
+      "id": "budget-guard",
+      "functionality": "Quota window and allow/deny evaluation",
+      "project": "ndycode/codex-multi-auth",
+      "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
+      "license": "MIT",
+      "classification": "direct-import-with-adapter",
+      "parityAudit": {
+        "retained": ["Calendar budget windows", "Request/token/cost allow decision and reasons"],
+        "lost": ["File-backed budget store is replaced by PostgreSQL persistence"],
+        "decision": "Keep the direct runtime import; the destination is an adapter, so copied-line percentage does not represent executed upstream behavior."
+      },
+      "kind": "file",
+      "source": "upstream/codex-multi-auth/lib/budget-guard.ts",
+      "destination": "packages/quota/src/budget.ts"
+    },
+    {
+      "id": "usage-ledger-types",
+      "functionality": "Usage ledger data contracts",
+      "project": "ndycode/codex-multi-auth",
+      "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
+      "license": "MIT",
+      "classification": "original-reimplementation-under-review",
+      "incompatibility": "PostgreSQL fields differ, but that does not justify replacing the complete upstream ledger.",
+      "parityAudit": {
+        "retained": ["Token categories", "Outcome and model metadata"],
+        "lost": ["Account reference", "project grouping", "query and summary contracts"],
+        "decision": "Invalid as a full replacement; reincorporate upstream ledger contracts before calling this integrated."
+      },
+      "kind": "file",
+      "source": "upstream/codex-multi-auth/lib/usage/types.ts",
+      "destination": "packages/usage/src/types.ts"
+    },
+    {
+      "id": "profile-management",
+      "functionality": "CODEX_HOME profile isolation",
+      "project": "Ducksss/codex-profiles",
+      "sourceCommit": "b0df2dd0ab955eb712436f234bbab984cc017992",
+      "license": "MIT",
+      "classification": "original-platform-port",
+      "incompatibility": "The upstream executable is Bash and its desktop lifecycle is macOS-only.",
+      "parityAudit": {
+        "retained": ["Validated names", "separate CODEX_HOME", "symlink rejection"],
+        "lost": ["Workspace bindings", "guard mode", "profile sharing", "doctor", "upgrade", "desktop launch"],
+        "decision": "Not feature-parity; keep explicitly partial until portable upstream functions are extracted behind a platform shell."
+      },
+      "kind": "file",
+      "source": "upstream/codex-profiles/bin/codex-profile",
+      "destination": "packages/profiles/src/profiles.ts"
+    },
+    {
+      "id": "sse",
+      "functionality": "SSE payload framing",
+      "project": "lidge-jun/OpenCodex",
+      "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+      "license": "MIT",
+      "classification": "original-reimplementation-under-review",
+      "incompatibility": "No accepted incompatibility has been demonstrated.",
+      "parityAudit": {
+        "retained": ["SSE framing", "Event names", "DONE sentinel"],
+        "lost": ["Recursive OpenAI/Anthropic payload rewriting and nested JSON-string handling"],
+        "decision": "Not feature-parity; use the upstream rewrite module before marking SSE transformation integrated."
+      },
+      "kind": "file",
+      "source": "upstream/opencodex/src/server/sse-payload-rewrite.ts",
+      "destination": "packages/protocol/src/sse.ts"
+    },
+    {
+      "id": "provider-registry",
+      "functionality": "Provider registry",
+      "project": "lidge-jun/OpenCodex",
+      "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+      "license": "MIT",
+      "classification": "original-reimplementation-under-review",
+      "incompatibility": "No accepted incompatibility has been demonstrated.",
+      "parityAudit": {
+        "retained": ["Provider identifiers", "Availability", "Model preference"],
+        "lost": ["Provider catalog", "Account pools", "Regions", "Pricing", "Validation and defaults"],
+        "decision": "Invalid as a replacement; OpenCodex must become the catalog and the local file must become an adapter."
+      },
+      "kind": "file",
+      "source": "upstream/opencodex/src/providers/registry.ts",
+      "destination": "packages/providers/src/registry.ts"
+    },
+    {
+      "id": "api-contracts",
+      "functionality": "OpenAI-compatible request and response contracts",
+      "project": "circlemouth/Codex-Wrapper",
+      "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+      "license": "MIT",
+      "classification": "language-port-under-review",
+      "incompatibility": "Python/Pydantic cannot be imported directly by TypeScript/Zod.",
+      "parityAudit": {
+        "retained": ["Messages", "Streaming", "Model", "Reasoning effort", "Responses input"],
+        "lost": ["Generated parity with Pydantic defaults and response variants"],
+        "decision": "Generate JSON Schema or fixtures from Pydantic and test Zod parity; language difference alone is insufficient."
+      },
+      "kind": "file",
+      "source": "upstream/Codex-Wrapper/app/schemas.py",
+      "destination": "packages/protocol/src/openai.ts"
+    },
+    {
+      "id": "runtime-pool",
+      "functionality": "Persistent Codex process lifecycle",
+      "project": "lidge-jun/OpenCodex",
+      "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+      "license": "MIT",
+      "classification": "original-reimplementation-under-review",
+      "incompatibility": "The upstream file does not expose the JSON-RPC pool used here.",
+      "parityAudit": {
+        "retained": ["Persistent processes", "Bounded shutdown"],
+        "lost": ["Discovery", "Command matching", "Stale-server warnings", "Safe termination reporting"],
+        "decision": "Pooling is additional, not a replacement; incorporate upstream discovery and shutdown safety around it."
+      },
+      "kind": "file",
+      "source": "upstream/opencodex/src/codex/app-server-processes.ts",
+      "destination": "packages/codex-runtime/src/pool.ts"
+    },
+    {
+      "id": "scheduler",
+      "functionality": "Codex concurrency control",
+      "project": "circlemouth/Codex-Wrapper",
+      "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+      "license": "MIT",
+      "classification": "original-extension-under-review",
+      "incompatibility": "The upstream limiter is process-local and not user-fair.",
+      "parityAudit": {
+        "retained": ["Global concurrency bound", "Wait queue"],
+        "lost": ["Direct subprocess cancellation and upstream semaphore lifecycle"],
+        "decision": "Treat as extension and add parity tests against the original limiter before superseding it."
+      },
+      "kind": "file",
+      "source": "upstream/Codex-Wrapper/app/codex.py",
+      "destination": "packages/queue/src/scheduler.ts"
+    },
+    {
+      "id": "provenance-generator",
+      "functionality": "Provenance manifest generation",
+      "project": "ndycode/codex-multi-auth",
+      "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
+      "license": "MIT",
+      "classification": "adapted-module",
+      "incompatibility": "Upstream hashes vendored files but does not calculate pairwise line reuse or unified diffs.",
+      "kind": "file",
+      "source": "upstream/codex-multi-auth/scripts/update-vendor-provenance.mjs",
+      "destination": "scripts/provenance/update.mjs"
+    },
+    {
+      "id": "provenance-verifier",
+      "functionality": "Fail-closed provenance verification",
+      "project": "ndycode/codex-multi-auth",
+      "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
+      "license": "MIT",
+      "classification": "adapted-module",
+      "incompatibility": "AIWrapper additionally validates source hashes, diff hashes, metrics and parity audits.",
+      "parityAudit": {
+        "retained": ["Manifest validation", "SHA-256 destination verification", "Fail-closed errors"],
+        "lost": ["Recursive unlisted-file detection is replaced by explicit origin/destination mappings"],
+        "decision": "Preserve the upstream fail-closed verifier architecture while extending it to source and diff integrity plus mandatory low-reuse audits."
+      },
+      "kind": "file",
+      "source": "upstream/codex-multi-auth/scripts/verify-vendor-provenance.mjs",
+      "destination": "scripts/provenance/verify.mjs"
+    }
+  ]
+}

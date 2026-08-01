@@ -1,0 +1,797 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-01T15:40:38.662Z",
+  "generatorUpstream": {
+    "project": "ndycode/codex-multi-auth",
+    "commit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
+    "license": "MIT",
+    "files": [
+      "upstream/codex-multi-auth/scripts/update-vendor-provenance.mjs",
+      "upstream/codex-multi-auth/scripts/verify-vendor-provenance.mjs"
+    ]
+  },
+  "components": [
+    {
+      "id": "codex-wrapper-service",
+      "functionality": "OpenAI proxy, Codex execution, streaming, model registry and middleware",
+      "project": "circlemouth/Codex-Wrapper",
+      "classification": "copied-and-adapted",
+      "incompatibility": null,
+      "parityAudit": null,
+      "files": [
+        {
+          "source": "upstream/Codex-Wrapper/app/codex.py",
+          "destination": "services/codex-wrapper/app/codex.py",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT",
+          "sourceSha256": "492b1a8fdfc4882beef21069efc7916f5ed8e955b46213f4bd6a16276a777af2",
+          "sha256": "a08fb9c36f0a2137e48447341a4bf6e3f548f06c105668534d544b3c9d6af5ae",
+          "diff": "provenance/diffs/codex-wrapper-service--app_codex.py.diff",
+          "diffSha256": "1a2bb4c1789273870a4f5d736ab4c87152cc1978aaf0ceb09f69d8441f3fc57e",
+          "lines": {
+            "source": 1053,
+            "destination": 1057,
+            "preserved": 1050,
+            "changed": 3,
+            "removed": 0,
+            "added": 4,
+            "reusePercent": 99.72
+          }
+        },
+        {
+          "source": "upstream/Codex-Wrapper/app/config.py",
+          "destination": "services/codex-wrapper/app/config.py",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT",
+          "sourceSha256": "ea7965f6bf02016a3a03887a774fd10eeacce42b5426b61c1ef989cee373604d",
+          "sha256": "ea7965f6bf02016a3a03887a774fd10eeacce42b5426b61c1ef989cee373604d",
+          "diff": "provenance/diffs/codex-wrapper-service--app_config.py.diff",
+          "diffSha256": "52c062977333ccbf2ab2474b0b7f507fe8174cce3a69baa43aea0236269baa92",
+          "lines": {
+            "source": 52,
+            "destination": 52,
+            "preserved": 52,
+            "changed": 0,
+            "removed": 0,
+            "added": 0,
+            "reusePercent": 100
+          }
+        },
+        {
+          "source": "upstream/Codex-Wrapper/app/deps.py",
+          "destination": "services/codex-wrapper/app/deps.py",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT",
+          "sourceSha256": "f6de7b670c88217a825014a0671d3eacfcfd3bc45ffe9c91d2b62e6b7abe3ecc",
+          "sha256": "f6de7b670c88217a825014a0671d3eacfcfd3bc45ffe9c91d2b62e6b7abe3ecc",
+          "diff": "provenance/diffs/codex-wrapper-service--app_deps.py.diff",
+          "diffSha256": "52c062977333ccbf2ab2474b0b7f507fe8174cce3a69baa43aea0236269baa92",
+          "lines": {
+            "source": 38,
+            "destination": 38,
+            "preserved": 38,
+            "changed": 0,
+            "removed": 0,
+            "added": 0,
+            "reusePercent": 100
+          }
+        },
+        {
+          "source": "upstream/Codex-Wrapper/app/images.py",
+          "destination": "services/codex-wrapper/app/images.py",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT",
+          "sourceSha256": "84cb89270397eb5b38b1adedb427aa42faeaccece7b5946ea025ece13a3e3430",
+          "sha256": "84cb89270397eb5b38b1adedb427aa42faeaccece7b5946ea025ece13a3e3430",
+          "diff": "provenance/diffs/codex-wrapper-service--app_images.py.diff",
+          "diffSha256": "52c062977333ccbf2ab2474b0b7f507fe8174cce3a69baa43aea0236269baa92",
+          "lines": {
+            "source": 34,
+            "destination": 34,
+            "preserved": 34,
+            "changed": 0,
+            "removed": 0,
+            "added": 0,
+            "reusePercent": 100
+          }
+        },
+        {
+          "source": "upstream/Codex-Wrapper/app/main.py",
+          "destination": "services/codex-wrapper/app/main.py",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT",
+          "sourceSha256": "e40cdd42970dffd2148095756800d793475ee3daae61bc70fec39e7e9a3145af",
+          "sha256": "e40cdd42970dffd2148095756800d793475ee3daae61bc70fec39e7e9a3145af",
+          "diff": "provenance/diffs/codex-wrapper-service--app_main.py.diff",
+          "diffSha256": "52c062977333ccbf2ab2474b0b7f507fe8174cce3a69baa43aea0236269baa92",
+          "lines": {
+            "source": 269,
+            "destination": 269,
+            "preserved": 269,
+            "changed": 0,
+            "removed": 0,
+            "added": 0,
+            "reusePercent": 100
+          }
+        },
+        {
+          "source": "upstream/Codex-Wrapper/app/model_registry.py",
+          "destination": "services/codex-wrapper/app/model_registry.py",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT",
+          "sourceSha256": "9d6e4839265082048e5669ad159bac451ca43cded0449dbaa047cd01f51eafbe",
+          "sha256": "9d6e4839265082048e5669ad159bac451ca43cded0449dbaa047cd01f51eafbe",
+          "diff": "provenance/diffs/codex-wrapper-service--app_model_registry.py.diff",
+          "diffSha256": "52c062977333ccbf2ab2474b0b7f507fe8174cce3a69baa43aea0236269baa92",
+          "lines": {
+            "source": 173,
+            "destination": 173,
+            "preserved": 173,
+            "changed": 0,
+            "removed": 0,
+            "added": 0,
+            "reusePercent": 100
+          }
+        },
+        {
+          "source": "upstream/Codex-Wrapper/app/prompt.py",
+          "destination": "services/codex-wrapper/app/prompt.py",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT",
+          "sourceSha256": "723fc5d25c7f1c9a95e5620421d9081934ecaeee1a42d317c62806713ed0c03f",
+          "sha256": "723fc5d25c7f1c9a95e5620421d9081934ecaeee1a42d317c62806713ed0c03f",
+          "diff": "provenance/diffs/codex-wrapper-service--app_prompt.py.diff",
+          "diffSha256": "52c062977333ccbf2ab2474b0b7f507fe8174cce3a69baa43aea0236269baa92",
+          "lines": {
+            "source": 114,
+            "destination": 114,
+            "preserved": 114,
+            "changed": 0,
+            "removed": 0,
+            "added": 0,
+            "reusePercent": 100
+          }
+        },
+        {
+          "source": "upstream/Codex-Wrapper/app/schemas.py",
+          "destination": "services/codex-wrapper/app/schemas.py",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT",
+          "sourceSha256": "7ab3cd9641b80d818783ac25ba4e5bb275e9e3749adcb68521c4ce48746cff52",
+          "sha256": "7ab3cd9641b80d818783ac25ba4e5bb275e9e3749adcb68521c4ce48746cff52",
+          "diff": "provenance/diffs/codex-wrapper-service--app_schemas.py.diff",
+          "diffSha256": "52c062977333ccbf2ab2474b0b7f507fe8174cce3a69baa43aea0236269baa92",
+          "lines": {
+            "source": 92,
+            "destination": 92,
+            "preserved": 92,
+            "changed": 0,
+            "removed": 0,
+            "added": 0,
+            "reusePercent": 100
+          }
+        },
+        {
+          "source": "upstream/Codex-Wrapper/app/security.py",
+          "destination": "services/codex-wrapper/app/security.py",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT",
+          "sourceSha256": "3e3d47e0acf9a1cb0ac038aced1c676b9d8c17de20172ce7a194a5e2c2bd7666",
+          "sha256": "3e3d47e0acf9a1cb0ac038aced1c676b9d8c17de20172ce7a194a5e2c2bd7666",
+          "diff": "provenance/diffs/codex-wrapper-service--app_security.py.diff",
+          "diffSha256": "52c062977333ccbf2ab2474b0b7f507fe8174cce3a69baa43aea0236269baa92",
+          "lines": {
+            "source": 95,
+            "destination": 95,
+            "preserved": 95,
+            "changed": 0,
+            "removed": 0,
+            "added": 0,
+            "reusePercent": 100
+          }
+        },
+        {
+          "source": "upstream/Codex-Wrapper/app/__init__.py",
+          "destination": "services/codex-wrapper/app/__init__.py",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT",
+          "sourceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "diff": "provenance/diffs/codex-wrapper-service--app___init__.py.diff",
+          "diffSha256": "52c062977333ccbf2ab2474b0b7f507fe8174cce3a69baa43aea0236269baa92",
+          "lines": {
+            "source": 1,
+            "destination": 1,
+            "preserved": 1,
+            "changed": 0,
+            "removed": 0,
+            "added": 0,
+            "reusePercent": 100
+          }
+        },
+        {
+          "source": "upstream/Codex-Wrapper/Dockerfile",
+          "destination": "services/codex-wrapper/Dockerfile",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT",
+          "sourceSha256": "23d441e72fe208ab3f03b930d0408a87f48d369edcd696c47e3dd9be447e794e",
+          "sha256": "23d441e72fe208ab3f03b930d0408a87f48d369edcd696c47e3dd9be447e794e",
+          "diff": "provenance/diffs/codex-wrapper-service--Dockerfile.diff",
+          "diffSha256": "52c062977333ccbf2ab2474b0b7f507fe8174cce3a69baa43aea0236269baa92",
+          "lines": {
+            "source": 46,
+            "destination": 46,
+            "preserved": 46,
+            "changed": 0,
+            "removed": 0,
+            "added": 0,
+            "reusePercent": 100
+          }
+        },
+        {
+          "source": "upstream/Codex-Wrapper/LICENSE",
+          "destination": "services/codex-wrapper/LICENSE",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT",
+          "sourceSha256": "a07d79fd794c80acdc1f8dffb851baeebe8bb3af0b6bfba7960840fdbd9ff332",
+          "sha256": "a07d79fd794c80acdc1f8dffb851baeebe8bb3af0b6bfba7960840fdbd9ff332",
+          "diff": "provenance/diffs/codex-wrapper-service--LICENSE.diff",
+          "diffSha256": "52c062977333ccbf2ab2474b0b7f507fe8174cce3a69baa43aea0236269baa92",
+          "lines": {
+            "source": 22,
+            "destination": 22,
+            "preserved": 22,
+            "changed": 0,
+            "removed": 0,
+            "added": 0,
+            "reusePercent": 100
+          }
+        },
+        {
+          "source": "upstream/Codex-Wrapper/requirements.txt",
+          "destination": "services/codex-wrapper/requirements.txt",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT",
+          "sourceSha256": "a96b94cb5b739c22c1c457905167285134630f92f2f247d2455fe959e12423bf",
+          "sha256": "a96b94cb5b739c22c1c457905167285134630f92f2f247d2455fe959e12423bf",
+          "diff": "provenance/diffs/codex-wrapper-service--requirements.txt.diff",
+          "diffSha256": "52c062977333ccbf2ab2474b0b7f507fe8174cce3a69baa43aea0236269baa92",
+          "lines": {
+            "source": 5,
+            "destination": 5,
+            "preserved": 5,
+            "changed": 0,
+            "removed": 0,
+            "added": 0,
+            "reusePercent": 100
+          }
+        },
+        {
+          "source": "upstream/Codex-Wrapper/tests/test_codex_hide_reasoning_config.py",
+          "destination": "services/codex-wrapper/tests/test_codex_hide_reasoning_config.py",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT",
+          "sourceSha256": "69eda19d8cc5a2ca4f68cc6d62a630bcd9953fc416eeebbd0269ca205b1534fb",
+          "sha256": "69eda19d8cc5a2ca4f68cc6d62a630bcd9953fc416eeebbd0269ca205b1534fb",
+          "diff": "provenance/diffs/codex-wrapper-service--tests_test_codex_hide_reasoning_config.py.diff",
+          "diffSha256": "52c062977333ccbf2ab2474b0b7f507fe8174cce3a69baa43aea0236269baa92",
+          "lines": {
+            "source": 31,
+            "destination": 31,
+            "preserved": 31,
+            "changed": 0,
+            "removed": 0,
+            "added": 0,
+            "reusePercent": 100
+          }
+        },
+        {
+          "source": "upstream/Codex-Wrapper/tests/test_codex_model_listing.py",
+          "destination": "services/codex-wrapper/tests/test_codex_model_listing.py",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT",
+          "sourceSha256": "e088f186180d8218f711f6c53eaaeb8e80ec42f07c68612e13c4ae31b50110ef",
+          "sha256": "e088f186180d8218f711f6c53eaaeb8e80ec42f07c68612e13c4ae31b50110ef",
+          "diff": "provenance/diffs/codex-wrapper-service--tests_test_codex_model_listing.py.diff",
+          "diffSha256": "52c062977333ccbf2ab2474b0b7f507fe8174cce3a69baa43aea0236269baa92",
+          "lines": {
+            "source": 40,
+            "destination": 40,
+            "preserved": 40,
+            "changed": 0,
+            "removed": 0,
+            "added": 0,
+            "reusePercent": 100
+          }
+        },
+        {
+          "source": "upstream/Codex-Wrapper/tests/test_codex_output_filter.py",
+          "destination": "services/codex-wrapper/tests/test_codex_output_filter.py",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT",
+          "sourceSha256": "d7886e5dfab683254d9d910786bf87ed5b7a2452e9b75b2645fce88c5da4798a",
+          "sha256": "d7886e5dfab683254d9d910786bf87ed5b7a2452e9b75b2645fce88c5da4798a",
+          "diff": "provenance/diffs/codex-wrapper-service--tests_test_codex_output_filter.py.diff",
+          "diffSha256": "52c062977333ccbf2ab2474b0b7f507fe8174cce3a69baa43aea0236269baa92",
+          "lines": {
+            "source": 60,
+            "destination": 60,
+            "preserved": 60,
+            "changed": 0,
+            "removed": 0,
+            "added": 0,
+            "reusePercent": 100
+          }
+        },
+        {
+          "source": "upstream/Codex-Wrapper/tests/test_codex_parallel.py",
+          "destination": "services/codex-wrapper/tests/test_codex_parallel.py",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT",
+          "sourceSha256": "0b4c233fbbec9a0c467f79d893ef8a35ed1b0056dab4751f3b645c28ae4094e2",
+          "sha256": "0b4c233fbbec9a0c467f79d893ef8a35ed1b0056dab4751f3b645c28ae4094e2",
+          "diff": "provenance/diffs/codex-wrapper-service--tests_test_codex_parallel.py.diff",
+          "diffSha256": "52c062977333ccbf2ab2474b0b7f507fe8174cce3a69baa43aea0236269baa92",
+          "lines": {
+            "source": 81,
+            "destination": 81,
+            "preserved": 81,
+            "changed": 0,
+            "removed": 0,
+            "added": 0,
+            "reusePercent": 100
+          }
+        },
+        {
+          "source": "upstream/Codex-Wrapper/tests/test_codex_profile_bootstrap.py",
+          "destination": "services/codex-wrapper/tests/test_codex_profile_bootstrap.py",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT",
+          "sourceSha256": "9427d42412445f01bb5a33dc7e83d915e6e55dc0385dc49eb1e6c35c7993d991",
+          "sha256": "9427d42412445f01bb5a33dc7e83d915e6e55dc0385dc49eb1e6c35c7993d991",
+          "diff": "provenance/diffs/codex-wrapper-service--tests_test_codex_profile_bootstrap.py.diff",
+          "diffSha256": "52c062977333ccbf2ab2474b0b7f507fe8174cce3a69baa43aea0236269baa92",
+          "lines": {
+            "source": 120,
+            "destination": 120,
+            "preserved": 120,
+            "changed": 0,
+            "removed": 0,
+            "added": 0,
+            "reusePercent": 100
+          }
+        },
+        {
+          "source": "upstream/Codex-Wrapper/tests/test_codex_workdir.py",
+          "destination": "services/codex-wrapper/tests/test_codex_workdir.py",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT",
+          "sourceSha256": "c45195f4df9586d269571fbce9b3c7eb69abc64ce3036ee99470a952283c4ab7",
+          "sha256": "c45195f4df9586d269571fbce9b3c7eb69abc64ce3036ee99470a952283c4ab7",
+          "diff": "provenance/diffs/codex-wrapper-service--tests_test_codex_workdir.py.diff",
+          "diffSha256": "52c062977333ccbf2ab2474b0b7f507fe8174cce3a69baa43aea0236269baa92",
+          "lines": {
+            "source": 102,
+            "destination": 102,
+            "preserved": 102,
+            "changed": 0,
+            "removed": 0,
+            "added": 0,
+            "reusePercent": 100
+          }
+        },
+        {
+          "source": "upstream/Codex-Wrapper/tests/test_model_registry_reasoning_aliases.py",
+          "destination": "services/codex-wrapper/tests/test_model_registry_reasoning_aliases.py",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT",
+          "sourceSha256": "8bb4d4971970759ee522ed589a58649433197161da65d6a62193cae9b87d4fef",
+          "sha256": "8bb4d4971970759ee522ed589a58649433197161da65d6a62193cae9b87d4fef",
+          "diff": "provenance/diffs/codex-wrapper-service--tests_test_model_registry_reasoning_aliases.py.diff",
+          "diffSha256": "52c062977333ccbf2ab2474b0b7f507fe8174cce3a69baa43aea0236269baa92",
+          "lines": {
+            "source": 30,
+            "destination": 30,
+            "preserved": 30,
+            "changed": 0,
+            "removed": 0,
+            "added": 0,
+            "reusePercent": 100
+          }
+        }
+      ]
+    },
+    {
+      "id": "budget-guard",
+      "functionality": "Quota window and allow/deny evaluation",
+      "project": "ndycode/codex-multi-auth",
+      "classification": "direct-import-with-adapter",
+      "incompatibility": null,
+      "parityAudit": {
+        "retained": [
+          "Calendar budget windows",
+          "Request/token/cost allow decision and reasons"
+        ],
+        "lost": [
+          "File-backed budget store is replaced by PostgreSQL persistence"
+        ],
+        "decision": "Keep the direct runtime import; the destination is an adapter, so copied-line percentage does not represent executed upstream behavior."
+      },
+      "files": [
+        {
+          "source": "upstream/codex-multi-auth/lib/budget-guard.ts",
+          "destination": "packages/quota/src/budget.ts",
+          "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
+          "license": "MIT",
+          "sourceSha256": "da14e0070ac4643f5106eb47037d592cfa48e67239dce97c528ae309f8268059",
+          "sha256": "c5489a02ff65861cd7c0be648101aab8969dd751b637b0fc14a99e1b2223ac04",
+          "diff": "provenance/diffs/budget-guard--file.diff",
+          "diffSha256": "1b1dc9a3bd527cfac462b7da96169451059cbd0a138779fe6c31efb5e8a8c6c4",
+          "lines": {
+            "source": 262,
+            "destination": 76,
+            "preserved": 8,
+            "changed": 68,
+            "removed": 186,
+            "added": 0,
+            "reusePercent": 3.05
+          }
+        }
+      ]
+    },
+    {
+      "id": "usage-ledger-types",
+      "functionality": "Usage ledger data contracts",
+      "project": "ndycode/codex-multi-auth",
+      "classification": "original-reimplementation-under-review",
+      "incompatibility": "PostgreSQL fields differ, but that does not justify replacing the complete upstream ledger.",
+      "parityAudit": {
+        "retained": [
+          "Token categories",
+          "Outcome and model metadata"
+        ],
+        "lost": [
+          "Account reference",
+          "project grouping",
+          "query and summary contracts"
+        ],
+        "decision": "Invalid as a full replacement; reincorporate upstream ledger contracts before calling this integrated."
+      },
+      "files": [
+        {
+          "source": "upstream/codex-multi-auth/lib/usage/types.ts",
+          "destination": "packages/usage/src/types.ts",
+          "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
+          "license": "MIT",
+          "sourceSha256": "357c9e737d1b383cf4031e111147b952b520fa3240f3fd07551da20b1ef431c2",
+          "sha256": "2e2bcd7d9ec82bd9cd9ee475b50a7960495a63719ac7a96c6d75286d55566bae",
+          "diff": "provenance/diffs/usage-ledger-types--file.diff",
+          "diffSha256": "845bb6cd32c3b47f7c58f08556441afbdbadbf2165b69ab878ec4528ae2532d6",
+          "lines": {
+            "source": 122,
+            "destination": 16,
+            "preserved": 5,
+            "changed": 11,
+            "removed": 106,
+            "added": 0,
+            "reusePercent": 4.1
+          }
+        }
+      ]
+    },
+    {
+      "id": "profile-management",
+      "functionality": "CODEX_HOME profile isolation",
+      "project": "Ducksss/codex-profiles",
+      "classification": "original-platform-port",
+      "incompatibility": "The upstream executable is Bash and its desktop lifecycle is macOS-only.",
+      "parityAudit": {
+        "retained": [
+          "Validated names",
+          "separate CODEX_HOME",
+          "symlink rejection"
+        ],
+        "lost": [
+          "Workspace bindings",
+          "guard mode",
+          "profile sharing",
+          "doctor",
+          "upgrade",
+          "desktop launch"
+        ],
+        "decision": "Not feature-parity; keep explicitly partial until portable upstream functions are extracted behind a platform shell."
+      },
+      "files": [
+        {
+          "source": "upstream/codex-profiles/bin/codex-profile",
+          "destination": "packages/profiles/src/profiles.ts",
+          "sourceCommit": "b0df2dd0ab955eb712436f234bbab984cc017992",
+          "license": "MIT",
+          "sourceSha256": "72b17f8a1e4e8e3b2520d0203b9d02b4ee8b839502b889ab0761f6d910c314e8",
+          "sha256": "497a9b76ac09cc93abcf973b4bafb719b404f5ebe4585bf40107f940354ace49",
+          "diff": "provenance/diffs/profile-management--file.diff",
+          "diffSha256": "cc2c2329e69f78f26cf35006b9ad43e52bfea39e88ddb62f0678557f60d38ef6",
+          "lines": {
+            "source": 2499,
+            "destination": 30,
+            "preserved": 8,
+            "changed": 22,
+            "removed": 2469,
+            "added": 0,
+            "reusePercent": 0.32
+          }
+        }
+      ]
+    },
+    {
+      "id": "sse",
+      "functionality": "SSE payload framing",
+      "project": "lidge-jun/OpenCodex",
+      "classification": "original-reimplementation-under-review",
+      "incompatibility": "No accepted incompatibility has been demonstrated.",
+      "parityAudit": {
+        "retained": [
+          "SSE framing",
+          "Event names",
+          "DONE sentinel"
+        ],
+        "lost": [
+          "Recursive OpenAI/Anthropic payload rewriting and nested JSON-string handling"
+        ],
+        "decision": "Not feature-parity; use the upstream rewrite module before marking SSE transformation integrated."
+      },
+      "files": [
+        {
+          "source": "upstream/opencodex/src/server/sse-payload-rewrite.ts",
+          "destination": "packages/protocol/src/sse.ts",
+          "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+          "license": "MIT",
+          "sourceSha256": "1f9ae848e09ffe229ca07a52d5e9d92acb27a634870fabf79eda9f5c18fe9fe0",
+          "sha256": "8bfedce0f7bec3866b9c15b37a00e8d5d3f2c005fdfde1610b434bbf5db1ceca",
+          "diff": "provenance/diffs/sse--file.diff",
+          "diffSha256": "918ca77827c719c66e71ae8394ad10f66de2287d624c4ac414e527a8b3ce7cfe",
+          "lines": {
+            "source": 117,
+            "destination": 44,
+            "preserved": 28,
+            "changed": 16,
+            "removed": 73,
+            "added": 0,
+            "reusePercent": 23.93
+          }
+        }
+      ]
+    },
+    {
+      "id": "provider-registry",
+      "functionality": "Provider registry",
+      "project": "lidge-jun/OpenCodex",
+      "classification": "original-reimplementation-under-review",
+      "incompatibility": "No accepted incompatibility has been demonstrated.",
+      "parityAudit": {
+        "retained": [
+          "Provider identifiers",
+          "Availability",
+          "Model preference"
+        ],
+        "lost": [
+          "Provider catalog",
+          "Account pools",
+          "Regions",
+          "Pricing",
+          "Validation and defaults"
+        ],
+        "decision": "Invalid as a replacement; OpenCodex must become the catalog and the local file must become an adapter."
+      },
+      "files": [
+        {
+          "source": "upstream/opencodex/src/providers/registry.ts",
+          "destination": "packages/providers/src/registry.ts",
+          "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+          "license": "MIT",
+          "sourceSha256": "820760d50fc5744d7446d61854c96e69b8428bf316560afca200646db3cc852d",
+          "sha256": "365fb76718071f68eb8f88846a35102cbcb75f633effa0d49f56f1cb1e68277b",
+          "diff": "provenance/diffs/provider-registry--file.diff",
+          "diffSha256": "eacb81019c9877e2f9866ffd5f2c6ad2c1deac097325fca18fcbee7f4b941d42",
+          "lines": {
+            "source": 1149,
+            "destination": 12,
+            "preserved": 2,
+            "changed": 10,
+            "removed": 1137,
+            "added": 0,
+            "reusePercent": 0.17
+          }
+        }
+      ]
+    },
+    {
+      "id": "api-contracts",
+      "functionality": "OpenAI-compatible request and response contracts",
+      "project": "circlemouth/Codex-Wrapper",
+      "classification": "language-port-under-review",
+      "incompatibility": "Python/Pydantic cannot be imported directly by TypeScript/Zod.",
+      "parityAudit": {
+        "retained": [
+          "Messages",
+          "Streaming",
+          "Model",
+          "Reasoning effort",
+          "Responses input"
+        ],
+        "lost": [
+          "Generated parity with Pydantic defaults and response variants"
+        ],
+        "decision": "Generate JSON Schema or fixtures from Pydantic and test Zod parity; language difference alone is insufficient."
+      },
+      "files": [
+        {
+          "source": "upstream/Codex-Wrapper/app/schemas.py",
+          "destination": "packages/protocol/src/openai.ts",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT",
+          "sourceSha256": "7ab3cd9641b80d818783ac25ba4e5bb275e9e3749adcb68521c4ce48746cff52",
+          "sha256": "174c26ba1207ce25cd7651c8b1d52c21def30368366076023942160a84fa3f24",
+          "diff": "provenance/diffs/api-contracts--file.diff",
+          "diffSha256": "b97fc51a5c8b33f6858d366e9039cadff5b93ce3305d40a9b2606eb1a8162eec",
+          "lines": {
+            "source": 92,
+            "destination": 33,
+            "preserved": 6,
+            "changed": 27,
+            "removed": 59,
+            "added": 0,
+            "reusePercent": 6.52
+          }
+        }
+      ]
+    },
+    {
+      "id": "runtime-pool",
+      "functionality": "Persistent Codex process lifecycle",
+      "project": "lidge-jun/OpenCodex",
+      "classification": "original-reimplementation-under-review",
+      "incompatibility": "The upstream file does not expose the JSON-RPC pool used here.",
+      "parityAudit": {
+        "retained": [
+          "Persistent processes",
+          "Bounded shutdown"
+        ],
+        "lost": [
+          "Discovery",
+          "Command matching",
+          "Stale-server warnings",
+          "Safe termination reporting"
+        ],
+        "decision": "Pooling is additional, not a replacement; incorporate upstream discovery and shutdown safety around it."
+      },
+      "files": [
+        {
+          "source": "upstream/opencodex/src/codex/app-server-processes.ts",
+          "destination": "packages/codex-runtime/src/pool.ts",
+          "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+          "license": "MIT",
+          "sourceSha256": "722b05379e47dd825a9471a5d4e78847e0535297b81feb6a96afdf06622257fb",
+          "sha256": "5b1319e0b9c394e771a562dd76c457256edd9bb08bd51d8d830d6afd71f238d3",
+          "diff": "provenance/diffs/runtime-pool--file.diff",
+          "diffSha256": "c5755c20db1a80be56826c40a861ded4f5bf88b2156c131c530dbc7d7b02b3df",
+          "lines": {
+            "source": 512,
+            "destination": 27,
+            "preserved": 10,
+            "changed": 17,
+            "removed": 485,
+            "added": 0,
+            "reusePercent": 1.95
+          }
+        }
+      ]
+    },
+    {
+      "id": "scheduler",
+      "functionality": "Codex concurrency control",
+      "project": "circlemouth/Codex-Wrapper",
+      "classification": "original-extension-under-review",
+      "incompatibility": "The upstream limiter is process-local and not user-fair.",
+      "parityAudit": {
+        "retained": [
+          "Global concurrency bound",
+          "Wait queue"
+        ],
+        "lost": [
+          "Direct subprocess cancellation and upstream semaphore lifecycle"
+        ],
+        "decision": "Treat as extension and add parity tests against the original limiter before superseding it."
+      },
+      "files": [
+        {
+          "source": "upstream/Codex-Wrapper/app/codex.py",
+          "destination": "packages/queue/src/scheduler.ts",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT",
+          "sourceSha256": "492b1a8fdfc4882beef21069efc7916f5ed8e955b46213f4bd6a16276a777af2",
+          "sha256": "e6d5f03e7f775a4e5bdf48f4959332bf88b7078279013d05e65639a78c668507",
+          "diff": "provenance/diffs/scheduler--file.diff",
+          "diffSha256": "8fe2c72a90e1381dd034f420965c6b2ad269ae9935f08286d460b54fae2b1da0",
+          "lines": {
+            "source": 1053,
+            "destination": 24,
+            "preserved": 2,
+            "changed": 22,
+            "removed": 1029,
+            "added": 0,
+            "reusePercent": 0.19
+          }
+        }
+      ]
+    },
+    {
+      "id": "provenance-generator",
+      "functionality": "Provenance manifest generation",
+      "project": "ndycode/codex-multi-auth",
+      "classification": "adapted-module",
+      "incompatibility": "Upstream hashes vendored files but does not calculate pairwise line reuse or unified diffs.",
+      "parityAudit": null,
+      "files": [
+        {
+          "source": "upstream/codex-multi-auth/scripts/update-vendor-provenance.mjs",
+          "destination": "scripts/provenance/update.mjs",
+          "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
+          "license": "MIT",
+          "sourceSha256": "213412a53958eec4becde6126ea6ed3f240c381538ed611995bc93aeeb03d693",
+          "sha256": "05c470b4051c91ba162975221257d04ad950cf218f13e4f7dbbcb579496fa5ec",
+          "diff": "provenance/diffs/provenance-generator--file.diff",
+          "diffSha256": "25c5411d49b27bd7c4a2b24da1c0668f7a50bec7fe18965747a19363e0c73005",
+          "lines": {
+            "source": 97,
+            "destination": 91,
+            "preserved": 13,
+            "changed": 78,
+            "removed": 6,
+            "added": 0,
+            "reusePercent": 13.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "provenance-verifier",
+      "functionality": "Fail-closed provenance verification",
+      "project": "ndycode/codex-multi-auth",
+      "classification": "adapted-module",
+      "incompatibility": "AIWrapper additionally validates source hashes, diff hashes, metrics and parity audits.",
+      "parityAudit": {
+        "retained": [
+          "Manifest validation",
+          "SHA-256 destination verification",
+          "Fail-closed errors"
+        ],
+        "lost": [
+          "Recursive unlisted-file detection is replaced by explicit origin/destination mappings"
+        ],
+        "decision": "Preserve the upstream fail-closed verifier architecture while extending it to source and diff integrity plus mandatory low-reuse audits."
+      },
+      "files": [
+        {
+          "source": "upstream/codex-multi-auth/scripts/verify-vendor-provenance.mjs",
+          "destination": "scripts/provenance/verify.mjs",
+          "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
+          "license": "MIT",
+          "sourceSha256": "a15dd53a0be29eb0a13a181387f04e824d7c5482956d5264e225a1e114d1ccae",
+          "sha256": "718333747fe052a5ce5968d6b41a913ba8dada884ac8fdc5b48f982d370989db",
+          "diff": "provenance/diffs/provenance-verifier--file.diff",
+          "diffSha256": "7b95b19912a17f712bf71512949c5395b824c2981d9589a34ae01f6d5d1d945d",
+          "lines": {
+            "source": 118,
+            "destination": 36,
+            "preserved": 7,
+            "changed": 29,
+            "removed": 82,
+            "added": 0,
+            "reusePercent": 5.93
+          }
+        }
+      ]
+    }
+  ]
+}

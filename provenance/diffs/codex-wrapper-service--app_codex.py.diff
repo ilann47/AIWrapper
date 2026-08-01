@@ -1,0 +1,36 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\codex.py" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\codex.py"
+index 8ec82d41..f22587af 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\codex.py"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\codex.py"	
+@@ -356,8 +356,10 @@ def _resolve_codex_home_dir() -> Path:
+         if env_path not in candidates:
+             candidates.append(env_path)
+ 
++    # AIWrapper Windows adaptation: an explicitly configured isolated profile
++    # must never silently fall back to the shared account home.
+     default_home = Path.home() / ".codex"
+-    if default_home not in candidates:
++    if not settings.codex_config_dir and not env_home and default_home not in candidates:
+         candidates.append(default_home)
+ 
+     workspace_home = Path(settings.codex_workdir).expanduser() / ".codex"
+@@ -421,7 +423,7 @@ def _configure_codex_home_environment(resolved: Path, had_errors: bool) -> None:
+     default_home = Path.home() / ".codex"
+ 
+     if previous_env != resolved_str:
+-        if previous_env and previous_env != resolved_str:
++        if previous_env and previous_env != resolved_str and had_errors:
+             logger.warning(
+                 "Overriding unusable CODEX_HOME '%s' with '%s'.",
+                 previous_env,
+@@ -815,7 +817,9 @@ def _parse_model_listing(raw: str) -> List[str]:
+         parts = stripped.split()
+         base = parts[0]
+         is_codex = any(p.lower() == "codex" for p in parts[1:])
+-        if is_codex and not base.endswith("-codex"):
++        # AIWrapper adaptation: gpt-*-codex-max already identifies a Codex
++        # model even though the marker is not the final suffix.
++        if is_codex and "-codex" not in base:
+             models.append(f"{base}-codex")
+         else:
+             models.append(base)
