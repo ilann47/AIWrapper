@@ -1,0 +1,243 @@
+name: Release
+
+# Releases are deliberate. Prepare and review every version change on main,
+# then dispatch this workflow with that exact tracked version. The workflow
+# validates repository state; it never edits or commits a version bump.
+# Immutable releases are an operator prerequisite for every live dispatch.
+# The workflow token cannot read that Administration-only repository setting,
+# so the operator verifies it before dispatch; final verification enforces the
+# immutable result.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Exact tracked version to release (for example, 0.8.0)."
+        required: true
+        type: string
+      dry_run:
+        description: "Validate and build without tagging or publishing."
+        required: true
+        default: true
+        type: boolean
+      desktop_smoke_attestation:
+        description: "Live release only: tested ChatGPT version and bundle ID; no account data."
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify release inputs and artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    permissions:
+      contents: read
+
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
+      commit: ${{ steps.release.outputs.commit }}
+
+    env:
+      INPUT_VERSION: ${{ inputs.version }}
+      DRY_RUN: ${{ inputs.dry_run }}
+      DESKTOP_SMOKE_ATTESTATION: ${{ inputs.desktop_smoke_attestation }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Validate release source and tracked versions
+        id: release
+        shell: bash
+        run: |
+          scripts/release/verify-source.sh
+
+      - name: Run full verification
+        run: |
+          make check
+          git diff --exit-code
+          git diff --cached --exit-code
+          worktree_status="$(git status --porcelain=v1 --untracked-files=all)"
+          [[ -z "$worktree_status" ]] || {
+            echo "Release verification left tracked or untracked changes:" >&2
+            printf '%s\n' "$worktree_status" >&2
+            exit 1
+          }
+
+      - name: Verification summary
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          if [[ "$DRY_RUN" == "true" ]]; then
+            echo "Validated $TAG. Dry run made no release changes." | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Validated $TAG for live publication." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+  publish:
+    name: Publish and verify release
+    if: ${{ ! inputs.dry_run }}
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    permissions:
+      contents: write # create the tag and GitHub Release
+      id-token: write # npm provenance
+      actions: write # dispatch the Pages workflow after release
+
+    steps:
+      - name: Check out verified release
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Validate live release source
+        shell: bash
+        env:
+          TAG: ${{ needs.verify.outputs.tag }}
+          V: ${{ needs.verify.outputs.version }}
+          VERIFIED_SHA: ${{ needs.verify.outputs.commit }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF" == "refs/heads/main" ]] || {
+            echo "Live releases must run from main, not $GITHUB_REF." >&2
+            exit 1
+          }
+          [[ "$GITHUB_SHA" == "$VERIFIED_SHA" ]] || {
+            echo "Workflow commit $GITHUB_SHA changed after verification of $VERIFIED_SHA." >&2
+            exit 1
+          }
+          [[ "$(git rev-parse HEAD)" == "$VERIFIED_SHA" ]] || {
+            echo "Publish checkout does not match verified commit $VERIFIED_SHA." >&2
+            exit 1
+          }
+          [[ "$TAG" == "v$V" ]] || {
+            echo "Verified tag $TAG does not match version $V." >&2
+            exit 1
+          }
+
+      - name: Preflight release credential identities
+        if: ${{ ! inputs.dry_run }}
+        shell: bash
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
+        run: |
+          scripts/release/preflight.sh
+
+      - name: Revalidate live release state
+        id: live
+        if: ${{ ! inputs.dry_run }}
+        shell: bash
+        env:
+          TAG: ${{ needs.verify.outputs.tag }}
+          VERIFIED_SHA: ${{ needs.verify.outputs.commit }}
+        run: |
+          scripts/release/verify-state.sh
+
+      - name: Create and push tag
+        if: ${{ ! inputs.dry_run }}
+        env:
+          TAG: ${{ needs.verify.outputs.tag }}
+          TAG_EXISTS: ${{ steps.live.outputs.tag_exists }}
+          VERIFIED_SHA: ${{ needs.verify.outputs.commit }}
+        run: |
+          scripts/release/publish-tag.sh
+
+      - name: Verify tagged AUR release files
+        if: ${{ ! inputs.dry_run }}
+        env:
+          TAG: ${{ needs.verify.outputs.tag }}
+        run: |
+          scripts/release/verify-distribution.sh tagged-aur
+
+      - name: Publish to npm
+        if: ${{ ! inputs.dry_run }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          V: ${{ needs.verify.outputs.version }}
+        run: |
+          scripts/release/publish-npm.sh publish
+
+      - name: Verify published npm package
+        if: ${{ ! inputs.dry_run }}
+        env:
+          V: ${{ needs.verify.outputs.version }}
+        run: |
+          scripts/release/publish-npm.sh verify
+
+      - name: Create GitHub Release
+        if: ${{ ! inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.verify.outputs.tag }}
+        run: |
+          scripts/release/publish-github.sh publish
+
+      - name: Verify GitHub Release
+        if: ${{ ! inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.verify.outputs.tag }}
+        run: |
+          scripts/release/publish-github.sh verify
+
+      - name: Verify public standalone installer
+        if: ${{ ! inputs.dry_run }}
+        env:
+          TAG: ${{ needs.verify.outputs.tag }}
+          V: ${{ needs.verify.outputs.version }}
+        run: |
+          scripts/release/verify-distribution.sh standalone
+
+      - name: Update Homebrew tap
+        if: ${{ ! inputs.dry_run }}
+        env:
+          TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
+          V: ${{ needs.verify.outputs.version }}
+        run: |
+          scripts/release/update-homebrew.sh
+
+      - name: Deploy and verify release documentation
+        if: ${{ ! inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.verify.outputs.tag }}
+          V: ${{ needs.verify.outputs.version }}
+        run: |
+          scripts/release/deploy-pages.sh
+
+      - name: Release summary
+        env:
+          V: ${{ needs.verify.outputs.version }}
+          TAG: ${{ needs.verify.outputs.tag }}
+        run: |
+          echo "Released codex-profile $V and verified Pages from $TAG." | tee -a "$GITHUB_STEP_SUMMARY"

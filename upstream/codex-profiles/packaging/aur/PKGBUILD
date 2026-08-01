@@ -1,0 +1,23 @@
+# Maintainer: Ducksss <https://github.com/Ducksss>
+pkgname=codex-profile
+pkgver=0.8.0
+pkgrel=1
+pkgdesc="Named Codex CLI profiles with separate local ChatGPT desktop state"
+arch=('any')
+url="https://github.com/Ducksss/codex-profiles"
+license=('MIT')
+depends=('bash')
+source=(
+  "codex-profile-$pkgver::https://raw.githubusercontent.com/Ducksss/codex-profiles/v$pkgver/bin/codex-profile"
+  "LICENSE-$pkgver::https://raw.githubusercontent.com/Ducksss/codex-profiles/v$pkgver/LICENSE"
+)
+sha256sums=(
+  '798272aa58b2f8f9257552203ca89fb25f9921621d69046b980e337c968c2b50'
+  '9ff3b3e5b6a234802d746443539abda82c35d1581a98249b40636dd5acff4364'
+)
+
+package() {
+  install -Dm755 "codex-profile-$pkgver" "$pkgdir/usr/bin/codex-profile"
+  ln -s codex-profile "$pkgdir/usr/bin/codex-profiles"
+  install -Dm644 "LICENSE-$pkgver" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
