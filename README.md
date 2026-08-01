@@ -12,6 +12,8 @@ Multi-user OpenAI-compatible gateway backed by persistent Codex App Server proce
 
 See `docs/TARGET_ARCHITECTURE.md`, `docs/REFERENCE_REUSE_MATRIX.md`, `THIRD_PARTY.md` and `NOTICE`.
 
+The four community repositories are imported with their real Git ancestry under `upstream/`. The original Codex-Wrapper FastAPI service and tests live under `services/codex-wrapper`; run it with `docker compose --profile upstream-proxy up codex-wrapper`. See `docs/UPSTREAM_ADOPTION.md` for honest copied/imported/original classifications and run `pnpm provenance:report` for line-level metrics.
+
 ## Local installation (Windows)
 
 Requirements: Node 22+, pnpm 10+, PostgreSQL 16+, Redis 7+ and the official Codex CLI.

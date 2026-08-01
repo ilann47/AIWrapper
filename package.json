@@ -13,6 +13,7 @@
     "db:migrate": "tsx packages/db/src/migrate.ts"
     ,"db:bootstrap": "tsx packages/db/src/bootstrap.ts"
     ,"worker": "tsx apps/worker/src/index.ts"
+    ,"provenance:report": "node scripts/upstream-diff-report.mjs"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.1",

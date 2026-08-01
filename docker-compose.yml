@@ -1,4 +1,25 @@
 services:
+  # Exact circlemouth/Codex-Wrapper service; opt in with --profile upstream-proxy.
+  codex-wrapper:
+    profiles: [upstream-proxy]
+    build: { context: ./services/codex-wrapper, dockerfile: Dockerfile }
+    environment:
+      PROXY_API_KEY: ${CODEX_WRAPPER_INTERNAL_KEY:-}
+      CODEX_HOME: /home/codex/.codex
+      CODEX_WORKDIR: /workspace
+      CODEX_PATH: codex
+      CODEX_REASONING_EFFORT: ${CODEX_REASONING_EFFORT:-medium}
+      CODEX_MAX_PARALLEL_REQUESTS: ${CODEX_MAX_PARALLEL_REQUESTS:-2}
+      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-60}
+    ports: [127.0.0.1:8020:8000]
+    volumes:
+      - type: bind
+        source: ${CODEX_HOST_HOME:-C:/Users/Public/.codex}
+        target: /home/codex/.codex
+        read_only: true
+      - type: volume
+        source: codex_workspace
+        target: /workspace
   postgres:
     image: postgres:17-alpine
     environment:
@@ -42,8 +63,9 @@ services:
     ports: [127.0.0.1:9090:9090]
   grafana:
     image: grafana/grafana:12.1.0
-    environment: { GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin} }
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
     volumes: [grafana_data:/var/lib/grafana, ./infra/grafana/provisioning:/etc/grafana/provisioning:ro]
     ports: [127.0.0.1:3000:3000]
     depends_on: [prometheus]
-volumes: { postgres_data: {}, redis_data: {}, codex_profiles: {}, prometheus_data: {}, grafana_data: {} }
+volumes: { postgres_data: {}, redis_data: {}, codex_profiles: {}, codex_workspace: {}, prometheus_data: {}, grafana_data: {} }
