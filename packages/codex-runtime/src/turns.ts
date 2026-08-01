@@ -21,6 +21,10 @@ export class CodexTurns {
     if (!threadId) {
       const started = await this.runtime.request<{ thread: { id: string } }>("thread/start", { cwd: options.cwd, model: options.model, approvalPolicy: "never", sandbox: "read-only", ephemeral: false, serviceTier: options.serviceTier ?? null });
       threadId = started.thread.id;
+    } else {
+      // App Server threads persisted on disk must be loaded into this process
+      // before a new turn can be appended.
+      await this.runtime.request("thread/resume", { threadId });
     }
     const response = await this.runtime.request<{ turn: { id: string } }>("turn/start", { threadId, input: options.input, model: options.model, effort: options.effort ?? null, serviceTier: options.serviceTier ?? null, clientUserMessageId: randomUUID() });
     const turnId = response.turn.id; const queue = new AsyncEventQueue<TurnStreamEvent>(); let text = ""; const tools: string[] = []; let compactions = 0; let usage:Record<string,number>={};
