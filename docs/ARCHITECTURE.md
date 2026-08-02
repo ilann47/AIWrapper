@@ -1,28 +1,24 @@
-# Arquitetura
+# Arquitetura atual
+
+AIWrapper é uma composição de quatro árvores upstream preservadas, com extensões próprias restritas ao domínio multiusuário.
 
 ```text
-Cliente A -- aiw_key_A --+
-                         +--> FastAPI --> quota guard --> backend mock/OpenAI
-Cliente B -- aiw_key_B --+       |
-                                 +--> SQLite: users, usage, audit
-                                 +--> dashboard administrativo
+OpenCodex server + apps/opencodex-gui
+  ├─ GUI administrativa upstream completa
+  ├─ OAuth, providers, models, keys, usage, quotas, logs e settings
+  └─ extensions/: Chat, Users, Organizations, Sessions, Sharing e Billing
+                         │ chave individual
+                         ▼
+services/codex-wrapper (FastAPI upstream)
+  ├─ /v1/models, /v1/chat/completions, /v1/responses e SSE
+  ├─ app/aiwrapper: domínio e adapters permitidos
+  ├─ governance bridge ──► packages/codex-multi-auth (código original compilado)
+  └─ profiles adapter  ──► packages/codex-profiles/bin/codex-profile (original)
+                         │
+                         ▼
+Codex CLI ──► auth.json da conta ChatGPT
 ```
 
-## Fronteiras
+SQLite armazena apenas entidades exclusivas do AIWrapper: usuários, organizações, sessões, mensagens e compartilhamentos. O ledger e o budget não são reimplementados no SQLite; eles são executados pelo codex-multi-auth e persistidos em seu formato file-backed original.
 
-1. A chave administrativa gerencia usuários e consulta todos os saldos.
-2. Cada usuário recebe uma chave aleatória; somente o hash é persistido.
-3. A autorização consulta cota e RPM antes do backend.
-4. O consumo confirmado é gravado após uma resposta bem-sucedida.
-5. O backend não recebe a identidade ou a chave do cliente.
-
-## Próximas extensões
-
-- Streaming SSE com contabilização no bloco `finally`.
-- Rotação e revogação de chaves.
-- Reserva transacional de unidades para concorrência estrita.
-- PostgreSQL e migrations.
-- Prometheus/OpenTelemetry.
-- Políticas por modelo e orçamento monetário.
-- Adaptador read-only para métricas do `codex app-server` de uma conta própria.
-
+O frontend antigo, o Fastify antigo e as reimplementações locais de SSE, ledger, budget, profiles, provider registry e runtime foram removidos. As fronteiras de integração e justificativas estão em `provenance/components.json`.

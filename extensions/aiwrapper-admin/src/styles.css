@@ -1,0 +1,21 @@
+.aiw-gate { max-width: 520px; margin: 9vh auto 0; display: grid; gap: var(--space-3); justify-items: start; }
+.aiw-gate > svg { width: 28px; height: 28px; }
+.aiw-gate h2, .aiw-gate .page-sub { margin: 0; }
+.aiw-gate .btn { min-width: 140px; }
+.aiw-field { display: grid; gap: var(--space-2); width: 100%; color: var(--muted); font-size: var(--text-label); }
+.aiw-endpoint { color: var(--faint); font-size: var(--text-caption); overflow-wrap: anywhere; }
+.aiw-identity { display: flex; align-items: center; gap: var(--space-2); }
+.aiw-toolbar { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin-bottom: var(--space-4); }
+.aiw-toolbar .custom-select { min-width: 180px; }
+.aiw-table-wrap { overflow: auto; }
+.aiw-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.aiw-form-grid .aiw-field:last-of-type { grid-column: 1 / -1; }
+.aiw-secret { display: block; margin-top: var(--space-3); padding: var(--space-3); border: 1px dashed var(--border); border-radius: var(--radius-sm); overflow-wrap: anywhere; }
+.aiw-stack { display: grid; gap: var(--space-4); }
+.aiw-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3); }
+.aiw-quota-input { width: 112px; }
+@media (max-width: 700px) {
+  .aiw-form-grid { grid-template-columns: 1fr; }
+  .aiw-form-grid .aiw-field:last-of-type { grid-column: auto; }
+  .aiw-identity { width: 100%; justify-content: space-between; }
+}

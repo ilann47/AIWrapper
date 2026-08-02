@@ -1,0 +1,80 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\App.tsx" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\App.tsx"
+index d60e839b..8ec27f4e 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\App.tsx"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\App.tsx"	
+@@ -14,7 +14,7 @@ import Claude from "./pages/Claude";
+ import Grok from "./pages/Grok";
+ import Startup from "./pages/Startup";
+ import ErrorBoundary from "./components/ErrorBoundary";
+-import { IconGrid, IconServer, IconBoxes, IconBot, IconList, IconActivity, IconHardDrive, IconKey, IconGithub, IconMenu, IconSun, IconMoon, IconMonitor, IconGlobe, IconPower, IconSparkle, IconX } from "./icons";
++import { IconGrid, IconServer, IconBoxes, IconBot, IconList, IconActivity, IconHardDrive, IconKey, IconGithub, IconMenu, IconSun, IconMoon, IconMonitor, IconGlobe, IconPower, IconSparkle, IconX, IconTerminal, IconLink } from "./icons";
+ import { useI18n, useT, LOCALES, type Locale, type TKey } from "./i18n/shared";
+ import { Select, Switch } from "./ui";
+ import { installApiAuthFetch } from "./api";
+@@ -22,6 +22,15 @@ import { readJsonIfOk } from "./fetch-json";
+ import { type Page } from "./app-routing";
+ import { useAppRouteState } from "./use-app-route-state";
+ import { requestProxyStop } from "./stop-proxy";
++import { AIWrapperProvider } from "../../../extensions/aiwrapper-admin/src/auth";
++import ChatPage from "../../../extensions/aiwrapper-chat/src/ChatPage";
++import SessionsPage from "../../../extensions/aiwrapper-chat/src/SessionsPage";
++import UsersPage from "../../../extensions/aiwrapper-users/src/UsersPage";
++import OrganizationsPage from "../../../extensions/aiwrapper-users/src/OrganizationsPage";
++import SharingPage from "../../../extensions/aiwrapper-sharing/src/SharingPage";
++import BillingPage from "../../../extensions/aiwrapper-billing/src/BillingPage";
++import "../../../extensions/aiwrapper-admin/src/styles.css";
++import "../../../extensions/aiwrapper-chat/src/styles.css";
+ 
+ installApiAuthFetch();
+ 
+@@ -41,6 +50,12 @@ const PAGE_TKEY: Record<Page, TKey> = {
+   api: "nav.api",
+   claude: "nav.claude",
+   grok: "nav.grok",
++  "aiwrapper-chat": "nav.aiwrapperChat",
++  "aiwrapper-users": "nav.aiwrapperUsers",
++  "aiwrapper-organizations": "nav.aiwrapperOrganizations",
++  "aiwrapper-sessions": "nav.aiwrapperSessions",
++  "aiwrapper-sharing": "nav.aiwrapperSharing",
++  "aiwrapper-billing": "nav.aiwrapperBilling",
+ };
+ 
+ const API_BASE = import.meta.env.VITE_API_BASE || "";
+@@ -49,6 +64,12 @@ const THEME_KEY = "ocx-theme";
+ const NAV: { id: Page; tkey: TKey; Icon: typeof IconGrid }[] = [
+   { id: "dashboard", tkey: "nav.dashboard", Icon: IconGrid },
+   { id: "codex-auth", tkey: "nav.codexAuth", Icon: IconKey },
++  { id: "aiwrapper-chat", tkey: "nav.aiwrapperChat", Icon: IconTerminal },
++  { id: "aiwrapper-sessions", tkey: "nav.aiwrapperSessions", Icon: IconList },
++  { id: "aiwrapper-users", tkey: "nav.aiwrapperUsers", Icon: IconBot },
++  { id: "aiwrapper-organizations", tkey: "nav.aiwrapperOrganizations", Icon: IconBoxes },
++  { id: "aiwrapper-sharing", tkey: "nav.aiwrapperSharing", Icon: IconLink },
++  { id: "aiwrapper-billing", tkey: "nav.aiwrapperBilling", Icon: IconActivity },
+   { id: "providers", tkey: "nav.providers", Icon: IconServer },
+   { id: "models", tkey: "nav.models", Icon: IconBoxes },
+   { id: "subagents", tkey: "nav.subagents", Icon: IconBot },
+@@ -207,6 +228,7 @@ export default function App() {
+   );
+ 
+   return (
++    <AIWrapperProvider>
+     <div className="app">
+       {/* inert while the drawer is open: keeps focus and assistive tech inside the drawer */}
+       <header className="mobile-topbar" inert={navOpen}>
+@@ -309,9 +331,16 @@ export default function App() {
+             {page === "api" && <ApiKeys apiBase={API_BASE} />}
+             {page === "claude" && <Claude apiBase={API_BASE} />}
+             {page === "grok" && <Grok apiBase={API_BASE} />}
++            {page === "aiwrapper-chat" && <ChatPage />}
++            {page === "aiwrapper-users" && <UsersPage />}
++            {page === "aiwrapper-organizations" && <OrganizationsPage />}
++            {page === "aiwrapper-sessions" && <SessionsPage />}
++            {page === "aiwrapper-sharing" && <SharingPage />}
++            {page === "aiwrapper-billing" && <BillingPage />}
+           </ErrorBoundary>
+         </div>
+       </main>
+     </div>
++    </AIWrapperProvider>
+   );
+ }

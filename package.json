@@ -1,44 +1,29 @@
 {
   "name": "aiwrapper-platform",
-  "version": "1.0.0",
+  "version": "2.0.0-lab",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.14.0",
   "scripts": {
-    "build": "tsc -b",
-    "typecheck": "tsc -b --pretty false",
-    "test": "vitest run",
-    "dev:api": "tsx watch apps/api/src/index.ts",
-    "dev:web": "pnpm --dir apps/web dev",
-    "db:migrate": "tsx packages/db/src/migrate.ts"
-    ,"db:bootstrap": "tsx packages/db/src/bootstrap.ts"
-    ,"worker": "tsx apps/worker/src/index.ts"
-    ,"provenance:report": "pnpm provenance:update"
-    ,"provenance:update": "node scripts/provenance/update.mjs"
-    ,"provenance:verify": "node scripts/provenance/verify.mjs"
-  },
-  "dependencies": {
-    "@fastify/cors": "^11.0.1",
-    "@fastify/rate-limit": "^10.3.0",
-    "@fastify/sensible": "^6.0.3",
-    "drizzle-orm": "^0.44.5",
-    "fastify": "^5.5.0",
-    "ioredis": "^5.7.0",
-    "pg": "^8.16.3",
-    "pino": "^9.9.0",
-    "prom-client": "^15.1.3",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "zod": "^4.1.5"
+    "build": "pnpm build:governance && pnpm build:web",
+    "build:governance": "pnpm --dir packages/codex-multi-auth build",
+    "build:web": "pnpm --dir apps/opencodex-gui build",
+    "typecheck": "pnpm --dir packages/codex-multi-auth typecheck && pnpm --dir apps/opencodex-gui build",
+    "test": "pnpm test:backend && pnpm test:gui",
+    "test:backend": "cd services/codex-wrapper && python -m pytest -q",
+    "test:gui": "pnpm --dir apps/opencodex-gui test",
+    "dev:api": "cd services/codex-wrapper && python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8766",
+    "dev:web": "pnpm --dir apps/opencodex-gui dev",
+    "dev:opencodex": "pnpm --filter @bitkyc08/opencodex start",
+    "provenance:report": "pnpm provenance:update",
+    "provenance:update": "node scripts/provenance/update.mjs",
+    "provenance:verify": "node scripts/provenance/verify.mjs"
   },
   "devDependencies": {
-    "@types/node": "^22.18.0",
-    "@types/pg": "^8.15.5",
-    "@types/react": "^19.1.12",
-    "@types/react-dom": "^19.1.9",
-    "tsx": "^4.20.5",
-    "typescript": "^5.9.2",
-    "vite": "^7.1.3",
-    "vitest": "^3.2.4"
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "bun": "1.3.14",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   }
 }

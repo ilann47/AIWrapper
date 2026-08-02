@@ -1,0 +1,64 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\docker-compose.yml" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\docker-compose.yml"
+index e729bc00..d0d4ae8e 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\docker-compose.yml"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\docker-compose.yml"	
+@@ -1,24 +1,43 @@
+ services:
++  # Full lidge-jun/OpenCodex runtime and its imported GUI.
++  opencodex:
++    build: { context: ., dockerfile: Dockerfile.opencodex }
++    environment:
++      OPENCODEX_API_AUTH_TOKEN: ${OPENCODEX_API_AUTH_TOKEN:-aiwrapper-local-only}
++    ports: ["127.0.0.1:8765:8765"]
++    volumes:
++      - type: bind
++        source: ${CODEX_HOST_HOME:-C:/Users/Public/.codex}
++        target: /home/bun/.codex
++
++  # circlemouth/Codex-Wrapper with thin AIWrapper integration adapters.
+   codex-wrapper:
+-    build:
+-      context: .
+-      dockerfile: Dockerfile
+-      args:
+-        CODEX_UID: ${HOST_UID:-1000}
+-        CODEX_GID: ${HOST_GID:-1000}
+-    restart: unless-stopped
+-    image: codex-wrapper:latest
+-    env_file:
+-      - .env
++    build: { context: ., dockerfile: Dockerfile.codex-wrapper }
+     environment:
+-      CODEX_HOME: /home/codex/.codex
++      CODEX_CONFIG_DIR: /home/codex/.codex
+       CODEX_WORKDIR: /workspace
+       CODEX_PATH: codex
+-    ports:
+-      - "8020:8000"
++      CODEX_REASONING_EFFORT: ${CODEX_REASONING_EFFORT:-medium}
++      CODEX_MAX_PARALLEL_REQUESTS: ${CODEX_MAX_PARALLEL_REQUESTS:-2}
++      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-60}
++      AIWRAPPER_STATE_DIR: /data
++      AIWRAPPER_DATABASE_PATH: /data/aiwrapper.db
++      AIWRAPPER_MULTI_AUTH_DIR: /data/multi-auth
++      AIWRAPPER_GOVERNANCE_BRIDGE: /opt/aiwrapper/extensions/aiwrapper-admin/src/governance-bridge.mjs
++      AIWRAPPER_PROFILE_SCRIPT: /opt/aiwrapper/packages/codex-profiles/bin/codex-profile
++      AIWRAPPER_PROFILE_BASH: /bin/bash
++      AIWRAPPER_OWNER_NAME: ${AIWRAPPER_OWNER_NAME:-owner}
++      AIWRAPPER_OWNER_KEY: ${AIWRAPPER_OWNER_KEY:-}
++      AIWRAPPER_PUBLIC_BASE_URL: http://127.0.0.1:8766
++    ports: ["127.0.0.1:8766:8766"]
+     volumes:
+-      - ${HOME}/.codex:/home/codex/.codex
+-      - codex-workspace:/workspace
++      - type: bind
++        source: ${CODEX_HOST_HOME:-C:/Users/Public/.codex}
++        target: /home/codex/.codex
++        read_only: true
++      - aiwrapper_data:/data
++      - codex_workspace:/workspace
+ 
+ volumes:
+-  codex-workspace:
++  aiwrapper_data: {}
++  codex_workspace: {}

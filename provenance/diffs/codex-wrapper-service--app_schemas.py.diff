@@ -1,1 +1,21 @@
-# Files are identical.
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\schemas.py" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\schemas.py"
+index f0225ef2..1679302c 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\schemas.py"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\schemas.py"	
+@@ -24,6 +24,8 @@ class ChatCompletionRequest(BaseModel):
+     temperature: Optional[float] = None
+     max_tokens: Optional[int] = None
+     x_codex: Optional[XCodexOptions] = None
++    reasoning_effort: Optional[str] = None
++    metadata: Optional[Dict[str, Any]] = None
+ 
+ 
+ class ChatMessageResponse(BaseModel):
+@@ -61,6 +63,7 @@ class ResponsesRequest(BaseModel):
+     input: Any
+     stream: Optional[bool] = False
+     reasoning: Optional[ResponsesReasoning] = None
++    previous_response_id: Optional[str] = None
+ 
+ 
+ class ResponsesOutputText(BaseModel):

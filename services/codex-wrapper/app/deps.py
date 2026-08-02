@@ -13,8 +13,18 @@ _rate_lock = asyncio.Lock()
 _rate_data = {}
 
 
-async def verify_api_key(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> None:
+async def verify_api_key(request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> None:
     """Verify bearer token if PROXY_API_KEY is set."""
+    if settings.aiwrapper_enabled:
+        from .aiwrapper.store import store
+        token = credentials.credentials if credentials else ""
+        principal = store.authenticate(token) if token else None
+        if not principal and settings.proxy_api_key and token == settings.proxy_api_key:
+            principal = next((user for user in store.list_users() if user["role"] == "owner"), None)
+        if not principal:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid individual AIWrapper key")
+        request.state.aiwrapper_principal = principal
+        return
     if settings.proxy_api_key:
         if not credentials or credentials.credentials != settings.proxy_api_key:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")

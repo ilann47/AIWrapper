@@ -1,0 +1,2498 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+PROGRAM="${0##*/}"
+VERSION="0.8.0"
+CHATGPT_APP="${CHATGPT_APP:-}"
+CODEX_APP="${CODEX_APP:-}"
+CODEX_APP_BIN="${CODEX_APP_BIN:-}"
+CODEX_BUNDLED_CLI="${CODEX_BUNDLED_CLI:-}"
+CODEX_PROFILE_APP_INSTANCE_ROOT="${CODEX_PROFILE_APP_INSTANCE_ROOT:-$HOME/Library/Application Support/codex-profile/app-instances}"
+CODEX_PROFILE_UPGRADE_REPO="${CODEX_PROFILE_UPGRADE_REPO:-https://github.com/Ducksss/codex-profiles.git}"
+CODEX_PROFILE_UPGRADE_REF="${CODEX_PROFILE_UPGRADE_REF:-main}"
+CODEX_PROFILE_CONFIG_HOME="${CODEX_PROFILE_CONFIG_HOME:-${XDG_CONFIG_HOME:-$HOME/.config}/codex-profile}"
+WORKSPACE_REGISTRY="$CODEX_PROFILE_CONFIG_HOME/workspaces.tsv"
+WORKSPACE_GUARD_FILE="$CODEX_PROFILE_CONFIG_HOME/guard-mode"
+
+usage() {
+  cat <<EOF
+$PROGRAM - select named Codex homes and ChatGPT windows with separate local state
+
+Usage:
+  $PROGRAM app <profile> [--instance] [--rebuild] [workspace]
+  $PROGRAM cli <profile> [codex-args...]
+  $PROGRAM login <profile> [codex-login-args...]
+  $PROGRAM init <profile> [--share-with <source-profile>]
+  $PROGRAM remove <profile> [--yes]
+  $PROGRAM workspace bind <path> <profile> [--force]
+  $PROGRAM workspace unbind <path>
+  $PROGRAM workspace list [--json]
+  $PROGRAM workspace status [--json] [path]
+  $PROGRAM workspace guard [off|warn|strict]
+  $PROGRAM run [--] [codex-args...]
+  $PROGRAM run --app [workspace]
+  $PROGRAM status [profile]
+  $PROGRAM status --json [profile]
+  $PROGRAM path <profile>
+  $PROGRAM env <profile> [--shell <bash|zsh|fish>]
+  $PROGRAM use <profile>
+  $PROGRAM logs <profile> [--instance] [--path|--tail [lines]]
+  $PROGRAM clone-config <source-profile> <target-profile> [--force]
+  $PROGRAM list
+  $PROGRAM doctor [--json]
+  $PROGRAM completions <bash|zsh|fish>
+  $PROGRAM shell-init <bash|zsh|fish>
+  $PROGRAM upgrade [--dry-run] [--prefix <path>] [--ref <git-ref>]
+  $PROGRAM version
+  $PROGRAM help
+
+Examples:
+  $PROGRAM login personal
+  $PROGRAM init work
+  $PROGRAM init personal-2 --share-with personal
+  $PROGRAM app personal ~/Dev/my-project
+  $PROGRAM app work ~/Dev/client-project
+  $PROGRAM cli personal exec "review this repo"
+  $PROGRAM workspace bind ~/Dev/client-project work
+  $PROGRAM run exec "review this repo"
+  $PROGRAM run --app
+  $PROGRAM status
+  eval "\$($PROGRAM env work)"     # set CODEX_HOME for this shell
+  $PROGRAM use work               # same, via the shell-init wrapper
+  $PROGRAM logs personal --tail 50
+  $PROGRAM clone-config personal work
+  $PROGRAM upgrade
+
+Desktop (app):
+  default         Launch the stock ChatGPT session with CODEX_HOME=~/.codex.
+  named profile   Launch a named ChatGPT window with separate local state across
+                  Chat, Work, and Codex, using profile-specific Electron data.
+
+Deprecated compatibility:
+  app-instance    Alias for app; no separate launch mode is created.
+  --instance      Accepted by app and logs; named windows already use separate
+                  local state.
+  --rebuild       Accepted by app; app bundles are never cloned or rebuilt.
+
+Profiles:
+  default         -> ~/.codex
+  any other name  -> ~/.codex-<profile>
+
+Environment:
+  CHATGPT_APP     Override the ChatGPT.app bundle path (preferred).
+  CODEX_APP       Override the desktop app bundle path (legacy compatibility).
+  CODEX_APP_BIN   Locate a desktop .app from its executable (deprecated).
+  CODEX_CLI       Override Codex CLI binary path.
+  CODEX_BUNDLED_CLI  Override the bundled Codex CLI fallback path.
+  CODEX_PROFILE_CONFIG_HOME  Override private workspace binding storage.
+  CODEX_PROFILE_APP_INSTANCE_ROOT  Legacy clone root (doctor only; never written).
+  CODEX_PROFILE_UPGRADE_REPO    Override upgrade repository.
+  CODEX_PROFILE_UPGRADE_REF     Override upgrade git ref.
+  CODEX_PROFILE_UPGRADE_CACHE   Override upgrade cache checkout.
+  CODEX_PROFILE_UPGRADE_PREFIX  Override upgrade install prefix.
+  CODEX_PROFILE_NO_UPDATE_CHECK  Disable the daily update check (also honors DO_NOT_TRACK).
+
+Desktop auth safety:
+  app refuses an inherited CODEX_ACCESS_TOKEN so a shell credential cannot
+  silently override the selected window.
+
+Platform:
+  app requires macOS (it drives the ChatGPT desktop app).
+  All other commands run on macOS and Linux.
+EOF
+}
+
+die() {
+  printf 'Error: %s\n' "$*" >&2
+  exit 1
+}
+
+note() {
+  printf '%s\n' "$*"
+}
+
+die_macos_only() {
+  local subcommand="$1"
+
+  die "$PROGRAM $subcommand is only available on macOS (it drives the ChatGPT desktop app)."
+}
+
+is_valid_profile_name() {
+  local profile="$1"
+
+  [[ "$profile" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
+}
+
+validate_profile() {
+  local profile="$1"
+
+  if ! is_valid_profile_name "$profile"; then
+    die "Invalid profile '$profile'. Use letters, numbers, dots, dashes, or underscores."
+  fi
+}
+
+codex_home_for_profile() {
+  local profile="$1"
+
+  validate_profile "$profile"
+
+  if [[ "$profile" == "default" ]]; then
+    printf '%s/.codex\n' "$HOME"
+  else
+    printf '%s/.codex-%s\n' "$HOME" "$profile"
+  fi
+}
+
+discovered_profile_is_managed() {
+  local profile="$1"
+  local dir="$2"
+  local expected
+
+  is_valid_profile_name "$profile" || return 1
+  expected="$(codex_home_for_profile "$profile")"
+  [[ "$expected" == "$dir" ]]
+}
+
+discover_profiles() {
+  local include_default="${1:-yes}"
+  local dir profile
+
+  if [[ "$include_default" == "yes" && -d "$HOME/.codex" ]]; then
+    printf 'default\n'
+  fi
+
+  for dir in "$HOME"/.codex-*; do
+    [[ -d "$dir" ]] || continue
+    profile="${dir##*/.codex-}"
+    discovered_profile_is_managed "$profile" "$dir" || continue
+    printf '%s\n' "$profile"
+  done
+}
+
+ensure_home() {
+  local codex_home="$1"
+
+  [[ ! -L "$codex_home" ]] || die "Refusing symlinked managed directory: $codex_home"
+  mkdir -p "$codex_home" || die "Cannot create directory: $codex_home"
+  [[ -d "$codex_home" ]] || die "Not a directory: $codex_home"
+  chmod 700 "$codex_home" || die "Cannot set private permissions on: $codex_home"
+}
+
+shared_profile_config_entries() {
+  printf '%s\n' \
+    config.toml \
+    AGENTS.md \
+    AGENTS.override.md \
+    instructions.md \
+    custom-instructions.md \
+    rules \
+    plugins
+}
+
+initialize_shared_profile() {
+  local target_profile="$1"
+  local source_profile="$2"
+  local target_home source_home entry source_entry target_entry
+
+  [[ "$target_profile" != "$source_profile" ]] ||
+    die "Source and target profiles must be different."
+
+  target_home="$(codex_home_for_profile "$target_profile")"
+  source_home="$(codex_home_for_profile "$source_profile")"
+
+  [[ ! -L "$source_home" ]] ||
+    die "Refusing symlinked shared profile source: $source_home"
+  [[ -d "$source_home" ]] ||
+    die "Shared profile source is not initialized: $source_profile ($source_home)"
+  [[ ! -e "$target_home" && ! -L "$target_home" ]] ||
+    die "Target profile path already exists: $target_profile ($target_home)"
+
+  mkdir "$target_home" || die "Cannot create directory: $target_home"
+  if ! chmod 700 "$target_home"; then
+    if ! rm -rf "$target_home"; then
+      die "Cannot set private permissions on: $target_home; cleanup also failed."
+    fi
+    die "Cannot set private permissions on: $target_home"
+  fi
+
+  while IFS= read -r entry; do
+    source_entry="$source_home/$entry"
+    target_entry="$target_home/$entry"
+    [[ -e "$source_entry" || -L "$source_entry" ]] || continue
+
+    if ! ln -s "$source_entry" "$target_entry"; then
+      if ! rm -rf "$target_home"; then
+        die "Cannot link shared entry $entry into $target_home; cleanup also failed."
+      fi
+      die "Cannot link shared entry $entry into $target_home"
+    fi
+  done < <(shared_profile_config_entries)
+
+  note "Initialized $target_profile ($target_home)"
+  note "Sharing configuration with $source_profile ($source_home)"
+}
+
+profile_is_initialized() {
+  local codex_home
+
+  codex_home="$(codex_home_for_profile "$1")"
+  [[ -d "$codex_home" && ! -L "$codex_home" ]]
+}
+
+workspace_path_has_control_characters() {
+  local path="$1"
+
+  [[ "$path" == *$'\t'* || "$path" == *$'\r'* || "$path" == *$'\n'* ]]
+}
+
+canonical_directory() {
+  local path="$1" canonical
+
+  workspace_path_has_control_characters "$path" && \
+    die "Workspace paths cannot contain tab, carriage-return, or newline control characters."
+  [[ -d "$path" ]] || die "Workspace directory does not exist: $path"
+  canonical="$(cd -- "$path" 2> /dev/null && pwd -P)" || \
+    die "Cannot resolve workspace directory: $path"
+  workspace_path_has_control_characters "$canonical" && \
+    die "Workspace paths cannot contain tab, carriage-return, or newline control characters."
+  printf '%s\n' "$canonical"
+}
+
+workspace_path_for_unbind() {
+  local path="$1"
+
+  workspace_path_has_control_characters "$path" && \
+    die "Workspace paths cannot contain tab, carriage-return, or newline control characters."
+
+  if [[ -d "$path" ]]; then
+    canonical_directory "$path"
+    return 0
+  fi
+
+  [[ "$path" == /* ]] || die "Missing workspace paths must be supplied as absolute paths: $path"
+  while [[ "$path" != "/" && "$path" == */ ]]; do
+    path="${path%/}"
+  done
+  printf '%s\n' "$path"
+}
+
+workspace_assert_state_paths_safe() {
+  [[ ! -L "$CODEX_PROFILE_CONFIG_HOME" ]] || \
+    die "Refusing symlinked workspace config directory: $CODEX_PROFILE_CONFIG_HOME"
+  if [[ -e "$CODEX_PROFILE_CONFIG_HOME" && ! -d "$CODEX_PROFILE_CONFIG_HOME" ]]; then
+    die "Workspace config path is not a directory: $CODEX_PROFILE_CONFIG_HOME"
+  fi
+  [[ ! -L "$WORKSPACE_REGISTRY" ]] || \
+    die "Refusing symlinked workspace registry: $WORKSPACE_REGISTRY"
+  [[ ! -L "$WORKSPACE_GUARD_FILE" ]] || \
+    die "Refusing symlinked workspace guard file: $WORKSPACE_GUARD_FILE"
+
+  if [[ -e "$WORKSPACE_REGISTRY" && ! -f "$WORKSPACE_REGISTRY" ]]; then
+    die "Workspace registry is not a regular file: $WORKSPACE_REGISTRY"
+  fi
+  if [[ -e "$WORKSPACE_GUARD_FILE" && ! -f "$WORKSPACE_GUARD_FILE" ]]; then
+    die "Workspace guard state is not a regular file: $WORKSPACE_GUARD_FILE"
+  fi
+}
+
+ensure_workspace_config_home() {
+  workspace_assert_state_paths_safe
+  (umask 077 && mkdir -p "$CODEX_PROFILE_CONFIG_HOME") || \
+    die "Cannot create workspace config directory: $CODEX_PROFILE_CONFIG_HOME"
+  [[ -d "$CODEX_PROFILE_CONFIG_HOME" ]] || \
+    die "Workspace config path is not a directory: $CODEX_PROFILE_CONFIG_HOME"
+  chmod 700 "$CODEX_PROFILE_CONFIG_HOME" || \
+    die "Cannot set private permissions on: $CODEX_PROFILE_CONFIG_HOME"
+}
+
+workspace_decode_registry_line() {
+  local line="$1" tab=$'\t' path profile
+
+  [[ -n "$line" && "$line" == *"$tab"* ]] || return 1
+  path="${line%%$'\t'*}"
+  profile="${line#*$'\t'}"
+  if [[ -z "$path" || -z "$profile" || "$profile" == *"$tab"* || \
+        "$path" != /* ]] || workspace_path_has_control_characters "$path" || \
+        ! is_valid_profile_name "$profile"; then
+    return 1
+  fi
+
+  WORKSPACE_ROW_PATH="$path"
+  WORKSPACE_ROW_PROFILE="$profile"
+}
+
+workspace_parse_registry_line() {
+  local line="$1" line_number="$2"
+
+  [[ -n "$line" ]] || return 1
+  workspace_decode_registry_line "$line" || \
+    die "Malformed workspace registry line $line_number: expected one absolute <path><tab><profile> row."
+}
+
+workspace_registry_validate() {
+  local line line_number=0
+
+  workspace_assert_state_paths_safe
+  [[ -f "$WORKSPACE_REGISTRY" ]] || return 0
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line_number=$((line_number + 1))
+    workspace_parse_registry_line "$line" "$line_number" || true
+  done < "$WORKSPACE_REGISTRY"
+}
+
+workspace_guard_mode() {
+  local mode
+
+  workspace_assert_state_paths_safe
+  if [[ ! -f "$WORKSPACE_GUARD_FILE" ]]; then
+    printf 'warn\n'
+    return 0
+  fi
+
+  mode="$(< "$WORKSPACE_GUARD_FILE")"
+  case "$mode" in
+    off | warn | strict)
+      printf '%s\n' "$mode"
+      ;;
+    *)
+      die "Invalid workspace guard state in $WORKSPACE_GUARD_FILE. Use off, warn, or strict."
+      ;;
+  esac
+}
+
+workspace_exact_profile() {
+  local requested_path="$1" line line_number=0
+
+  WORKSPACE_EXACT_PROFILE=""
+  workspace_registry_validate
+  [[ -f "$WORKSPACE_REGISTRY" ]] || return 1
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line_number=$((line_number + 1))
+    workspace_parse_registry_line "$line" "$line_number" || continue
+    if [[ "$WORKSPACE_ROW_PATH" == "$requested_path" ]]; then
+      WORKSPACE_EXACT_PROFILE="$WORKSPACE_ROW_PROFILE"
+      return 0
+    fi
+  done < "$WORKSPACE_REGISTRY"
+  return 1
+}
+
+workspace_registry_rewrite() {
+  local skipped_path="$1" appended_profile="${2:-}"
+  local line line_number=0 temp
+
+  workspace_registry_validate
+  ensure_workspace_config_home
+  temp="$(mktemp "$CODEX_PROFILE_CONFIG_HOME/.workspaces.tmp.XXXXXX")" || \
+    die "Cannot create a temporary workspace registry."
+  chmod 600 "$temp" || {
+    rm -f "$temp"
+    die "Cannot set private permissions on temporary workspace registry."
+  }
+
+  if [[ -f "$WORKSPACE_REGISTRY" ]]; then
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      line_number=$((line_number + 1))
+      if ! workspace_parse_registry_line "$line" "$line_number"; then
+        continue
+      fi
+      if [[ "$WORKSPACE_ROW_PATH" != "$skipped_path" ]]; then
+        printf '%s\t%s\n' "$WORKSPACE_ROW_PATH" "$WORKSPACE_ROW_PROFILE" >> "$temp" || {
+          rm -f "$temp"
+          die "Cannot write temporary workspace registry."
+        }
+      fi
+    done < "$WORKSPACE_REGISTRY"
+  fi
+
+  if [[ -n "$appended_profile" ]]; then
+    printf '%s\t%s\n' "$skipped_path" "$appended_profile" >> "$temp" || {
+      rm -f "$temp"
+      die "Cannot write temporary workspace registry."
+    }
+  fi
+
+  mv -f "$temp" "$WORKSPACE_REGISTRY" || {
+    rm -f "$temp"
+    die "Cannot replace workspace registry: $WORKSPACE_REGISTRY"
+  }
+}
+
+workspace_resolve() {
+  local requested_path="$1" line line_number=0 binding profile
+
+  WORKSPACE_RESOLVED_PATH=""
+  WORKSPACE_RESOLVED_BINDING=""
+  WORKSPACE_RESOLVED_PROFILE=""
+  if ! WORKSPACE_RESOLVED_PATH="$(canonical_directory "$requested_path")"; then
+    return 2
+  fi
+  workspace_registry_validate
+  [[ -f "$WORKSPACE_REGISTRY" ]] || return 1
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line_number=$((line_number + 1))
+    workspace_parse_registry_line "$line" "$line_number" || continue
+    binding="$WORKSPACE_ROW_PATH"
+    profile="$WORKSPACE_ROW_PROFILE"
+
+    if [[ "$WORKSPACE_RESOLVED_PATH" == "$binding" || "$binding" == "/" || \
+          "$WORKSPACE_RESOLVED_PATH" == "$binding/"* ]]; then
+      if [[ ${#binding} -gt ${#WORKSPACE_RESOLVED_BINDING} ]]; then
+        WORKSPACE_RESOLVED_BINDING="$binding"
+        WORKSPACE_RESOLVED_PROFILE="$profile"
+      fi
+    fi
+  done < "$WORKSPACE_REGISTRY"
+
+  [[ -n "$WORKSPACE_RESOLVED_PROFILE" ]]
+}
+
+workspace_remove_profile_bindings() {
+  local target_profile="$1" line line_number=0 found=no temp
+
+  workspace_registry_validate
+  [[ -f "$WORKSPACE_REGISTRY" ]] || return 0
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line_number=$((line_number + 1))
+    workspace_parse_registry_line "$line" "$line_number" || continue
+    if [[ "$WORKSPACE_ROW_PROFILE" == "$target_profile" ]]; then
+      found=yes
+      break
+    fi
+  done < "$WORKSPACE_REGISTRY"
+  [[ "$found" == "yes" ]] || return 0
+
+  ensure_workspace_config_home
+  temp="$(mktemp "$CODEX_PROFILE_CONFIG_HOME/.workspaces.tmp.XXXXXX")" || \
+    die "Cannot create a temporary workspace registry."
+  chmod 600 "$temp" || {
+    rm -f "$temp"
+    die "Cannot set private permissions on temporary workspace registry."
+  }
+
+  line_number=0
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line_number=$((line_number + 1))
+    workspace_parse_registry_line "$line" "$line_number" || continue
+    if [[ "$WORKSPACE_ROW_PROFILE" != "$target_profile" ]]; then
+      printf '%s\t%s\n' "$WORKSPACE_ROW_PATH" "$WORKSPACE_ROW_PROFILE" >> "$temp" || {
+        rm -f "$temp"
+        die "Cannot write temporary workspace registry."
+      }
+    fi
+  done < "$WORKSPACE_REGISTRY"
+
+  mv -f "$temp" "$WORKSPACE_REGISTRY" || {
+    rm -f "$temp"
+    die "Cannot replace workspace registry: $WORKSPACE_REGISTRY"
+  }
+}
+
+workspace_registry_stats() {
+  local line mode line_number=0
+
+  WORKSPACE_STATS_GUARD_MODE="warn"
+  WORKSPACE_STATS_REGISTRY_VALID=true
+  WORKSPACE_STATS_BINDING_COUNT=0
+  WORKSPACE_STATS_MISSING_PATHS=0
+  WORKSPACE_STATS_MISSING_PROFILES=0
+
+  if [[ -e "$CODEX_PROFILE_CONFIG_HOME" && ! -d "$CODEX_PROFILE_CONFIG_HOME" ]]; then
+    WORKSPACE_STATS_GUARD_MODE=""
+    WORKSPACE_STATS_REGISTRY_VALID=false
+    return 0
+  fi
+  if [[ -L "$CODEX_PROFILE_CONFIG_HOME" || -L "$WORKSPACE_REGISTRY" || \
+        -L "$WORKSPACE_GUARD_FILE" ]]; then
+    WORKSPACE_STATS_GUARD_MODE=""
+    WORKSPACE_STATS_REGISTRY_VALID=false
+    return 0
+  fi
+  if [[ -e "$WORKSPACE_REGISTRY" && ! -f "$WORKSPACE_REGISTRY" ]] || \
+     [[ -e "$WORKSPACE_GUARD_FILE" && ! -f "$WORKSPACE_GUARD_FILE" ]]; then
+    WORKSPACE_STATS_GUARD_MODE=""
+    WORKSPACE_STATS_REGISTRY_VALID=false
+    return 0
+  fi
+
+  if [[ -f "$WORKSPACE_GUARD_FILE" ]]; then
+    mode="$(< "$WORKSPACE_GUARD_FILE")"
+    case "$mode" in
+      off | warn | strict) WORKSPACE_STATS_GUARD_MODE="$mode" ;;
+      *)
+        WORKSPACE_STATS_GUARD_MODE=""
+        WORKSPACE_STATS_REGISTRY_VALID=false
+        ;;
+    esac
+  fi
+
+  [[ -f "$WORKSPACE_REGISTRY" ]] || return 0
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line_number=$((line_number + 1))
+    [[ -n "$line" ]] || continue
+    if ! workspace_decode_registry_line "$line"; then
+      WORKSPACE_STATS_REGISTRY_VALID=false
+      continue
+    fi
+    WORKSPACE_STATS_BINDING_COUNT=$((WORKSPACE_STATS_BINDING_COUNT + 1))
+    [[ -d "$WORKSPACE_ROW_PATH" ]] || \
+      WORKSPACE_STATS_MISSING_PATHS=$((WORKSPACE_STATS_MISSING_PATHS + 1))
+    profile_is_initialized "$WORKSPACE_ROW_PROFILE" || \
+      WORKSPACE_STATS_MISSING_PROFILES=$((WORKSPACE_STATS_MISSING_PROFILES + 1))
+  done < "$WORKSPACE_REGISTRY"
+}
+
+workspace_guard_profile() {
+  local selected_profile="$1" path="$2" mode resolve_status
+
+  mode="$(workspace_guard_mode)"
+  [[ "$mode" != "off" ]] || return 0
+  workspace_registry_validate
+  [[ -s "$WORKSPACE_REGISTRY" && -d "$path" ]] || return 0
+  if workspace_resolve "$path"; then
+    :
+  else
+    resolve_status=$?
+    [[ "$resolve_status" -eq 1 ]] || return 1
+    return 0
+  fi
+  [[ "$selected_profile" != "$WORKSPACE_RESOLVED_PROFILE" ]] || return 0
+
+  if [[ "$mode" == "strict" ]]; then
+    die "Workspace '$WORKSPACE_RESOLVED_BINDING' is bound to profile '$WORKSPACE_RESOLVED_PROFILE'; refusing selected profile '$selected_profile'."
+  fi
+  printf "Warning: workspace '%s' is bound to profile '%s'; selected profile is '%s'.\n" \
+    "$WORKSPACE_RESOLVED_BINDING" "$WORKSPACE_RESOLVED_PROFILE" "$selected_profile" >&2
+}
+
+desktop_plist_value() {
+  local app="$1"
+  local key="$2"
+  local plist="$app/Contents/Info.plist"
+
+  [[ -f "$plist" ]] || return 1
+
+  if command -v plutil > /dev/null 2>&1; then
+    plutil -extract "$key" raw -o - "$plist" 2> /dev/null && return 0
+  fi
+
+  if [[ -x /usr/libexec/PlistBuddy ]]; then
+    /usr/libexec/PlistBuddy -c "Print :$key" "$plist" 2> /dev/null && return 0
+  fi
+
+  return 1
+}
+
+desktop_executable_name() {
+  local app="$1"
+  local executable
+
+  executable="$(desktop_plist_value "$app" CFBundleExecutable 2> /dev/null || true)"
+  if [[ -n "$executable" ]]; then
+    printf '%s\n' "$executable"
+  elif [[ -x "$app/Contents/MacOS/ChatGPT" ]]; then
+    printf 'ChatGPT\n'
+  elif [[ -x "$app/Contents/MacOS/Codex" ]]; then
+    printf 'Codex\n'
+  else
+    return 1
+  fi
+}
+
+desktop_executable_path() {
+  local app="$1"
+  local executable
+
+  executable="$(desktop_executable_name "$app")" || return 1
+  printf '%s/Contents/MacOS/%s\n' "$app" "$executable"
+}
+
+desktop_product_name() {
+  local app="$1"
+  local product
+
+  product="$(desktop_plist_value "$app" CFBundleDisplayName 2> /dev/null || true)"
+  [[ -n "$product" ]] || product="$(desktop_plist_value "$app" CFBundleName 2> /dev/null || true)"
+  [[ -n "$product" ]] || product="$(desktop_executable_name "$app" 2> /dev/null || true)"
+  printf '%s\n' "${product:-ChatGPT}"
+}
+
+desktop_bundle_identifier() {
+  local app="$1"
+
+  desktop_plist_value "$app" CFBundleIdentifier 2> /dev/null || true
+}
+
+desktop_app_from_legacy_binary() {
+  local executable="$1"
+
+  case "$executable" in
+    */Contents/MacOS/*)
+      printf '%s\n' "${executable%/Contents/MacOS/*}"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+desktop_app_is_usable() {
+  local app="$1"
+  local executable
+
+  [[ -d "$app" && -f "$app/Contents/Info.plist" ]] || return 1
+  executable="$(desktop_executable_path "$app" 2> /dev/null || true)"
+  [[ -n "$executable" && -x "$executable" ]]
+}
+
+try_find_desktop_app() {
+  local app
+
+  if [[ -n "$CHATGPT_APP" ]]; then
+    desktop_app_is_usable "$CHATGPT_APP" || return 1
+    printf '%s\n' "$CHATGPT_APP"
+    return 0
+  fi
+
+  if [[ -n "$CODEX_APP" ]]; then
+    desktop_app_is_usable "$CODEX_APP" || return 1
+    printf '%s\n' "$CODEX_APP"
+    return 0
+  fi
+
+  if [[ -n "$CODEX_APP_BIN" ]]; then
+    [[ -x "$CODEX_APP_BIN" ]] || return 1
+    app="$(desktop_app_from_legacy_binary "$CODEX_APP_BIN" 2> /dev/null || true)"
+    [[ -n "$app" ]] && desktop_app_is_usable "$app" || return 1
+    [[ "$(desktop_executable_path "$app" 2> /dev/null || true)" == "$CODEX_APP_BIN" ]] || return 1
+    printf '%s\n' "$app"
+    return 0
+  fi
+
+  for app in /Applications/ChatGPT.app /Applications/Codex.app; do
+    if desktop_app_is_usable "$app"; then
+      printf '%s\n' "$app"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+desktop_app_error_message() {
+  if [[ -n "$CHATGPT_APP" ]]; then
+    printf 'CHATGPT_APP is not a usable desktop app bundle: %s\n' "$CHATGPT_APP"
+  elif [[ -n "$CODEX_APP" ]]; then
+    printf 'CODEX_APP is not a usable desktop app bundle: %s\n' "$CODEX_APP"
+  elif [[ -n "$CODEX_APP_BIN" ]]; then
+    printf 'CODEX_APP_BIN must be an executable inside a usable .app bundle: %s\n' "$CODEX_APP_BIN"
+  else
+    printf 'ChatGPT desktop app not found. Install ChatGPT.app or set CHATGPT_APP=/path/to/ChatGPT.app.\n'
+  fi
+}
+
+find_desktop_app() {
+  local app
+
+  if app="$(try_find_desktop_app)"; then
+    printf '%s\n' "$app"
+    return 0
+  fi
+
+  if [[ -n "$CHATGPT_APP" || -n "$CODEX_APP" || -n "$CODEX_APP_BIN" ]]; then
+    die "$(desktop_app_error_message)"
+  fi
+  [[ "$(uname -s)" == "Darwin" ]] || die_macos_only app
+  die "$(desktop_app_error_message)"
+}
+
+codex_cli_is_healthy() {
+  local codex_cli="$1"
+
+  [[ -x "$codex_cli" ]] || return 1
+  "$codex_cli" --version > /dev/null 2>&1
+}
+
+codex_cli_error_message() {
+  if [[ -n "${CODEX_CLI:-}" ]]; then
+    if [[ ! -x "$CODEX_CLI" ]]; then
+      printf 'CODEX_CLI is set but not executable: %s\n' "$CODEX_CLI"
+    else
+      printf 'CODEX_CLI is set but unhealthy (its --version check failed): %s\n' "$CODEX_CLI"
+    fi
+    return 0
+  fi
+
+  printf 'No healthy Codex CLI found. Install Codex, repair PATH, or set CODEX_CLI=/path/to/codex.\n'
+}
+
+try_find_codex_cli() {
+  local app bundled_cli path_cli
+
+  if [[ -n "${CODEX_CLI:-}" ]]; then
+    codex_cli_is_healthy "$CODEX_CLI" || return 1
+    printf '%s\n' "$CODEX_CLI"
+    return 0
+  fi
+
+  path_cli="$(command -v codex 2> /dev/null || true)"
+  if [[ -n "$path_cli" ]] && codex_cli_is_healthy "$path_cli"; then
+    printf '%s\n' "$path_cli"
+    return 0
+  fi
+
+  if [[ -n "$CODEX_BUNDLED_CLI" ]] && codex_cli_is_healthy "$CODEX_BUNDLED_CLI"; then
+    printf '%s\n' "$CODEX_BUNDLED_CLI"
+    return 0
+  fi
+
+  if app="$(try_find_desktop_app 2> /dev/null)"; then
+    bundled_cli="$app/Contents/Resources/codex"
+    if codex_cli_is_healthy "$bundled_cli"; then
+      printf '%s\n' "$bundled_cli"
+      return 0
+    fi
+  fi
+
+  return 1
+}
+
+codex_cli_source() {
+  local codex_cli="$1"
+  local path_cli app
+
+  if [[ -n "${CODEX_CLI:-}" && "$codex_cli" == "$CODEX_CLI" ]]; then
+    printf 'CODEX_CLI\n'
+    return 0
+  fi
+
+  path_cli="$(command -v codex 2> /dev/null || true)"
+  if [[ -n "$path_cli" && "$codex_cli" == "$path_cli" ]]; then
+    printf 'PATH\n'
+    return 0
+  fi
+
+  if [[ -n "$CODEX_BUNDLED_CLI" && "$codex_cli" == "$CODEX_BUNDLED_CLI" ]]; then
+    printf 'CODEX_BUNDLED_CLI\n'
+    return 0
+  fi
+
+  if app="$(try_find_desktop_app 2> /dev/null)" && [[ "$codex_cli" == "$app/Contents/Resources/codex" ]]; then
+    printf 'desktop bundle\n'
+    return 0
+  fi
+
+  printf 'discovered\n'
+}
+
+codex_cli_version_string() {
+  local codex_cli="$1"
+  local version_output
+
+  version_output="$("$codex_cli" --version 2>&1)" || return 1
+  printf '%s\n' "$version_output" | awk 'NF { line = $0 } END { if (line != "") print line }'
+}
+
+find_codex_cli() {
+  local codex_cli
+
+  if codex_cli="$(try_find_codex_cli)"; then
+    printf '%s\n' "$codex_cli"
+    return 0
+  fi
+
+  die "$(codex_cli_error_message)"
+}
+
+command_app() {
+  local usage="Usage: $PROGRAM app <profile> [--instance] [--rebuild] [workspace]"
+  local instance=no rebuild=no
+  local profile="" workspace="" profile_set=no workspace_set=no positional_only=no
+
+  while [[ "$#" -gt 0 ]]; do
+    if [[ "$positional_only" == no ]]; then
+      case "$1" in
+        --instance)
+          instance=yes
+          shift
+          continue
+          ;;
+        --rebuild)
+          rebuild=yes
+          shift
+          continue
+          ;;
+        --)
+          positional_only=yes
+          shift
+          continue
+          ;;
+        --*)
+          die "$usage"
+          ;;
+      esac
+    fi
+
+    if [[ "$profile_set" == no ]]; then
+      profile="$1"
+      profile_set=yes
+    elif [[ "$workspace_set" == no ]]; then
+      workspace="$1"
+      workspace_set=yes
+    else
+      die "$usage"
+    fi
+    shift
+  done
+
+  [[ "$profile_set" == yes ]] || die "$usage"
+  [[ "$workspace_set" == yes ]] || workspace="$PWD"
+  validate_profile "$profile"
+  workspace_guard_profile "$profile" "$workspace"
+
+  if [[ "$instance" == yes ]]; then
+    note "Compatibility: --instance is no longer needed; named ChatGPT windows already use separate local state."
+  fi
+  if [[ "$rebuild" == yes ]]; then
+    note "Compatibility: --rebuild no longer rebuilds an app clone; the original signed app is always used."
+  fi
+
+  run_desktop_app "$profile" "$workspace"
+}
+
+# Launch the original signed ChatGPT (or legacy Codex) app. A named profile
+# gets both its own CODEX_HOME and Electron browser state, so the local boundary
+# spans Chat, Work, and Codex in that window. Account identity is still
+# unverified. The default profile intentionally keeps stock browser state.
+run_desktop_app() {
+  local profile="$1"
+  local workspace="$2"
+  local app product executable codex_home user_data_dir="" log_dir log_file
+
+  validate_profile "$profile"
+  if [[ -n "${CODEX_ACCESS_TOKEN:-}" ]]; then
+    die "Refusing Desktop launch while CODEX_ACCESS_TOKEN is set; unset it so the selected ChatGPT window controls authentication."
+  fi
+
+  app="$(find_desktop_app)"
+  executable="$(desktop_executable_path "$app")" || die "Desktop app has no executable: $app"
+  [[ -x "$executable" ]] || die "Desktop app executable is not runnable: $executable"
+  product="$(desktop_product_name "$app")"
+  command -v open > /dev/null 2>&1 || die "macOS open command not found; $PROGRAM app is macOS-only."
+
+  codex_home="$(codex_home_for_profile "$profile")"
+  ensure_home "$codex_home"
+  if [[ "$profile" != "default" ]]; then
+    user_data_dir="$codex_home/electron-user-data"
+    ensure_home "$user_data_dir"
+  fi
+
+  log_dir="$codex_home/logs"
+  log_file="$log_dir/desktop.log"
+  ensure_home "$log_dir"
+  (umask 077 && : > "$log_file")
+  chmod 600 "$log_file" 2> /dev/null || true
+
+  note "Launching $product for profile $profile"
+  note "CODEX_HOME=$codex_home"
+  note "App bundle: $app"
+  if [[ "$profile" == "default" ]]; then
+    note "Desktop scope: stock ChatGPT session"
+  else
+    note "Desktop scope: separate Electron state for this named ChatGPT window (separate local state across Chat, Work, and Codex)"
+    note "Electron user data: $user_data_dir"
+  fi
+  note "Log: $log_file"
+
+  if [[ "$profile" == "default" ]]; then
+    (umask 077 && open -n --env "CODEX_HOME=$codex_home" --stdout "$log_file" --stderr "$log_file" -a "$app" "$workspace") \
+      || die "Cannot launch $product app: $app"
+  else
+    (umask 077 && open -n --env "CODEX_HOME=$codex_home" --stdout "$log_file" --stderr "$log_file" -a "$app" "$workspace" --args "--user-data-dir=$user_data_dir") \
+      || die "Cannot launch $product app: $app"
+  fi
+}
+
+# Deprecated compatibility alias. The original signed app and the same named
+# local-state launcher are used; no app bundle is copied or re-signed.
+command_app_instance() {
+  note "Compatibility: app-instance is now an alias for app; named ChatGPT windows already use separate local state."
+  command_app --instance "$@"
+}
+
+command_cli() {
+  local profile="${1:-}"
+  [[ -n "$profile" ]] || die "Usage: $PROGRAM cli <profile> [codex-args...]"
+  shift || true
+
+  local codex_home codex_cli
+  validate_profile "$profile"
+  workspace_guard_profile "$profile" "$PWD"
+  codex_home="$(codex_home_for_profile "$profile")"
+  ensure_home "$codex_home"
+  codex_cli="$(find_codex_cli)"
+
+  exec env CODEX_HOME="$codex_home" "$codex_cli" "$@"
+}
+
+command_login() {
+  local profile="${1:-}"
+  [[ -n "$profile" ]] || die "Usage: $PROGRAM login <profile> [codex-login-args...]"
+  shift || true
+
+  local codex_home codex_cli
+  codex_home="$(codex_home_for_profile "$profile")"
+  ensure_home "$codex_home"
+  codex_cli="$(find_codex_cli)"
+
+  exec env CODEX_HOME="$codex_home" "$codex_cli" login "$@"
+}
+
+command_init() {
+  local profile="${1:-}"
+  [[ -n "$profile" && "$profile" != -* ]] ||
+    die "Usage: $PROGRAM init <profile> [--share-with <source-profile>]"
+  shift || true
+
+  local source_profile=""
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --share-with)
+        [[ -z "$source_profile" && -n "${2:-}" ]] ||
+          die "Usage: $PROGRAM init <profile> [--share-with <source-profile>]"
+        source_profile="$2"
+        shift
+        ;;
+      *)
+        die "Usage: $PROGRAM init <profile> [--share-with <source-profile>]"
+        ;;
+    esac
+    shift
+  done
+
+  if [[ -n "$source_profile" ]]; then
+    initialize_shared_profile "$profile" "$source_profile"
+    return 0
+  fi
+
+  local codex_home existed
+  codex_home="$(codex_home_for_profile "$profile")"
+  existed=no
+  [[ -d "$codex_home" ]] && existed=yes
+
+  ensure_home "$codex_home"
+
+  if [[ "$existed" == "yes" ]]; then
+    note "Already initialized $profile ($codex_home)"
+  else
+    note "Initialized $profile ($codex_home)"
+  fi
+}
+
+command_remove() {
+  local profile="${1:-}"
+  [[ -n "$profile" ]] || die "Usage: $PROGRAM remove <profile> [--yes]"
+  shift || true
+
+  local yes=no
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --yes | -y)
+        yes=yes
+        ;;
+      *)
+        die "Usage: $PROGRAM remove <profile> [--yes]"
+        ;;
+    esac
+    shift
+  done
+
+  local codex_home confirmation
+  codex_home="$(codex_home_for_profile "$profile")"
+  workspace_registry_validate
+
+  if [[ ! -d "$codex_home" ]]; then
+    workspace_remove_profile_bindings "$profile"
+    note "Not initialized $profile ($codex_home)"
+    return 0
+  fi
+
+  if [[ "$yes" != "yes" ]]; then
+    printf "Type '%s' to permanently remove %s: " "$profile" "$codex_home" >&2
+    if ! IFS= read -r confirmation && [[ -z "$confirmation" ]]; then
+      die "Confirmation required."
+    fi
+    if [[ "$confirmation" != "$profile" ]]; then
+      die "Confirmation did not match; nothing removed."
+    fi
+  fi
+
+  rm -rf -- "$codex_home" || die "Cannot remove profile home: $codex_home"
+  workspace_remove_profile_bindings "$profile"
+  note "Removed $profile ($codex_home)"
+}
+
+login_status_is_logged_out() {
+  local status_output="$1"
+  local normalized
+
+  normalized="$(printf '%s' "$status_output" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
+  case "$normalized" in
+    *"not logged in"* | *"not authenticated"* | *"no login credentials"* | *"authentication required"*)
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
+command_status_one() {
+  local profile="$1"
+  local codex_home codex_cli
+  local status_output status_code
+
+  codex_home="$(codex_home_for_profile "$profile")"
+
+  if [[ ! -d "$codex_home" ]]; then
+    printf '%s (%s): Not initialized\n' "$profile" "$codex_home"
+    return 0
+  fi
+
+  codex_cli="$(find_codex_cli)"
+
+  printf '%s (%s): ' "$profile" "$codex_home"
+
+  set +e
+  status_output="$(env CODEX_HOME="$codex_home" "$codex_cli" login status 2>&1)"
+  status_code=$?
+  set -e
+
+  printf '%s\n' "$status_output"
+
+  if [[ "$status_code" -eq 0 ]] || login_status_is_logged_out "$status_output"; then
+    return 0
+  fi
+
+  return "$status_code"
+}
+
+json_escape() {
+  local value="$1"
+
+  value=${value//\\/\\\\}
+  value=${value//\"/\\\"}
+  value=${value//$'\b'/\\b}
+  value=${value//$'\f'/\\f}
+  value=${value//$'\n'/\\n}
+  value=${value//$'\r'/\\r}
+  value=${value//$'\t'/\\t}
+  value=${value//$'\001'/\\u0001}
+  value=${value//$'\002'/\\u0002}
+  value=${value//$'\003'/\\u0003}
+  value=${value//$'\004'/\\u0004}
+  value=${value//$'\005'/\\u0005}
+  value=${value//$'\006'/\\u0006}
+  value=${value//$'\007'/\\u0007}
+  value=${value//$'\013'/\\u000b}
+  value=${value//$'\016'/\\u000e}
+  value=${value//$'\017'/\\u000f}
+  value=${value//$'\020'/\\u0010}
+  value=${value//$'\021'/\\u0011}
+  value=${value//$'\022'/\\u0012}
+  value=${value//$'\023'/\\u0013}
+  value=${value//$'\024'/\\u0014}
+  value=${value//$'\025'/\\u0015}
+  value=${value//$'\026'/\\u0016}
+  value=${value//$'\027'/\\u0017}
+  value=${value//$'\030'/\\u0018}
+  value=${value//$'\031'/\\u0019}
+  value=${value//$'\032'/\\u001a}
+  value=${value//$'\033'/\\u001b}
+  value=${value//$'\034'/\\u001c}
+  value=${value//$'\035'/\\u001d}
+  value=${value//$'\036'/\\u001e}
+  value=${value//$'\037'/\\u001f}
+  printf '%s' "$value"
+}
+
+json_string() {
+  printf '"'
+  json_escape "$1"
+  printf '"'
+}
+
+json_status_object() {
+  local profile="$1"
+  local codex_home codex_cli status_output status_code state
+
+  codex_home="$(codex_home_for_profile "$profile")"
+
+  if [[ ! -d "$codex_home" ]]; then
+    printf '{"name":'
+    json_string "$profile"
+    printf ',"home":'
+    json_string "$codex_home"
+    printf ',"state":"not_initialized","status":"Not initialized","exit_code":0}'
+    return 0
+  fi
+
+  if ! codex_cli="$(try_find_codex_cli)"; then
+    printf '{"name":'
+    json_string "$profile"
+    printf ',"home":'
+    json_string "$codex_home"
+    printf ',"state":"error","status":'
+    json_string "$(codex_cli_error_message)"
+    printf ',"exit_code":1}'
+    return 1
+  fi
+
+  set +e
+  status_output="$(env CODEX_HOME="$codex_home" "$codex_cli" login status 2>&1)"
+  status_code=$?
+  set -e
+
+  if [[ "$status_code" -eq 0 ]]; then
+    state=ok
+  elif login_status_is_logged_out "$status_output"; then
+    state=not_logged_in
+  else
+    state=error
+  fi
+
+  printf '{"name":'
+  json_string "$profile"
+  printf ',"home":'
+  json_string "$codex_home"
+  printf ',"state":'
+  json_string "$state"
+  printf ',"status":'
+  json_string "$status_output"
+  printf ',"exit_code":%s}' "$status_code"
+
+  if [[ "$state" == "error" ]]; then
+    return "$status_code"
+  fi
+
+  return 0
+}
+
+json_emit_status_profiles_array() {
+  local requested_profile="${1:-}"
+  local status_code=0
+  local first=yes
+  local profile object object_status
+
+  printf '['
+
+  if [[ -n "$requested_profile" ]]; then
+    set +e
+    object="$(json_status_object "$requested_profile")"
+    object_status=$?
+    set -e
+    printf '%s' "$object"
+    printf ']'
+    return "$object_status"
+  fi
+
+  for profile in default $(discover_profiles no); do
+    if [[ "$first" == "yes" ]]; then
+      first=no
+    else
+      printf ','
+    fi
+
+    set +e
+    object="$(json_status_object "$profile")"
+    object_status=$?
+    set -e
+    printf '%s' "$object"
+
+    if [[ "$object_status" -ne 0 ]]; then
+      status_code="$object_status"
+    fi
+  done
+
+  printf ']'
+  return "$status_code"
+}
+
+command_status_json() {
+  local profile="${1:-}"
+  local status_code=0
+
+  printf '{"profiles":'
+  set +e
+  json_emit_status_profiles_array "$profile"
+  status_code=$?
+  set -e
+  printf '}\n'
+
+  return "$status_code"
+}
+
+command_status() {
+  local status_code=0
+  local json=no
+  local profile=""
+
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --json | -j)
+        json=yes
+        ;;
+      -*)
+        die "Unknown status option '$1'."
+        ;;
+      *)
+        [[ -z "$profile" ]] || die "Usage: $PROGRAM status [--json] [profile]"
+        profile="$1"
+        ;;
+    esac
+    shift
+  done
+
+  if [[ "$json" == "yes" ]]; then
+    command_status_json "$profile"
+    return $?
+  fi
+
+  if [[ -n "$profile" ]]; then
+    command_status_one "$profile"
+    return $?
+  fi
+
+  command_status_one default || status_code=$?
+
+  local profile
+  for profile in $(discover_profiles no); do
+    command_status_one "$profile" || status_code=$?
+  done
+
+  return "$status_code"
+}
+
+command_list() {
+  discover_profiles yes
+}
+
+command_workspace_bind() {
+  local usage="Usage: $PROGRAM workspace bind <path> <profile> [--force]"
+  local path="${1:-}" profile="${2:-}" force=no canonical existing
+
+  [[ -n "$path" && -n "$profile" ]] || die "$usage"
+  shift 2 || true
+  if [[ "${1:-}" == "--force" ]]; then
+    force=yes
+    shift
+  fi
+  [[ "$#" -eq 0 ]] || die "$usage"
+
+  validate_profile "$profile"
+  profile_is_initialized "$profile" || \
+    die "Profile '$profile' is not initialized; run '$PROGRAM init $profile' first."
+  canonical="$(canonical_directory "$path")"
+
+  if workspace_exact_profile "$canonical"; then
+    existing="$WORKSPACE_EXACT_PROFILE"
+    if [[ "$existing" == "$profile" ]]; then
+      note "Already bound $canonical to profile $profile"
+      return 0
+    fi
+    [[ "$force" == "yes" ]] || \
+      die "Workspace $canonical is already bound to profile $existing; use --force to replace it."
+    workspace_registry_rewrite "$canonical" "$profile"
+    note "Rebound $canonical from profile $existing to $profile"
+    return 0
+  fi
+
+  workspace_registry_rewrite "$canonical" "$profile"
+  note "Bound $canonical to profile $profile"
+}
+
+command_workspace_unbind() {
+  local usage="Usage: $PROGRAM workspace unbind <path>"
+  local path="${1:-}" canonical
+
+  [[ -n "$path" ]] || die "$usage"
+  shift || true
+  [[ "$#" -eq 0 ]] || die "$usage"
+  canonical="$(workspace_path_for_unbind "$path")"
+
+  workspace_exact_profile "$canonical" || \
+    die "No exact workspace binding exists for $canonical."
+  workspace_registry_rewrite "$canonical"
+  note "Unbound $canonical"
+}
+
+command_workspace_list() {
+  local json=no line line_number=0 mode first=yes
+  local path profile path_exists profile_exists state
+
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --json | -j) json=yes ;;
+      *) die "Usage: $PROGRAM workspace list [--json]" ;;
+    esac
+    shift
+  done
+
+  workspace_registry_validate
+  mode="$(workspace_guard_mode)"
+
+  if [[ "$json" == "yes" ]]; then
+    printf '{"guard_mode":'
+    json_string "$mode"
+    printf ',"bindings":['
+  else
+    note "Workspace guard mode: $mode"
+  fi
+
+  if [[ -f "$WORKSPACE_REGISTRY" ]]; then
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      line_number=$((line_number + 1))
+      workspace_parse_registry_line "$line" "$line_number" || continue
+      path="$WORKSPACE_ROW_PATH"
+      profile="$WORKSPACE_ROW_PROFILE"
+      if [[ -d "$path" ]]; then path_exists=true; else path_exists=false; fi
+      if profile_is_initialized "$profile"; then profile_exists=true; else profile_exists=false; fi
+
+      if [[ "$json" == "yes" ]]; then
+        if [[ "$first" == "yes" ]]; then first=no; else printf ','; fi
+        printf '{"path":'
+        json_string "$path"
+        printf ',"profile":'
+        json_string "$profile"
+        printf ',"path_exists":%s,"profile_exists":%s}' "$path_exists" "$profile_exists"
+      else
+        state=""
+        [[ "$path_exists" == "true" ]] || state="${state} missing-path"
+        [[ "$profile_exists" == "true" ]] || state="${state} missing-profile"
+        if [[ -n "$state" ]]; then
+          printf '%s -> %s [%s]\n' "$path" "$profile" "${state# }"
+        else
+          printf '%s -> %s\n' "$path" "$profile"
+        fi
+      fi
+    done < "$WORKSPACE_REGISTRY"
+  fi
+
+  if [[ "$json" == "yes" ]]; then
+    printf ']}\n'
+  elif [[ "$first" == "yes" && ! -s "$WORKSPACE_REGISTRY" ]]; then
+    note "No workspace bindings."
+  fi
+}
+
+command_workspace_status() {
+  local usage="Usage: $PROGRAM workspace status [--json] [path]"
+  local json=no path="" mode matched=no resolve_status
+
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --json | -j)
+        json=yes
+        ;;
+      -*)
+        die "$usage"
+        ;;
+      *)
+        [[ -z "$path" ]] || die "$usage"
+        path="$1"
+        ;;
+    esac
+    shift
+  done
+  [[ -n "$path" ]] || path="$PWD"
+
+  mode="$(workspace_guard_mode)"
+  if workspace_resolve "$path"; then
+    matched=yes
+  else
+    resolve_status=$?
+    [[ "$resolve_status" -eq 1 ]] || return 1
+  fi
+
+  if [[ "$json" == "yes" ]]; then
+    printf '{"path":'
+    json_string "$WORKSPACE_RESOLVED_PATH"
+    printf ',"binding_path":'
+    if [[ "$matched" == "yes" ]]; then json_string "$WORKSPACE_RESOLVED_BINDING"; else printf 'null'; fi
+    printf ',"profile":'
+    if [[ "$matched" == "yes" ]]; then json_string "$WORKSPACE_RESOLVED_PROFILE"; else printf 'null'; fi
+    printf ',"guard_mode":'
+    json_string "$mode"
+    printf '}\n'
+    return 0
+  fi
+
+  note "Workspace: $WORKSPACE_RESOLVED_PATH"
+  if [[ "$matched" == "yes" ]]; then
+    note "Binding: $WORKSPACE_RESOLVED_BINDING"
+    note "Profile: $WORKSPACE_RESOLVED_PROFILE"
+  else
+    note "Binding: none"
+    note "Profile: none"
+  fi
+  note "Guard mode: $mode"
+}
+
+command_workspace_guard() {
+  local usage="Usage: $PROGRAM workspace guard [off|warn|strict]"
+  local mode="${1:-}" temp
+
+  if [[ -z "$mode" ]]; then
+    workspace_guard_mode
+    return 0
+  fi
+  shift
+  [[ "$#" -eq 0 ]] || die "$usage"
+  case "$mode" in
+    off | warn | strict) ;;
+    *) die "Invalid workspace guard mode '$mode'. Use off, warn, or strict." ;;
+  esac
+
+  workspace_registry_validate
+  ensure_workspace_config_home
+  temp="$(mktemp "$CODEX_PROFILE_CONFIG_HOME/.guard-mode.tmp.XXXXXX")" || \
+    die "Cannot create temporary workspace guard state."
+  printf '%s\n' "$mode" > "$temp" || {
+    rm -f "$temp"
+    die "Cannot write temporary workspace guard state."
+  }
+  chmod 600 "$temp" || {
+    rm -f "$temp"
+    die "Cannot set private permissions on temporary workspace guard state."
+  }
+  mv -f "$temp" "$WORKSPACE_GUARD_FILE" || {
+    rm -f "$temp"
+    die "Cannot replace workspace guard state: $WORKSPACE_GUARD_FILE"
+  }
+  note "Workspace guard mode: $mode"
+}
+
+command_workspace() {
+  local subcommand="${1:-}"
+
+  [[ -n "$subcommand" ]] || \
+    die "Usage: $PROGRAM workspace <bind|unbind|list|status|guard> ..."
+  shift || true
+  case "$subcommand" in
+    bind) command_workspace_bind "$@" ;;
+    unbind) command_workspace_unbind "$@" ;;
+    list) command_workspace_list "$@" ;;
+    status) command_workspace_status "$@" ;;
+    guard) command_workspace_guard "$@" ;;
+    *) die "Unknown workspace command '$subcommand'. Use bind, unbind, list, status, or guard." ;;
+  esac
+}
+
+command_run() {
+  local usage="Usage: $PROGRAM run [--] [codex-args...]
+       $PROGRAM run --app [workspace]"
+  local workspace profile resolve_status
+
+  if [[ "${1:-}" == "--app" ]]; then
+    shift
+    workspace="${1:-$PWD}"
+    if [[ "$#" -gt 0 ]]; then
+      shift
+    fi
+    [[ "$#" -eq 0 ]] || die "$usage"
+    if workspace_resolve "$workspace"; then
+      :
+    else
+      resolve_status=$?
+      [[ "$resolve_status" -eq 1 ]] || return 1
+      die "No workspace profile is bound to '$WORKSPACE_RESOLVED_PATH'. Run '$PROGRAM workspace bind $WORKSPACE_RESOLVED_PATH <profile>' first."
+    fi
+    profile="$WORKSPACE_RESOLVED_PROFILE"
+    command_app "$profile" "$WORKSPACE_RESOLVED_PATH"
+    return 0
+  fi
+
+  case "${1:-}" in
+    --) shift ;;
+    -*) die "$usage" ;;
+  esac
+  if workspace_resolve "$PWD"; then
+    :
+  else
+    resolve_status=$?
+    [[ "$resolve_status" -eq 1 ]] || return 1
+    die "No workspace profile is bound to '$WORKSPACE_RESOLVED_PATH'. Run '$PROGRAM workspace bind $WORKSPACE_RESOLVED_PATH <profile>' first."
+  fi
+  profile="$WORKSPACE_RESOLVED_PROFILE"
+  command_cli "$profile" "$@"
+}
+
+command_path() {
+  local profile="${1:-}"
+  [[ -n "$profile" ]] || die "Usage: $PROGRAM path <profile>"
+  codex_home_for_profile "$profile"
+}
+
+shell_squote() {
+  local value="$1"
+
+  value=${value//\'/\'\\\'\'}
+  printf "'%s'" "$value"
+}
+
+fish_squote() {
+  local value="$1"
+
+  value=${value//\\/\\\\}
+  value=${value//\'/\\\'}
+  printf "'%s'" "$value"
+}
+
+command_env() {
+  local profile="" shell="posix"
+
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --shell)
+        [[ -n "${2:-}" ]] || die "Usage: $PROGRAM env <profile> [--shell <bash|zsh|fish>]"
+        shell="$2"
+        shift
+        ;;
+      -*)
+        die "Usage: $PROGRAM env <profile> [--shell <bash|zsh|fish>]"
+        ;;
+      *)
+        [[ -z "$profile" ]] || die "Usage: $PROGRAM env <profile> [--shell <bash|zsh|fish>]"
+        profile="$1"
+        ;;
+    esac
+    shift
+  done
+
+  [[ -n "$profile" ]] || die "Usage: $PROGRAM env <profile> [--shell <bash|zsh|fish>]"
+
+  local codex_home
+  codex_home="$(codex_home_for_profile "$profile")"
+  workspace_guard_profile "$profile" "$PWD"
+
+  if [[ ! -d "$codex_home" ]]; then
+    printf "%s: profile '%s' is not initialized (%s); run '%s init %s' or '%s login %s'.\n" \
+      "$PROGRAM" "$profile" "$codex_home" "$PROGRAM" "$profile" "$PROGRAM" "$profile" >&2
+  fi
+
+  case "$shell" in
+    fish)
+      printf 'set -gx CODEX_HOME %s\n' "$(fish_squote "$codex_home")"
+      printf 'set -gx CODEX_PROFILE_NAME %s\n' "$(fish_squote "$profile")"
+      ;;
+    posix | sh | bash | zsh)
+      printf 'export CODEX_HOME=%s\n' "$(shell_squote "$codex_home")"
+      printf 'export CODEX_PROFILE_NAME=%s\n' "$(shell_squote "$profile")"
+      ;;
+    *)
+      die "Unsupported shell '$shell'. Use bash, zsh, or fish."
+      ;;
+  esac
+}
+
+command_use() {
+  local profile="${1:-}"
+  local shell_hint="bash"
+
+  case "${SHELL:-}" in
+    */fish) shell_hint="fish" ;;
+    */zsh) shell_hint="zsh" ;;
+  esac
+
+  die "$(printf "'%s use' changes CODEX_HOME in your current shell, so it must run through the shell wrapper.\nAdd the wrapper to your shell startup file, then reopen your shell:\n  bash/zsh:  eval \"\$(%s shell-init %s)\"\n  fish:      %s shell-init fish | source\nThen: %s use %s\nOne-off (no wrapper): eval \"\$(%s env %s)\"" \
+    "$PROGRAM" "$PROGRAM" "$shell_hint" "$PROGRAM" "$PROGRAM" "${profile:-<profile>}" "$PROGRAM" "${profile:-<profile>}")"
+}
+
+command_logs() {
+  local profile="${1:-}"
+  [[ -n "$profile" ]] || die "Usage: $PROGRAM logs <profile> [--instance] [--path|--tail [lines]]"
+  shift || true
+
+  local mode="cat"
+  local instance_compat=no
+  local lines=50
+
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --instance)
+        instance_compat=yes
+        ;;
+      --path)
+        mode="path"
+        ;;
+      --tail)
+        mode="tail"
+        if [[ -n "${2:-}" && "$2" != -* ]]; then
+          lines="$2"
+          shift
+        fi
+        ;;
+      -*)
+        die "Unknown logs option '$1'."
+        ;;
+      *)
+        die "Usage: $PROGRAM logs <profile> [--instance] [--path|--tail [lines]]"
+        ;;
+    esac
+    shift
+  done
+
+  [[ "$lines" =~ ^[0-9]+$ ]] || die "Tail line count must be a non-negative integer."
+
+  local codex_home log_file legacy_log_file missing_label
+  codex_home="$(codex_home_for_profile "$profile")"
+  log_file="$codex_home/logs/desktop.log"
+  legacy_log_file="$codex_home/logs/desktop-instance.log"
+  missing_label="desktop log"
+  if [[ "$instance_compat" == "yes" && ! -f "$log_file" && -f "$legacy_log_file" ]]; then
+    log_file="$legacy_log_file"
+    missing_label="legacy desktop instance log"
+  fi
+
+  if [[ "$mode" == "path" ]]; then
+    printf '%s\n' "$log_file"
+    return 0
+  fi
+
+  [[ -f "$log_file" ]] || die "No $missing_label for $profile ($log_file)."
+
+  if [[ "$mode" == "tail" ]]; then
+    tail -n "$lines" "$log_file"
+  else
+    cat "$log_file"
+  fi
+}
+
+config_file_looks_sensitive() {
+  local file="$1"
+
+  grep -Eiq '(auth|token|secret|password|passwd|credential|api[_-]?key|access[_-]?key|private[_-]?key|oauth|bearer)' "$file"
+}
+
+command_clone_config() {
+  local source_profile="" target_profile="" force=no
+
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --force | -f)
+        force=yes
+        ;;
+      -*)
+        die "Usage: $PROGRAM clone-config <source-profile> <target-profile> [--force]"
+        ;;
+      *)
+        if [[ -z "$source_profile" ]]; then
+          source_profile="$1"
+        elif [[ -z "$target_profile" ]]; then
+          target_profile="$1"
+        else
+          die "Usage: $PROGRAM clone-config <source-profile> <target-profile> [--force]"
+        fi
+        ;;
+    esac
+    shift
+  done
+
+  [[ -n "$source_profile" && -n "$target_profile" ]] || die "Usage: $PROGRAM clone-config <source-profile> <target-profile> [--force]"
+  [[ "$source_profile" != "$target_profile" ]] || die "Source and target profiles must be different."
+
+  local source_home target_home
+  source_home="$(codex_home_for_profile "$source_profile")"
+  target_home="$(codex_home_for_profile "$target_profile")"
+
+  [[ -d "$source_home" ]] || die "Source profile is not initialized: $source_profile ($source_home)"
+  ensure_home "$target_home"
+
+  local safe_files=("config.toml" "AGENTS.md")
+  local file source_file target_file copied failed
+  copied=0
+  failed=0
+
+  for file in "${safe_files[@]}"; do
+    source_file="$source_home/$file"
+    target_file="$target_home/$file"
+    [[ -f "$source_file" ]] || continue
+
+    if [[ -L "$source_file" ]]; then
+      note "Refusing to copy $file because it is a symlink."
+      failed=1
+      continue
+    fi
+
+    if config_file_looks_sensitive "$source_file"; then
+      note "Refusing to copy $file because it contains sensitive-looking keys."
+      failed=1
+      continue
+    fi
+
+    if [[ -L "$target_file" ]]; then
+      note "Refusing to overwrite $file because the target is a symlink."
+      failed=1
+      continue
+    fi
+
+    if [[ -e "$target_file" && "$force" != "yes" ]]; then
+      note "Refusing to overwrite $file in $target_home. Use --force to overwrite."
+      failed=1
+      continue
+    fi
+
+    install -m 600 "$source_file" "$target_file" || die "Cannot copy $file to $target_home"
+    note "Copied $file"
+    copied=$((copied + 1))
+  done
+
+  if [[ "$failed" -ne 0 ]]; then
+    return 1
+  fi
+
+  if [[ "$copied" -eq 0 ]]; then
+    note "No safe config files found to clone from $source_profile."
+  fi
+}
+
+command_version() {
+  printf 'codex-profile %s\n' "$VERSION"
+}
+
+upgrade_cache_dir() {
+  if [[ -n "${CODEX_PROFILE_UPGRADE_CACHE:-}" ]]; then
+    printf '%s\n' "$CODEX_PROFILE_UPGRADE_CACHE"
+  elif [[ -n "${XDG_CACHE_HOME:-}" ]]; then
+    printf '%s/codex-profile/source\n' "$XDG_CACHE_HOME"
+  else
+    printf '%s/.cache/codex-profile/source\n' "$HOME"
+  fi
+}
+
+upgrade_prefix() {
+  printf '%s\n' "${CODEX_PROFILE_UPGRADE_PREFIX:-$HOME/.local}"
+}
+
+upgrade_print_plan() {
+  local repo="$1"
+  local ref="$2"
+  local cache="$3"
+  local prefix="$4"
+
+  note "Upgrade plan"
+  note "Repository: $repo"
+  note "Ref: $ref"
+  note "Cache: $cache"
+  note "Install prefix: $prefix"
+}
+
+version_core() {
+  local value="$1"
+
+  value="${value#codex-profile }"
+  value="${value%%$'\n'*}"
+  value="${value%%-*}"
+  printf '%s\n' "$value"
+}
+
+version_is_older_than_current() {
+  local candidate="$1"
+  local current="$VERSION"
+  local candidate_core current_core
+  local candidate_parts current_parts candidate_part current_part index
+
+  candidate_core="$(version_core "$candidate")"
+  current_core="$(version_core "$current")"
+
+  IFS=. read -r -a candidate_parts <<< "$candidate_core"
+  IFS=. read -r -a current_parts <<< "$current_core"
+
+  for index in 0 1 2; do
+    candidate_part="${candidate_parts[$index]:-0}"
+    current_part="${current_parts[$index]:-0}"
+
+    [[ "$candidate_part" =~ ^[0-9]+$ ]] || return 1
+    [[ "$current_part" =~ ^[0-9]+$ ]] || return 1
+
+    if ((10#$candidate_part < 10#$current_part)); then
+      return 0
+    fi
+    if ((10#$candidate_part > 10#$current_part)); then
+      return 1
+    fi
+  done
+
+  return 1
+}
+
+update_check_state_file() {
+  if [[ -n "${CODEX_PROFILE_UPDATE_CACHE:-}" ]]; then
+    printf '%s\n' "$CODEX_PROFILE_UPDATE_CACHE"
+  elif [[ -n "${XDG_CACHE_HOME:-}" ]]; then
+    printf '%s/codex-profile/update-check\n' "$XDG_CACHE_HOME"
+  else
+    printf '%s/.cache/codex-profile/update-check\n' "$HOME"
+  fi
+}
+
+update_check_fetch_latest() {
+  local url body
+  url="${CODEX_PROFILE_UPDATE_URL:-https://registry.npmjs.org/codex-profile/latest}"
+
+  if [[ -f "$url" ]]; then
+    body="$(cat "$url" 2> /dev/null)" || return 1
+  elif command -v curl > /dev/null 2>&1; then
+    body="$(curl -fsSL --max-time 5 "$url" 2> /dev/null)" || return 1
+  elif command -v wget > /dev/null 2>&1; then
+    body="$(wget -qO- --timeout=5 "$url" 2> /dev/null)" || return 1
+  else
+    return 1
+  fi
+
+  printf '%s' "$body" \
+    | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+    | head -n 1
+}
+
+update_version_is_newer() {
+  local candidate="$1"
+  local candidate_core current_core
+  local candidate_parts current_parts candidate_part current_part index
+
+  candidate_core="$(version_core "$candidate")"
+  current_core="$(version_core "$VERSION")"
+
+  IFS=. read -r -a candidate_parts <<< "$candidate_core"
+  IFS=. read -r -a current_parts <<< "$current_core"
+
+  for index in 0 1 2; do
+    candidate_part="${candidate_parts[$index]:-0}"
+    current_part="${current_parts[$index]:-0}"
+
+    [[ "$candidate_part" =~ ^[0-9]+$ ]] || return 1
+    [[ "$current_part" =~ ^[0-9]+$ ]] || return 1
+
+    if ((10#$candidate_part > 10#$current_part)); then
+      return 0
+    fi
+    if ((10#$candidate_part < 10#$current_part)); then
+      return 1
+    fi
+  done
+
+  return 1
+}
+
+update_check_refresh() {
+  local state_file="$1"
+  local now="$2"
+  local prev_version="$3"
+  local latest tmp
+
+  latest="$(update_check_fetch_latest 2> /dev/null || true)"
+  [[ -n "$latest" ]] || latest="$prev_version"
+
+  mkdir -p "$(dirname "$state_file")" 2> /dev/null || return 0
+  tmp="$state_file.$$"
+  if printf '%s %s\n' "$now" "$latest" > "$tmp" 2> /dev/null; then
+    mv "$tmp" "$state_file" 2> /dev/null || rm -f "$tmp" 2> /dev/null || true
+  fi
+}
+
+update_check_disabled() {
+  [[ -n "${CODEX_PROFILE_NO_UPDATE_CHECK:-}" ]] && return 0
+  [[ -n "${DO_NOT_TRACK:-}" && "${DO_NOT_TRACK}" != "0" ]] && return 0
+  return 1
+}
+
+maybe_check_for_update() {
+  update_check_disabled && return 0
+
+  # Interactive terminals only, unless a test hook forces the check.
+  if [[ -z "${CODEX_PROFILE_FORCE_UPDATE_CHECK:-}" ]]; then
+    [[ -t 1 ]] || return 0
+  fi
+
+  local state_file now interval last cached_epoch="" cached_version=""
+  state_file="$(update_check_state_file)"
+  now="$(date +%s 2> /dev/null)" || return 0
+  [[ "$now" =~ ^[0-9]+$ ]] || return 0
+  interval="${CODEX_PROFILE_UPDATE_INTERVAL:-86400}"
+  [[ "$interval" =~ ^[0-9]+$ ]] || interval=86400
+
+  if [[ -f "$state_file" ]]; then
+    read -r cached_epoch cached_version < "$state_file" 2> /dev/null || true
+    if [[ -n "$cached_version" ]] && update_version_is_newer "$cached_version"; then
+      printf "codex-profile %s available (you have %s); run '%s upgrade' or 'npm i -g codex-profile'.\n" \
+        "$cached_version" "$VERSION" "$PROGRAM" >&2
+    fi
+  fi
+
+  last="${cached_epoch:-0}"
+  [[ "$last" =~ ^[0-9]+$ ]] || last=0
+
+  if ((now - last >= interval)); then
+    if [[ -n "${CODEX_PROFILE_UPDATE_SYNC:-}" ]]; then
+      update_check_refresh "$state_file" "$now" "$cached_version"
+    else
+      (update_check_refresh "$state_file" "$now" "$cached_version") > /dev/null 2>&1 &
+    fi
+  fi
+
+  return 0
+}
+
+script_declared_version_output() {
+  local script="$1"
+  local declared_version
+
+  declared_version="$(sed -n 's/^VERSION="\([^"]*\)".*/\1/p' "$script" | sed -n '1p')"
+  [[ -n "$declared_version" ]] || return 1
+  printf 'codex-profile %s\n' "$declared_version"
+}
+
+upgrade_checkout_ref() {
+  local cache="$1"
+  local ref="$2"
+
+  git -C "$cache" fetch --tags --prune origin
+  if git -C "$cache" show-ref --verify --quiet "refs/remotes/origin/$ref"; then
+    git -C "$cache" checkout --quiet -B "$ref" "origin/$ref"
+  else
+    git -C "$cache" checkout --quiet "$ref"
+  fi
+}
+
+command_upgrade() {
+  local dry_run=no
+  local prefix
+  local ref="$CODEX_PROFILE_UPGRADE_REF"
+  local repo="$CODEX_PROFILE_UPGRADE_REPO"
+  local cache
+  prefix="$(upgrade_prefix)"
+  cache="$(upgrade_cache_dir)"
+
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --dry-run | -n)
+        dry_run=yes
+        ;;
+      --prefix)
+        [[ -n "${2:-}" ]] || die "Usage: $PROGRAM upgrade [--dry-run] [--prefix <path>] [--ref <git-ref>]"
+        prefix="$2"
+        shift
+        ;;
+      --ref)
+        [[ -n "${2:-}" ]] || die "Usage: $PROGRAM upgrade [--dry-run] [--prefix <path>] [--ref <git-ref>]"
+        ref="$2"
+        shift
+        ;;
+      *)
+        die "Usage: $PROGRAM upgrade [--dry-run] [--prefix <path>] [--ref <git-ref>]"
+        ;;
+    esac
+    shift
+  done
+
+  [[ -n "$repo" ]] || die "Upgrade repository cannot be empty."
+  [[ -n "$ref" ]] || die "Upgrade ref cannot be empty."
+  [[ -n "$cache" ]] || die "Upgrade cache cannot be empty."
+  [[ -n "$prefix" ]] || die "Upgrade prefix cannot be empty."
+  [[ "$repo" != -* ]] || die "Upgrade repository must not start with '-'."
+  [[ "$ref" != -* ]] || die "Upgrade ref must not start with '-'."
+
+  upgrade_print_plan "$repo" "$ref" "$cache" "$prefix"
+
+  if [[ "$dry_run" == "yes" ]]; then
+    return 0
+  fi
+
+  command -v git > /dev/null 2>&1 || die "git is required to upgrade codex-profile."
+  command -v make > /dev/null 2>&1 || die "make is required to upgrade codex-profile."
+
+  if [[ -e "$cache" && ! -d "$cache/.git" ]]; then
+    die "Upgrade cache exists but is not a git checkout: $cache"
+  fi
+
+  if [[ ! -d "$cache/.git" ]]; then
+    mkdir -p "$(dirname "$cache")" || die "Cannot create upgrade cache parent: $(dirname "$cache")"
+    git clone "$repo" "$cache"
+    upgrade_checkout_ref "$cache" "$ref"
+  else
+    local origin dirty
+    origin="$(git -C "$cache" remote get-url origin 2> /dev/null || true)"
+    [[ "$origin" == "$repo" ]] || die "Cached upgrade checkout origin differs from $repo: $origin"
+
+    dirty="$(git -C "$cache" status --porcelain)"
+    [[ -z "$dirty" ]] || die "Cached upgrade checkout has local changes: $cache"
+
+    upgrade_checkout_ref "$cache" "$ref"
+  fi
+
+  [[ -f "$cache/Makefile" ]] || die "Upgrade checkout is missing Makefile: $cache"
+  [[ -f "$cache/bin/codex-profile" ]] || die "Upgrade checkout is missing bin/codex-profile: $cache"
+
+  local candidate_version
+  candidate_version="$(script_declared_version_output "$cache/bin/codex-profile" || true)"
+  [[ -n "$candidate_version" ]] || die "Refusing to install candidate without a declared VERSION."
+  if [[ -n "$candidate_version" ]] && version_is_older_than_current "$candidate_version"; then
+    die "Refusing to install older $candidate_version over codex-profile $VERSION."
+  fi
+
+  make -C "$cache" install PREFIX="$prefix"
+
+  local installed version_output
+  installed="$prefix/bin/codex-profile"
+  [[ -x "$installed" ]] || die "Upgrade did not install executable: $installed"
+  version_output="$("$installed" version 2> /dev/null || "$installed" --version 2> /dev/null || true)"
+  [[ -n "$version_output" ]] || version_output="codex-profile version unknown"
+  note "Installed $version_output to $installed"
+}
+
+command_completions() {
+  local shell="${1:-}"
+  [[ -n "$shell" ]] || die "Usage: $PROGRAM completions <bash|zsh|fish>"
+  shift || true
+  [[ "$#" -eq 0 ]] || die "Usage: $PROGRAM completions <bash|zsh|fish>"
+
+  case "$shell" in
+    bash)
+      cat <<'EOF'
+_codex_profile()
+{
+  local cur command prev profiles workspace_commands
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  command="${COMP_WORDS[1]}"
+  prev="${COMP_WORDS[COMP_CWORD-1]}"
+  workspace_commands="bind unbind list status guard"
+
+  if [[ "$COMP_CWORD" -eq 1 ]]; then
+    COMPREPLY=( $(compgen -W "app app-instance cli login init remove workspace run status path env use logs clone-config list doctor completions shell-init upgrade version help" -- "$cur") )
+    return 0
+  fi
+
+  case "$command" in
+    app)
+      if [[ "$cur" == -* ]]; then
+        COMPREPLY=( $(compgen -W "--instance --rebuild" -- "$cur") )
+      elif [[ "$COMP_CWORD" -eq 2 ]]; then
+        profiles="$(codex-profile list 2>/dev/null)"
+        COMPREPLY=( $(compgen -W "default personal work $profiles" -- "$cur") )
+      fi
+      ;;
+    app-instance|cli|login|remove|status|path|env|use|logs)
+      if [[ "$COMP_CWORD" -eq 2 ]]; then
+        profiles="$(codex-profile list 2>/dev/null)"
+        COMPREPLY=( $(compgen -W "default personal work $profiles" -- "$cur") )
+      fi
+      ;;
+    init)
+      if [[ "$COMP_CWORD" -eq 2 || "$prev" == "--share-with" ]]; then
+        profiles="$(codex-profile list 2>/dev/null)"
+        COMPREPLY=( $(compgen -W "default personal work $profiles" -- "$cur") )
+      else
+        COMPREPLY=( $(compgen -W "--share-with" -- "$cur") )
+      fi
+      ;;
+    clone-config)
+      if [[ "$COMP_CWORD" -eq 2 || "$COMP_CWORD" -eq 3 ]]; then
+        profiles="$(codex-profile list 2>/dev/null)"
+        COMPREPLY=( $(compgen -W "default personal work $profiles" -- "$cur") )
+      fi
+      ;;
+    workspace)
+      if [[ "$COMP_CWORD" -eq 2 ]]; then
+        COMPREPLY=( $(compgen -W "$workspace_commands" -- "$cur") )
+      elif [[ "${COMP_WORDS[2]}" == "bind" && "$COMP_CWORD" -eq 4 ]]; then
+        profiles="$(codex-profile list 2>/dev/null)"
+        COMPREPLY=( $(compgen -W "default personal work $profiles" -- "$cur") )
+      elif [[ "${COMP_WORDS[2]}" == "guard" && "$COMP_CWORD" -eq 3 ]]; then
+        COMPREPLY=( $(compgen -W "off warn strict" -- "$cur") )
+      elif [[ ( "${COMP_WORDS[2]}" == "list" || "${COMP_WORDS[2]}" == "status" ) && "$cur" == -* ]]; then
+        COMPREPLY=( $(compgen -W "--json" -- "$cur") )
+      fi
+      ;;
+    run)
+      if [[ "$cur" == -* ]]; then
+        COMPREPLY=( $(compgen -W "--app" -- "$cur") )
+      fi
+      ;;
+    completions|shell-init)
+      if [[ "$COMP_CWORD" -eq 2 ]]; then
+        COMPREPLY=( $(compgen -W "bash zsh fish" -- "$cur") )
+      fi
+      ;;
+  esac
+}
+complete -F _codex_profile codex-profile codex-profiles
+EOF
+      ;;
+    zsh)
+      cat <<'EOF'
+#compdef codex-profile codex-profiles
+
+_codex_profile() {
+  local -a commands profiles shells app_flags init_flags workspace_commands run_flags workspace_json_flags
+  commands=(
+    app app-instance cli login init remove workspace run status path env use logs clone-config list doctor completions shell-init upgrade version help
+  )
+  profiles=(${(f)"$(codex-profile list 2>/dev/null)"} default personal work)
+  shells=(bash zsh fish)
+  app_flags=(--instance --rebuild)
+  init_flags=(--share-with)
+  workspace_commands=(bind unbind list status guard)
+  run_flags=(--app)
+  workspace_json_flags=(--json)
+
+  if (( CURRENT == 2 )); then
+    _describe 'command' commands
+    return
+  fi
+
+  case "$words[2]" in
+    app)
+      if [[ "$words[CURRENT]" == -* ]]; then
+        _describe 'flag' app_flags
+      elif (( CURRENT == 3 )); then
+        _describe 'profile' profiles
+      fi
+      ;;
+    app-instance|cli|login|remove|status|path|env|use|logs)
+      if (( CURRENT == 3 )); then
+        _describe 'profile' profiles
+      fi
+      ;;
+    init)
+      if (( CURRENT == 3 )) || [[ "$words[CURRENT-1]" == "--share-with" ]]; then
+        _describe 'profile' profiles
+      else
+        _describe 'flag' init_flags
+      fi
+      ;;
+    clone-config)
+      if (( CURRENT == 3 || CURRENT == 4 )); then
+        _describe 'profile' profiles
+      fi
+      ;;
+    workspace)
+      if (( CURRENT == 3 )); then
+        _describe 'workspace command' workspace_commands
+      elif [[ "$words[3]" == "bind" ]] && (( CURRENT == 5 )); then
+        _describe 'profile' profiles
+      elif [[ "$words[3]" == "guard" ]] && (( CURRENT == 4 )); then
+        _values 'guard mode' off warn strict
+      elif [[ "$words[3]" == "list" || "$words[3]" == "status" ]] && \
+           [[ "$words[CURRENT]" == -* ]]; then
+        _describe 'flag' workspace_json_flags
+      fi
+      ;;
+    run)
+      if [[ "$words[CURRENT]" == -* ]]; then
+        _describe 'flag' run_flags
+      fi
+      ;;
+    completions|shell-init)
+      if (( CURRENT == 3 )); then
+        _describe 'shell' shells
+      fi
+      ;;
+  esac
+}
+
+_codex_profile "$@"
+EOF
+      ;;
+    fish)
+      cat <<'EOF'
+for codex_profile_command in codex-profile codex-profiles
+    complete -c $codex_profile_command -f
+    complete -c $codex_profile_command -n '__fish_is_first_arg' -a 'app app-instance cli login init remove workspace run status path env use logs clone-config list doctor completions shell-init upgrade version help'
+    complete -c $codex_profile_command -n '__fish_seen_subcommand_from app app-instance cli login init remove status path env use logs' -a '(codex-profile list 2>/dev/null) default personal work'
+    complete -c $codex_profile_command -n '__fish_seen_subcommand_from app' -l instance -d 'Compatibility flag; named ChatGPT windows already use separate local state'
+    complete -c $codex_profile_command -n '__fish_seen_subcommand_from app' -l rebuild -d 'Compatibility no-op; the signed app is never cloned'
+    complete -c $codex_profile_command -n '__fish_seen_subcommand_from init' -l share-with -r -a '(codex-profile list 2>/dev/null) default personal work' -d 'Link the configuration allowlist from another profile'
+    complete -c $codex_profile_command -n '__fish_seen_subcommand_from clone-config' -a '(codex-profile list 2>/dev/null) default personal work'
+    complete -c $codex_profile_command -n '__fish_seen_subcommand_from workspace; and test (count (commandline -opc)) -eq 2' -a 'bind unbind list status guard'
+    complete -c $codex_profile_command -n '__fish_seen_subcommand_from workspace; and __fish_seen_subcommand_from bind; and test (count (commandline -opc)) -eq 3' -F
+    complete -c $codex_profile_command -n '__fish_seen_subcommand_from workspace; and __fish_seen_subcommand_from bind; and test (count (commandline -opc)) -eq 4' -a '(codex-profile list 2>/dev/null) default personal work'
+    complete -c $codex_profile_command -n '__fish_seen_subcommand_from workspace; and __fish_seen_subcommand_from unbind; and test (count (commandline -opc)) -eq 3' -F
+    complete -c $codex_profile_command -n '__fish_seen_subcommand_from workspace; and __fish_seen_subcommand_from status; and test (count (commandline -opc)) -eq 3' -F
+    complete -c $codex_profile_command -n '__fish_seen_subcommand_from workspace; and __fish_seen_subcommand_from guard; and test (count (commandline -opc)) -eq 3' -a 'off warn strict'
+    complete -c $codex_profile_command -n '__fish_seen_subcommand_from workspace; and __fish_seen_subcommand_from list status' -l json -d 'Emit JSON'
+    complete -c $codex_profile_command -n '__fish_seen_subcommand_from run' -l app -d 'Launch the bound ChatGPT window'
+    complete -c $codex_profile_command -n '__fish_seen_subcommand_from completions shell-init' -a 'bash zsh fish'
+end
+EOF
+      ;;
+    *)
+      die "Unsupported shell '$shell'. Use bash, zsh, or fish."
+      ;;
+  esac
+}
+
+command_shell_init() {
+  local shell="${1:-}"
+  [[ -n "$shell" ]] || die "Usage: $PROGRAM shell-init <bash|zsh|fish>"
+  shift || true
+  [[ "$#" -eq 0 ]] || die "Usage: $PROGRAM shell-init <bash|zsh|fish>"
+
+  case "$shell" in
+    bash | zsh)
+      cat <<'EOF'
+codex-profile() {
+  if [ "${1:-}" = "use" ]; then
+    shift
+    local __codex_profile_env
+    __codex_profile_env="$(command codex-profile env "$@")" || return $?
+    eval "$__codex_profile_env"
+  else
+    command codex-profile "$@"
+  fi
+}
+codex-profiles() { codex-profile "$@"; }
+EOF
+      ;;
+    fish)
+      cat <<'EOF'
+function codex-profile
+    if test (count $argv) -ge 1; and test "$argv[1]" = use
+        set -l __cp_env (command codex-profile env --shell fish $argv[2..-1]); or return $status
+        printf '%s\n' $__cp_env | source
+    else
+        command codex-profile $argv
+    end
+end
+
+function codex-profiles
+    codex-profile $argv
+end
+EOF
+      ;;
+    *)
+      die "Unsupported shell '$shell'. Use bash, zsh, or fish."
+      ;;
+  esac
+}
+
+command_doctor() {
+  local json=no
+  local app="" executable="" product="" bundle_id="" codex_cli="" cli_source="" cli_version=""
+  local desktop_found=false legacy_clone_found=false
+
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --json | -j)
+        json=yes
+        ;;
+      *)
+        die "Usage: $PROGRAM doctor [--json]"
+        ;;
+    esac
+    shift
+  done
+
+  if app="$(try_find_desktop_app 2> /dev/null)"; then
+    desktop_found=true
+    executable="$(desktop_executable_path "$app" 2> /dev/null || true)"
+    product="$(desktop_product_name "$app")"
+    bundle_id="$(desktop_bundle_identifier "$app")"
+  fi
+  [[ -d "$CODEX_PROFILE_APP_INSTANCE_ROOT" ]] && legacy_clone_found=true
+  workspace_registry_stats
+
+  if [[ "$json" == "yes" ]]; then
+    local status_code=0
+
+    printf '{"desktop":{"found":%s,"path":' "$desktop_found"
+    if [[ "$desktop_found" == "true" ]]; then json_string "$executable"; else printf 'null'; fi
+    printf ',"app_path":'
+    if [[ "$desktop_found" == "true" ]]; then json_string "$app"; else printf 'null'; fi
+    printf ',"product":'
+    if [[ "$desktop_found" == "true" ]]; then json_string "$product"; else printf 'null'; fi
+    printf ',"bundle_id":'
+    if [[ "$desktop_found" == "true" ]]; then json_string "$bundle_id"; else printf 'null'; fi
+    printf ',"scope":"default:stock_chatgpt_session;named:separate_local_state","account_identity":"unverified"}'
+    printf ',"legacy_clone_root":{"found":%s,"path":' "$legacy_clone_found"
+    json_string "$CODEX_PROFILE_APP_INSTANCE_ROOT"
+    printf '}'
+    printf ',"workspaces":{"config_home":'
+    json_string "$CODEX_PROFILE_CONFIG_HOME"
+    printf ',"registry_path":'
+    json_string "$WORKSPACE_REGISTRY"
+    printf ',"guard_mode":'
+    if [[ -n "$WORKSPACE_STATS_GUARD_MODE" ]]; then
+      json_string "$WORKSPACE_STATS_GUARD_MODE"
+    else
+      printf 'null'
+    fi
+    printf ',"registry_valid":%s' "$WORKSPACE_STATS_REGISTRY_VALID"
+    printf ',"binding_count":%s' "$WORKSPACE_STATS_BINDING_COUNT"
+    printf ',"missing_paths":%s' "$WORKSPACE_STATS_MISSING_PATHS"
+    printf ',"missing_profiles":%s}' "$WORKSPACE_STATS_MISSING_PROFILES"
+
+    if codex_cli="$(try_find_codex_cli)"; then
+      cli_source="$(codex_cli_source "$codex_cli")"
+      cli_version="$(codex_cli_version_string "$codex_cli")"
+      printf ',"cli":{"found":true,"path":'
+      json_string "$codex_cli"
+      printf ',"version":'
+      json_string "$cli_version"
+      printf ',"source":'
+      json_string "$cli_source"
+      printf ',"healthy":true,"scope":"codex_only","account_identity":"unverified_against_desktop"'
+      printf '},"status":{"skipped":false,"profiles":'
+      set +e
+      json_emit_status_profiles_array
+      status_code=$?
+      set -e
+      printf '}}\n'
+      return "$status_code"
+    fi
+
+    printf ',"cli":{"found":false,"path":null,"version":null,"source":null,"healthy":false,"scope":"codex_only","account_identity":"unverified_against_desktop"},"status":{"skipped":true,"reason":'
+    json_string "$(codex_cli_error_message)"
+    printf '}}\n'
+    return 0
+  fi
+
+  note "Codex profile doctor"
+  note ""
+
+  if [[ "$desktop_found" == "true" ]]; then
+    note "Desktop product: $product"
+    note "Desktop app: $app"
+    note "Desktop executable: $executable"
+    note "Desktop bundle ID: ${bundle_id:-unknown}"
+  else
+    note "Desktop: missing ($(desktop_app_error_message))"
+  fi
+  note "Desktop scope: default uses the stock ChatGPT session; named ChatGPT windows use separate local state"
+  note "Boundary: local-state separation is not an account, OS, or server-side boundary"
+  if [[ "$legacy_clone_found" == "true" ]]; then
+    note "Legacy app clones: found at $CODEX_PROFILE_APP_INSTANCE_ROOT (safe to remove after closing old cloned apps)"
+  fi
+  note "Workspace registry: $WORKSPACE_REGISTRY"
+  if [[ "$WORKSPACE_STATS_REGISTRY_VALID" == "true" ]]; then
+    note "Workspace guard mode: $WORKSPACE_STATS_GUARD_MODE"
+  else
+    note "Workspace guard mode: invalid"
+  fi
+  note "Workspace registry valid: $WORKSPACE_STATS_REGISTRY_VALID"
+  note "Workspace bindings: $WORKSPACE_STATS_BINDING_COUNT"
+  note "Missing workspace paths: $WORKSPACE_STATS_MISSING_PATHS"
+  note "Missing workspace profiles: $WORKSPACE_STATS_MISSING_PROFILES"
+
+  if codex_cli="$(try_find_codex_cli)"; then
+    cli_source="$(codex_cli_source "$codex_cli")"
+    note "CLI: $codex_cli (source: $cli_source)"
+    note "CLI scope: Codex commands only; Desktop and CLI accounts must be verified separately"
+    "$codex_cli" --version
+  else
+    note "CLI: missing"
+    note "CLI scope: Codex commands only; Desktop and CLI accounts must be verified separately"
+    note ""
+    note "Status: skipped"
+    return 0
+  fi
+
+  note ""
+  command_status
+}
+
+main() {
+  local command="${1:-help}"
+  local json_command=no arg
+  shift || true
+
+  case "$command" in
+    status | doctor | workspace)
+      for arg in "$@"; do
+        if [[ "$arg" == "--json" || "$arg" == "-j" ]]; then
+          json_command=yes
+          break
+        fi
+      done
+      ;;
+  esac
+
+  if [[ "$json_command" == "no" ]]; then
+    maybe_check_for_update || true
+  fi
+
+  case "$command" in
+    app)
+      command_app "$@"
+      ;;
+    app-instance)
+      command_app_instance "$@"
+      ;;
+    cli)
+      command_cli "$@"
+      ;;
+    login)
+      command_login "$@"
+      ;;
+    init)
+      command_init "$@"
+      ;;
+    remove)
+      command_remove "$@"
+      ;;
+    workspace)
+      command_workspace "$@"
+      ;;
+    run)
+      command_run "$@"
+      ;;
+    status)
+      command_status "$@"
+      ;;
+    path)
+      command_path "$@"
+      ;;
+    env)
+      command_env "$@"
+      ;;
+    use)
+      command_use "$@"
+      ;;
+    logs)
+      command_logs "$@"
+      ;;
+    clone-config)
+      command_clone_config "$@"
+      ;;
+    list)
+      command_list
+      ;;
+    doctor)
+      command_doctor "$@"
+      ;;
+    completions)
+      command_completions "$@"
+      ;;
+    shell-init)
+      command_shell_init "$@"
+      ;;
+    upgrade)
+      command_upgrade "$@"
+      ;;
+    version | --version)
+      command_version
+      ;;
+    help | -h | --help)
+      usage
+      ;;
+    *)
+      die "Unknown command '$command'. See '$PROGRAM help'."
+      ;;
+  esac
+}
+
+main "$@"

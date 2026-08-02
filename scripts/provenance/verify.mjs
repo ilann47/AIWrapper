@@ -7,10 +7,15 @@ import { resolve } from "node:path";
 const root = resolve(import.meta.dirname, "..", "..");
 const manifest = JSON.parse(await readFile(new URL("../../provenance/manifest.json", import.meta.url), "utf8"));
 if (!manifest || !Array.isArray(manifest.components)) throw new Error("provenance/manifest.json is missing a valid components array");
+const classifications = new Set(["copied", "directly imported", "adapter", "imported-not-wired", "IMPLEMENTAÇÃO PRÓPRIA"]);
 
 let count = 0;
 for (const component of manifest.components) {
   if (!component?.id || !component?.functionality || !Array.isArray(component.files) || component.files.length === 0) throw new Error(`Invalid provenance component: ${JSON.stringify(component)}`);
+  if (!classifications.has(component.classification)) throw new Error(`Invalid literal classification for ${component.id}: ${component.classification}`);
+  if (component.classification === "IMPLEMENTAÇÃO PRÓPRIA" && (!component.referenceOnly || typeof component.incompatibility !== "string" || component.incompatibility.length < 30)) {
+    throw new Error(`Own implementation ${component.id} must document its reviewed upstream reference and concrete incompatibility`);
+  }
   for (const file of component.files) {
     for (const required of ["source", "destination", "sourceCommit", "license", "sourceSha256", "sha256", "diff", "diffSha256", "lines"]) if (file[required] === undefined) throw new Error(`Missing ${required} in ${component.id}`);
     const content = await readFile(resolve(root, file.destination));

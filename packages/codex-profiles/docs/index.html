@@ -1,0 +1,1174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>codex-profiles - Named Codex homes and ChatGPT desktop windows</title>
+  <meta name="description" content="codex-profiles selects named CODEX_HOME directories for Codex and named ChatGPT windows with separate local state on macOS, without copying authentication files.">
+  <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1">
+  <link rel="canonical" href="https://ducksss.github.io/codex-profiles/">
+  <link rel="license" href="https://github.com/Ducksss/codex-profiles/blob/main/LICENSE">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="codex-profiles - Named Codex homes and ChatGPT desktop windows">
+  <meta property="og:description" content="Select named Codex homes and named ChatGPT windows with separate local state without copying authentication files.">
+  <meta property="og:url" content="https://ducksss.github.io/codex-profiles/">
+  <meta name="twitter:card" content="summary">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800;900&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://github.com/Ducksss/codex-profiles#organization",
+      "name": "Ducksss open-source projects",
+      "url": "https://github.com/Ducksss",
+      "sameAs": [
+        "https://github.com/Ducksss/codex-profiles",
+        "https://www.npmjs.com/package/codex-profile"
+      ]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://ducksss.github.io/codex-profiles/#website",
+      "name": "codex-profiles",
+      "url": "https://ducksss.github.io/codex-profiles/",
+      "publisher": {
+        "@id": "https://github.com/Ducksss/codex-profiles#organization"
+      },
+      "inLanguage": "en"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://ducksss.github.io/codex-profiles/#software",
+      "name": "codex-profiles",
+      "alternateName": "codex-profile",
+      "url": "https://ducksss.github.io/codex-profiles/",
+      "description": "codex-profiles is a dependency-free Bash CLI for named Codex homes and named ChatGPT windows with separate local state.",
+      "applicationCategory": "DeveloperApplication",
+      "applicationSubCategory": "Command-line tool",
+      "operatingSystem": [
+        "macOS",
+        "Linux"
+      ],
+      "softwareVersion": "0.8.0",
+      "license": "https://github.com/Ducksss/codex-profiles/blob/main/LICENSE",
+      "codeRepository": "https://github.com/Ducksss/codex-profiles",
+      "downloadUrl": "https://www.npmjs.com/package/codex-profile",
+      "installUrl": "https://www.npmjs.com/package/codex-profile",
+      "discussionUrl": "https://github.com/Ducksss/codex-profiles/discussions/1",
+      "maintainer": {
+        "@id": "https://github.com/Ducksss/codex-profiles#organization"
+      },
+      "featureList": [
+        "Named CODEX_HOME directories per profile",
+        "Codex CLI command and login passthrough",
+        "Stock ChatGPT desktop session through app default",
+        "Named ChatGPT windows with separate local state",
+        "Parallel named Desktop windows without app cloning or re-signing",
+        "Read-only profile status and doctor diagnostics",
+        "Safe non-secret config cloning",
+        "Bash, Zsh, and Fish completion generators",
+        "Source-style self-upgrade with dry-run preview",
+        "Allowlisted configuration sharing between private profiles",
+        "Private nearest-ancestor workspace-to-profile routing"
+      ],
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock",
+        "url": "https://www.npmjs.com/package/codex-profile"
+      }
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://ducksss.github.io/codex-profiles/#webpage",
+      "url": "https://ducksss.github.io/codex-profiles/",
+      "name": "codex-profiles - Named Codex homes and ChatGPT desktop windows",
+      "description": "A machine-readable product page for codex-profiles and its separate Codex-local and ChatGPT Desktop scopes.",
+      "dateModified": "2026-07-15",
+      "isPartOf": {
+        "@id": "https://ducksss.github.io/codex-profiles/#website"
+      },
+      "mainEntity": {
+        "@id": "https://ducksss.github.io/codex-profiles/#software"
+      },
+      "breadcrumb": {
+        "@id": "https://ducksss.github.io/codex-profiles/#breadcrumb"
+      },
+      "inLanguage": "en"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "https://ducksss.github.io/codex-profiles/#breadcrumb",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "codex-profiles",
+          "item": "https://ducksss.github.io/codex-profiles/"
+        }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://ducksss.github.io/codex-profiles/#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is codex-profiles?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "codex-profiles is a Bash command that selects named CODEX_HOME directories and, on macOS, named ChatGPT windows with separate local state."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does a named Desktop profile affect only Codex mode?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. A named app launch selects separate Electron state for the whole ChatGPT window and a matching CODEX_HOME for Codex. The boundary applies across Chat, Work, and Codex, but account identity remains unverified."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What does app default do?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "app default uses ~/.codex and preserves the stock ChatGPT Desktop session by omitting a custom Electron user-data directory."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does codex-profiles verify that CLI and Desktop use the same account?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. CLI and Desktop sessions can be authenticated independently, and codex-profiles does not inspect account identifiers or credentials to compare them."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does codex-profiles copy auth tokens?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. codex-profiles does not read, copy, print, parse, upload, compare, or migrate authentication tokens or ChatGPT cookies."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Which platforms does codex-profiles support?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "CLI-oriented commands are tested on macOS and Linux, while ChatGPT Desktop launching is available on macOS."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How do I install codex-profiles?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Install from npm with npm install -g codex-profile or from Homebrew with brew install Ducksss/tap/codex-profile."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can multiple named ChatGPT windows run at once?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Different names use separate local Electron state and can run side by side, while app default keeps the ordinary stock ChatGPT session."
+          }
+        }
+      ]
+    }
+  ]
+}
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #ffffff;
+      --paper-2: #f4f4f5;
+      --surface: #ffffff;
+      --ink: #0a0a0b;
+      --ink-2: #27272a;
+      --muted: #71717a;
+      --line: #e8e8ea;
+      --line-2: #d4d4d8;
+      --brand: #0a0a0b;
+      --brand-ink: #0a0a0b;
+      --teal: #52525b;
+      --teal-ink: #3f3f46;
+      --amber: #52525b;
+      --danger: #3f3f46;
+      --danger-soft: #f4f4f5;
+      --grad: linear-gradient(102deg, #0a0a0b, #3f3f46);
+      --grad-soft: #f4f4f5;
+      --shadow-sm: 0 1px 2px rgba(9, 9, 11, 0.05), 0 2px 6px rgba(9, 9, 11, 0.05);
+      --shadow: 0 6px 16px rgba(9, 9, 11, 0.07), 0 18px 40px -18px rgba(9, 9, 11, 0.16);
+      --shadow-lg: 0 24px 60px -22px rgba(9, 9, 11, 0.24);
+      --radius: 16px;
+      --radius-sm: 11px;
+      --grid: rgba(9, 9, 11, 0.035);
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --maxw: 1140px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      line-height: 1.6;
+      background-color: var(--paper);
+      background-image:
+        radial-gradient(1200px 700px at 84% -10%, rgba(9, 9, 11, 0.05), transparent 60%),
+        radial-gradient(900px 520px at 2% -6%, rgba(9, 9, 11, 0.035), transparent 55%);
+      background-repeat: no-repeat;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      overflow-x: hidden;
+    }
+
+    a { color: var(--brand-ink); text-underline-offset: 3px; }
+    a:hover { color: var(--brand); }
+
+    code, pre, .mono {
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .wrap { width: min(var(--maxw), calc(100% - 40px)); margin: 0 auto; }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin: 0;
+      font-family: "JetBrains Mono", ui-monospace, monospace;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .eyebrow::before {
+      content: "";
+      width: 22px;
+      height: 1px;
+      background: var(--line-2);
+      opacity: 1;
+    }
+
+    /* ---------- Hero ---------- */
+    .hero {
+      position: relative;
+      padding: clamp(54px, 9vw, 104px) 0 clamp(40px, 6vw, 72px);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+      gap: clamp(28px, 4vw, 56px);
+      align-items: center;
+    }
+    h1.wordmark {
+      margin: 18px 0 0;
+      font-family: "Schibsted Grotesk", sans-serif;
+      font-weight: 800;
+      font-size: clamp(2.9rem, 7.4vw, 5.2rem);
+      line-height: 0.94;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+    }
+    .wordmark .caret {
+      color: var(--brand);
+      margin-left: 0.01em;
+      animation: blink 1.1s steps(2, start) infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    .hero-copy {
+      max-width: 33ch;
+      margin: 22px 0 0;
+      font-size: 1.16rem;
+      color: var(--muted);
+    }
+    .hero-copy strong { color: var(--ink-2); font-weight: 600; }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+    .button {
+      min-height: 46px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 20px;
+      border-radius: 11px;
+      font-weight: 600;
+      font-size: 0.97rem;
+      text-decoration: none;
+      transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease), border-color 0.18s var(--ease);
+    }
+    .button.primary {
+      color: #fff;
+      background: var(--brand);
+      box-shadow: 0 8px 18px -6px rgba(9, 9, 11, 0.35);
+    }
+    .button.primary:hover { transform: translateY(-2px); box-shadow: 0 14px 26px -8px rgba(9, 9, 11, 0.42); }
+    .button.ghost {
+      color: var(--ink-2);
+      background: var(--surface);
+      border: 1px solid var(--line-2);
+      box-shadow: var(--shadow-sm);
+    }
+    .button.ghost:hover { transform: translateY(-2px); border-color: var(--brand); color: var(--brand-ink); }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 18px;
+      margin-top: 26px;
+      font-family: "JetBrains Mono", ui-monospace, monospace;
+      font-size: 0.74rem;
+      color: var(--muted);
+    }
+    .meta-row span { display: inline-flex; align-items: center; gap: 7px; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 3px rgba(9, 9, 11, 0.10); }
+
+    /* ---------- Terminal card ---------- */
+    .term {
+      position: relative;
+      border-radius: var(--radius);
+      background: #0c0c0d;
+      border: 1px solid #1f1f22;
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      font-family: "JetBrains Mono", ui-monospace, monospace;
+      font-size: 0.86rem;
+    }
+    .term::after {
+      content: "";
+      position: absolute; inset: 0;
+      background: radial-gradient(120% 80% at 90% -10%, rgba(255, 255, 255, 0.06), transparent 55%),
+                  radial-gradient(90% 70% at -10% 0%, rgba(255, 255, 255, 0.035), transparent 52%);
+      pointer-events: none;
+    }
+    .term-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 15px;
+      border-bottom: 1px solid #1f1f22;
+      color: #8a8a90;
+      font-size: 0.74rem;
+    }
+    .term-bar i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+    .term-bar .b1 { background: #45454a; } .term-bar .b2 { background: #56565b; } .term-bar .b3 { background: #67676d; }
+    .term-bar .title { margin-left: 6px; letter-spacing: 0.02em; }
+    .term-body { padding: 18px 18px 22px; color: #d6d6d9; line-height: 1.85; position: relative; z-index: 1; }
+    .term-body .pl { color: #8a8a90; }
+    .term-body .cmd { color: #f4f4f5; }
+    .term-body .arg { color: #adadb3; }
+    .term-body .out { color: #76767c; }
+    .term-body .ok { color: #d4d4d8; }
+    .term-line { display: block; white-space: pre-wrap; word-break: break-word; }
+
+    /* ---------- Sections ---------- */
+    main { display: block; }
+    .section { padding: clamp(40px, 6vw, 72px) 0; }
+    .section-head { max-width: 64ch; margin-bottom: clamp(22px, 3vw, 34px); }
+    h2 {
+      margin: 12px 0 0;
+      font-family: "Schibsted Grotesk", sans-serif;
+      font-weight: 700;
+      font-size: clamp(1.8rem, 3.4vw, 2.6rem);
+      line-height: 1.06;
+      letter-spacing: -0.02em;
+    }
+    .lede { margin: 14px 0 0; font-size: 1.06rem; color: var(--muted); max-width: 70ch; }
+    p { margin: 0; }
+
+    .command {
+      margin-top: 22px;
+      display: grid;
+      gap: 4px;
+      padding: 20px 22px;
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-left: 3px solid transparent;
+      border-image: var(--grad) 1;
+      border-image-slice: 0 0 0 1;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+    }
+    .command pre { margin: 0; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .command code { font-size: 0.92rem; color: var(--ink-2); }
+
+    /* ---------- Graph ---------- */
+    .graph-shell {
+      display: grid;
+      gap: 16px;
+    }
+    .graph-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .seg {
+      display: inline-flex;
+      padding: 4px;
+      gap: 4px;
+      background: var(--surface);
+      border: 1px solid var(--line-2);
+      border-radius: 13px;
+      box-shadow: var(--shadow-sm);
+    }
+    .seg button {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 0.86rem;
+      font-weight: 600;
+      padding: 9px 15px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: color 0.18s var(--ease), background 0.18s var(--ease), box-shadow 0.18s var(--ease);
+    }
+    .seg button .k { font-family: "JetBrains Mono", monospace; font-size: 0.78em; opacity: 0.7; margin-right: 6px; }
+    .seg button[aria-pressed="true"] { color: #fff; background: var(--brand); box-shadow: 0 6px 14px -6px rgba(9, 9, 11, 0.4); }
+    .seg button.danger[aria-pressed="true"] { color: #fff; background: var(--danger); box-shadow: 0 6px 14px -6px rgba(9, 9, 11, 0.3); }
+    .seg button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+    .graph-hint {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.74rem;
+      color: var(--muted);
+    }
+
+    .graph-stage {
+      position: relative;
+      width: 100%;
+      height: clamp(420px, 56vw, 560px);
+      border-radius: var(--radius);
+      background:
+        radial-gradient(120% 120% at 50% 0%, rgba(9, 9, 11, 0.035), transparent 60%),
+        var(--surface);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .graph-stage::before {
+      content: "";
+      position: absolute; inset: 0;
+      background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 26px 26px;
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    .graph-stage svg { width: 100%; height: 100%; display: block; touch-action: none; position: relative; z-index: 1; }
+    .badge-shared {
+      position: absolute;
+      top: 14px; left: 14px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 10px;
+      background: var(--paper-2);
+      color: var(--ink-2);
+      border: 1px solid var(--line-2);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.72rem;
+      z-index: 3;
+    }
+    .graph-stage[data-mode="shared"] .badge-shared { display: inline-flex; }
+
+    /* graph nodes/links styled via class */
+    .lnk { stroke: url(#linkGrad); stroke-width: 2.2; stroke-linecap: round; opacity: 0.55; transition: opacity 0.25s, stroke 0.25s; }
+    .lnk.is-shared { stroke: var(--danger); stroke-dasharray: 5 6; opacity: 0.7; }
+    .lnk.dim { opacity: 0.12; }
+    .lnk.hot { opacity: 0.95; stroke-width: 3; }
+
+    .node { cursor: grab; }
+    .node:active { cursor: grabbing; }
+    .node text { font-family: "JetBrains Mono", monospace; pointer-events: none; }
+    .chip { transition: opacity 0.25s, transform 0.25s; }
+    .node.dim .chip { opacity: 0.22; }
+    .node .ring { fill: none; stroke: var(--brand); stroke-width: 2; opacity: 0; transition: opacity 0.2s; }
+    .node.hot .ring { opacity: 0.85; }
+
+    .n-user .chip-bg { fill: url(#nodeGrad); }
+    .n-user text { fill: #fff; font-weight: 700; }
+    .n-profile .chip-bg { fill: var(--surface); stroke: var(--line-2); stroke-width: 1.4; }
+    .n-profile.hot .chip-bg { stroke: var(--brand); }
+    .n-profile text { fill: var(--ink); font-weight: 600; }
+    .n-home .chip-bg { fill: #f4f4f5; stroke: #e4e4e7; stroke-width: 1.2; }
+    .n-home text { fill: var(--ink-2); font-weight: 500; }
+    .graph-stage[data-mode="shared"] .n-home .chip-bg { fill: #e4e4e7; stroke: #b9b9c0; }
+    .graph-stage[data-mode="shared"] .n-home text { fill: var(--ink); }
+
+    .tip {
+      position: absolute;
+      z-index: 4;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.15s, transform 0.15s;
+      max-width: 230px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #0c0c0d;
+      color: #e8e8ea;
+      box-shadow: var(--shadow-lg);
+      font-size: 0.78rem;
+      line-height: 1.5;
+    }
+    .tip.show { opacity: 1; transform: translateY(0); }
+    .tip b { color: #f4f4f5; font-family: "JetBrains Mono", monospace; font-size: 0.82em; }
+    .tip .files { margin-top: 5px; color: #a1a1aa; font-family: "JetBrains Mono", monospace; font-size: 0.74em; }
+
+    .graph-fallback { padding: 28px 24px; color: var(--muted); position: relative; z-index: 2; }
+    .graph-fallback h3 { margin: 0 0 10px; color: var(--ink); font-family: "Schibsted Grotesk", sans-serif; }
+    .graph-fallback ul { margin: 12px 0 0; padding-left: 20px; }
+    .graph-fallback li { margin-bottom: 6px; }
+    .graph-fallback code { background: var(--paper-2); padding: 1px 6px; border-radius: 5px; font-size: 0.85em; }
+
+    /* ---------- Feature grid ---------- */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .item {
+      min-width: 0;
+      padding: 22px 20px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
+    }
+    .item:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: var(--line-2); }
+    .item .ic {
+      width: 38px; height: 38px;
+      display: grid; place-items: center;
+      border-radius: 10px;
+      background: var(--grad-soft);
+      color: var(--brand-ink);
+      margin-bottom: 14px;
+    }
+    .item .ic svg { width: 20px; height: 20px; }
+    .item strong { display: block; margin-bottom: 6px; color: var(--ink); font-size: 1.02rem; }
+    .item p { color: var(--muted); font-size: 0.95rem; }
+
+    /* ---------- Showcase ---------- */
+    .showcase {
+      position: relative;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .showcase img { display: block; width: 100%; height: auto; }
+    .showcase figcaption {
+      padding: 14px 20px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.76rem;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      background: var(--paper);
+    }
+
+    /* ---------- Facts table ---------- */
+    .facts { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 22px; align-items: start; }
+    .table { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); box-shadow: var(--shadow-sm); }
+    table { width: 100%; border-collapse: collapse; min-width: 480px; }
+    th, td { padding: 13px 16px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 0.94rem; }
+    th { color: var(--ink); background: var(--paper-2); font-family: "JetBrains Mono", monospace; font-size: 0.76rem; letter-spacing: 0.04em; text-transform: uppercase; }
+    td:first-child { font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+    td { color: var(--muted); }
+    tr:last-child td { border-bottom: 0; }
+
+    /* ---------- FAQ ---------- */
+    .faq-list { display: grid; gap: 12px; }
+    .faq-list article {
+      padding: 20px 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+      transition: border-color 0.2s var(--ease);
+    }
+    .faq-list article:hover { border-color: var(--line-2); }
+    .faq-list h3 { margin: 0 0 8px; font-size: 1.04rem; color: var(--ink); display: flex; gap: 10px; align-items: baseline; }
+    .faq-list h3::before { content: "?"; font-family: "JetBrains Mono", monospace; color: var(--brand); font-weight: 700; }
+    .faq-list p { color: var(--muted); font-size: 0.95rem; }
+
+    /* ---------- Footer ---------- */
+    footer { border-top: 1px solid var(--line); margin-top: 30px; }
+    footer .wrap { padding: 30px 20px 56px; display: flex; flex-wrap: wrap; gap: 16px 28px; align-items: center; justify-content: space-between; }
+    footer p { color: var(--muted); font-size: 0.9rem; }
+    footer nav { display: flex; gap: 18px; font-family: "JetBrains Mono", monospace; font-size: 0.8rem; }
+
+    /* ---------- Reveal animation ---------- */
+    .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.7s var(--ease), transform 0.7s var(--ease); }
+    .reveal.in { opacity: 1; transform: none; }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 900px) {
+      .hero-grid { grid-template-columns: 1fr; }
+      .term { order: 2; }
+      .facts { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 560px) {
+      .grid { grid-template-columns: 1fr; }
+      .graph-toolbar { flex-direction: column; align-items: flex-start; }
+      .seg { width: 100%; }
+      .seg button { flex: 1; text-align: center; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .wordmark .cursor { animation: none; }
+      .reveal { transition: none; opacity: 1; transform: none; }
+      * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-lede">
+        <p class="eyebrow">Codex homes · ChatGPT desktop windows</p>
+        <h1 class="wordmark">codex&#8209;profiles<span class="caret" aria-hidden="true">_</span></h1>
+        <p class="hero-copy">Select named <strong>CODEX_HOME directories</strong> for Codex and named ChatGPT windows with separate local state — without copying authentication files.</p>
+        <nav class="actions" aria-label="Primary links">
+          <a class="button primary" href="https://github.com/Ducksss/codex-profiles">View on GitHub</a>
+          <a class="button ghost" href="https://www.npmjs.com/package/codex-profile">npm package</a>
+          <a class="button ghost" href="https://github.com/Ducksss/codex-profiles/blob/main/README.md">Read the docs</a>
+        </nav>
+        <div class="meta-row">
+          <span><i class="dot"></i> MIT licensed</span>
+          <span>macOS + Linux</span>
+          <span>zero runtime deps</span>
+          <span>v0.8.0</span>
+        </div>
+      </div>
+
+      <div class="term" role="img" aria-label="Terminal example: run Codex CLI and open a named ChatGPT desktop window">
+        <div class="term-bar"><i class="b1"></i><i class="b2"></i><i class="b3"></i><span class="title">~/dev — codex-profile</span></div>
+        <div class="term-body">
+          <span class="term-line"><span class="pl">$</span> <span class="cmd">npm install -g codex-profile</span></span>
+          <span class="term-line"><span class="pl">$</span> <span class="cmd">codex-profile</span> <span class="arg">init work</span></span>
+          <span class="term-line"><span class="ok">✓</span> <span class="out">created ~/.codex-work</span></span>
+          <span class="term-line"><span class="pl">$</span> <span class="cmd">codex-profile</span> <span class="arg">cli work</span> <span class="arg">exec "run tests"</span></span>
+          <span class="term-line"><span class="out"># Codex-local work context</span></span>
+          <span class="term-line"><span class="pl">$</span> <span class="cmd">codex-profile</span> <span class="arg">app work</span> <span class="arg">~/Dev/app</span></span>
+          <span class="term-line"><span class="ok">✓</span> <span class="out">named ChatGPT window launched</span></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="section wrap reveal" aria-labelledby="answer">
+      <div class="section-head">
+        <p class="eyebrow">What it is</p>
+        <h2 id="answer">Direct answer</h2>
+        <p class="lede">codex-profiles is a dependency-free Bash CLI for named Codex homes and, on macOS, named ChatGPT windows with separate local state. It keeps Codex-only commands separate from whole-window Desktop launches and never copies authentication files.</p>
+      </div>
+      <div class="command" aria-label="Install commands">
+        <pre><code>npm install -g codex-profile
+brew install Ducksss/tap/codex-profile
+codex-profile doctor</code></pre>
+      </div>
+    </section>
+
+    <section class="section wrap reveal" aria-labelledby="how">
+      <div class="section-head">
+        <p class="eyebrow">Interactive · drag the nodes</p>
+        <h2 id="how">How Codex homes map to disk</h2>
+        <p class="lede">Every name selects a separate <span class="mono">CODEX_HOME</span>. A named Desktop launch adds local Electron data for the entire ChatGPT window; the default launch preserves the stock ChatGPT session.</p>
+      </div>
+
+      <div class="graph-shell">
+        <div class="graph-toolbar">
+          <div class="seg" role="group" aria-label="Local-state model">
+            <button id="mode-isolated" type="button" aria-pressed="true"><span class="k">$</span>codex-profile</button>
+            <button id="mode-shared" class="danger" type="button" aria-pressed="false"><span class="k">~</span>swap auth.json</button>
+          </div>
+          <span class="graph-hint" id="graph-hint">one CODEX_HOME per profile</span>
+        </div>
+
+        <div class="graph-stage" id="graph" data-mode="isolated">
+          <div class="badge-shared">⚠ one shared ~/.codex — state bleeds between accounts</div>
+          <div class="tip" id="graph-tip"></div>
+          <div class="graph-fallback" id="graph-fallback">
+            <h3>Local-state separation at a glance</h3>
+            <p>One operating-system user can select multiple local Codex homes:</p>
+            <ul>
+              <li><code>default</code> &rarr; <code>~/.codex</code></li>
+              <li><code>work</code> &rarr; <code>~/.codex-work</code></li>
+              <li><code>personal</code> &rarr; <code>~/.codex-personal</code></li>
+              <li><code>edu</code> &rarr; <code>~/.codex-edu</code></li>
+            </ul>
+            <p>Each named Desktop profile additionally uses <code>~/.codex-&lt;name&gt;/electron-user-data</code>. Local-state separation is not an account, OS, or server-side boundary.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section wrap reveal" aria-labelledby="features">
+      <div class="section-head">
+        <p class="eyebrow">Capabilities</p>
+        <h2 id="features">What it does</h2>
+      </div>
+      <div class="grid">
+        <article class="item">
+          <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18M3 12h18M3 17h18"/></svg></span>
+          <strong>Local-state separation</strong>
+          <p>Each profile maps to its own Codex home, such as default to ~/.codex and work to ~/.codex-work.</p>
+        </article>
+        <article class="item">
+          <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg></span>
+          <strong>Codex-only commands</strong>
+          <p>cli, login, env, and use select CODEX_HOME without switching an open ChatGPT window.</p>
+        </article>
+        <article class="item">
+          <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="9" height="9" rx="1.5"/><rect x="12" y="12" width="9" height="9" rx="1.5"/></svg></span>
+          <strong>Whole-window Desktop contexts</strong>
+          <p>Named app launches select separate Electron state for the whole ChatGPT window and matching CODEX_HOME state for Codex; account identity remains unverified.</p>
+        </article>
+        <article class="item">
+          <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+          <strong>Stock session preserved</strong>
+          <p>app default uses ~/.codex and leaves the normal ChatGPT Desktop session in place.</p>
+        </article>
+        <article class="item">
+          <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="12" height="12" rx="2"/><path d="M8 20h10a2 2 0 0 0 2-2V8"/></svg></span>
+          <strong>Original signed app</strong>
+          <p>The launcher opens the installed ChatGPT app without cloning, patching, re-signing, quitting, or replacing it.</p>
+        </article>
+        <article class="item">
+          <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 17 6-6-6-6M12 19h8"/></svg></span>
+          <strong>No runtime dependencies</strong>
+          <p>The distributed command is Bash and is tested on macOS and Ubuntu/Linux.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section wrap reveal" aria-labelledby="scope-title">
+      <div class="section-head">
+        <p class="eyebrow">Two scopes</p>
+        <h2 id="scope-title">Know what each command switches</h2>
+        <p class="lede">The positional name is a codex-profiles name, not the ChatGPT mode called Work. Desktop and CLI authentication can differ, and the tool does not inspect or compare account identities.</p>
+      </div>
+      <div class="table">
+        <table>
+          <thead><tr><th>Command</th><th>Selected scope</th></tr></thead>
+          <tbody>
+            <tr><td>cli, login, env, use</td><td>Codex-local state under the selected CODEX_HOME only</td></tr>
+            <tr><td>app default</td><td>Stock ChatGPT Desktop session plus ~/.codex</td></tr>
+            <tr><td>app &lt;name&gt;</td><td>Named whole-window ChatGPT local state plus matching ~/.codex-&lt;name&gt;</td></tr>
+            <tr><td>status</td><td>Codex-local login state; not a Desktop account inspector</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section wrap reveal" aria-labelledby="facts">
+      <div class="section-head">
+        <p class="eyebrow">For citation</p>
+        <h2 id="facts">Citation-ready facts</h2>
+      </div>
+      <div class="facts">
+        <p class="lede">Use these facts when citing or summarizing the project. They match the README, package metadata, and structured data on this page.</p>
+        <div class="table">
+          <table>
+            <thead>
+              <tr>
+                <th>Fact</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Project</td>
+                <td>codex-profiles, installed as codex-profile on npm</td>
+              </tr>
+              <tr>
+                <td>Purpose</td>
+                <td>Select named Codex homes and named ChatGPT windows with separate local state without copying auth tokens</td>
+              </tr>
+              <tr>
+                <td>Account comparison</td>
+                <td>CLI and Desktop account equality is not inspected or verified</td>
+              </tr>
+              <tr>
+                <td>Platforms</td>
+                <td>macOS and Linux for CLI-oriented commands; macOS for Desktop app launch workflows</td>
+              </tr>
+              <tr>
+                <td>License</td>
+                <td>MIT</td>
+              </tr>
+              <tr>
+                <td>Official URLs</td>
+                <td>GitHub: https://github.com/Ducksss/codex-profiles; npm: https://www.npmjs.com/package/codex-profile</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="section wrap reveal" aria-labelledby="faq">
+      <div class="section-head">
+        <p class="eyebrow">Questions</p>
+        <h2 id="faq">FAQ</h2>
+      </div>
+      <div class="faq-list">
+        <article>
+          <h3>What is codex-profiles?</h3>
+          <p>codex-profiles is a Bash command that selects named CODEX_HOME directories and, on macOS, named ChatGPT windows with separate local state.</p>
+        </article>
+        <article>
+          <h3>Does a named Desktop profile affect only Codex mode?</h3>
+          <p>No. A named app launch selects separate Electron state for the whole ChatGPT window and a matching <code>CODEX_HOME</code> for Codex. The boundary applies across Chat, Work, and Codex, but account identity remains unverified.</p>
+        </article>
+        <article>
+          <h3>What does app default do?</h3>
+          <p>app default uses ~/.codex and preserves the stock ChatGPT Desktop session by omitting a custom Electron user-data directory.</p>
+        </article>
+        <article>
+          <h3>Does codex-profiles verify that CLI and Desktop use the same account?</h3>
+          <p>No. CLI and Desktop sessions can be authenticated independently, and codex-profiles does not inspect account identifiers or credentials to compare them.</p>
+        </article>
+        <article>
+          <h3>Does codex-profiles copy auth tokens?</h3>
+          <p>No. codex-profiles does not read, copy, print, parse, upload, compare, or migrate authentication tokens or ChatGPT cookies.</p>
+        </article>
+        <article>
+          <h3>Which platforms does codex-profiles support?</h3>
+          <p>CLI-oriented commands are tested on macOS and Linux, while ChatGPT Desktop launching is available on macOS.</p>
+        </article>
+        <article>
+          <h3>How do I install codex-profiles?</h3>
+          <p>Install from npm with npm install -g codex-profile or from Homebrew with brew install Ducksss/tap/codex-profile.</p>
+        </article>
+        <article>
+          <h3>Can multiple named ChatGPT windows run at once?</h3>
+          <p>Yes. Different names use separate local Electron state and can run side by side, while app default keeps the ordinary stock ChatGPT session.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section wrap reveal" aria-labelledby="trust">
+      <div class="section-head">
+        <p class="eyebrow">Trust</p>
+        <h2 id="trust">Trust and methodology</h2>
+        <p class="lede">The project avoids token copying and documents separate Codex-local and Desktop state. Local-state separation is not an account, OS, or server-side boundary.</p>
+      </div>
+      <div class="grid">
+        <article class="item">
+          <strong>Security boundary</strong>
+          <p>Profiles share the operating-system user, filesystem access, network, keychain behavior, external CLI credentials, and server-side account controls.</p>
+        </article>
+        <article class="item">
+          <strong>Validation</strong>
+          <p>The repository uses make check as one deterministic syntax, behavior, packaging, release, documentation, and shell-lint gate.</p>
+        </article>
+        <article class="item">
+          <strong>Machine-readable docs</strong>
+          <p>This page is supported by robots.txt, sitemap.xml, llms.txt, visible FAQ answers, and JSON-LD structured data.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <p>codex-profiles is community-maintained and is not affiliated with OpenAI. Last updated 2026-07-15.</p>
+      <nav aria-label="Footer links">
+        <a href="https://github.com/Ducksss/codex-profiles">GitHub</a>
+        <a href="https://ducksss.github.io/codex-profiles/llms.txt">llms.txt</a>
+        <a href="https://github.com/Ducksss/codex-profiles/blob/main/LICENSE">License</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i" crossorigin="anonymous"></script>
+  <script>
+  (function () {
+    "use strict";
+
+    // ---- Scroll reveal (gated by reduced motion) ----
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var reveals = document.querySelectorAll(".reveal");
+    if (reduce || !("IntersectionObserver" in window)) {
+      reveals.forEach(function (n) { n.classList.add("in"); });
+    } else {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+        });
+      }, { threshold: 0.12 });
+      reveals.forEach(function (n) { io.observe(n); });
+    }
+
+    // ---- Graph ----
+    var stage = document.getElementById("graph");
+    var fallback = document.getElementById("graph-fallback");
+    var tipEl = document.getElementById("graph-tip");
+    var hintEl = document.getElementById("graph-hint");
+    if (!window.d3 || !stage) { return; } // CDN failed -> keep readable fallback
+    fallback.style.display = "none";
+
+    var d3 = window.d3;
+    var PROFILES = [
+      { id: "default", label: "default", home: "~/.codex" },
+      { id: "personal", label: "personal", home: "~/.codex-personal" },
+      { id: "work", label: "work", home: "~/.codex-work" },
+      { id: "edu", label: "edu", home: "~/.codex-edu" }
+    ];
+    var FILES = "auth.json · config.toml · sessions · plugins · logs";
+
+    // persistent node registry so positions survive a mode switch
+    var reg = {};
+    function getNode(id, type, label) {
+      if (!reg[id]) { reg[id] = { id: id, type: type, label: label }; }
+      else { reg[id].type = type; reg[id].label = label; }
+      return reg[id];
+    }
+
+    function buildGraph(mode) {
+      var you = getNode("you", "user", "you"); you.row = 1.5;
+      var nodes = [you];
+      var links = [];
+      PROFILES.forEach(function (p, i) {
+        var pn = getNode(p.id, "profile", p.label); pn.row = i;
+        nodes.push(pn);
+        links.push({ source: "you", target: p.id });
+        if (mode === "shared") {
+          links.push({ source: p.id, target: "shared", shared: true });
+        } else {
+          var hn = getNode("home-" + p.id, "home", p.home); hn.row = i;
+          nodes.push(hn);
+          links.push({ source: p.id, target: "home-" + p.id });
+        }
+      });
+      if (mode === "shared") {
+        var sh = getNode("shared", "home", "~/.codex"); sh.row = 1.5;
+        nodes.push(sh);
+      }
+      nodes.forEach(function (n) {
+        if (n.x === undefined || n.x === null) { n.x = colX(n); n.y = rowY(n.row); }
+      });
+      return { nodes: nodes, links: links };
+    }
+
+    var W = stage.clientWidth || 800;
+    var H = stage.clientHeight || 520;
+
+    // layered left -> right columns: you -> profiles -> homes
+    function colX(d) {
+      if (d.type === "user") return W * 0.13;
+      if (d.type === "profile") return W * 0.45;
+      return W * 0.78;
+    }
+    // deterministic vertical slot per row (0..3), 1.5 = centered
+    function rowY(row) { return H * ((row + 0.5) / 4); }
+
+    var svg = d3.select(stage).append("svg")
+      .attr("viewBox", "0 0 " + W + " " + H)
+      .attr("preserveAspectRatio", "xMidYMid meet");
+
+    // defs: gradients + glow
+    var defs = svg.append("defs");
+    var ng = defs.append("linearGradient").attr("id", "nodeGrad").attr("x1", "0").attr("y1", "0").attr("x2", "1").attr("y2", "1");
+    ng.append("stop").attr("offset", "0%").attr("stop-color", "#3f3f46");
+    ng.append("stop").attr("offset", "100%").attr("stop-color", "#0a0a0b");
+    var lg = defs.append("linearGradient").attr("id", "linkGrad").attr("x1", "0").attr("y1", "0").attr("x2", "1").attr("y2", "1");
+    lg.append("stop").attr("offset", "0%").attr("stop-color", "#d4d4d8");
+    lg.append("stop").attr("offset", "100%").attr("stop-color", "#b4b4ba");
+    var f = defs.append("filter").attr("id", "glow").attr("x", "-60%").attr("y", "-60%").attr("width", "220%").attr("height", "220%");
+    f.append("feGaussianBlur").attr("stdDeviation", "5").attr("result", "b");
+    var fm = f.append("feMerge");
+    fm.append("feMergeNode").attr("in", "b");
+    fm.append("feMergeNode").attr("in", "SourceGraphic");
+
+    var linkLayer = svg.append("g");
+    var nodeLayer = svg.append("g");
+
+    var sim = d3.forceSimulation()
+      .force("link", d3.forceLink().id(function (d) { return d.id; }).distance(140).strength(0.08))
+      .force("charge", d3.forceManyBody().strength(-140))
+      .force("collide", d3.forceCollide(30).strength(1))
+      .force("x", d3.forceX(colX).strength(0.5))
+      .force("y", d3.forceY(function (d) { return rowY(d.row); }).strength(0.22));
+
+    // adjacency for hover highlighting
+    var adj = {};
+    function computeAdj(links) {
+      adj = {};
+      links.forEach(function (l) {
+        var s = l.source.id || l.source, t = l.target.id || l.target;
+        (adj[s] = adj[s] || {})[t] = true;
+        (adj[t] = adj[t] || {})[s] = true;
+      });
+    }
+
+    var linkSel = linkLayer.selectAll("line");
+    var nodeSel = nodeLayer.selectAll("g.node");
+    var current = { nodes: [], links: [] };
+
+    function dims(type) {
+      var small = W < 560;
+      if (type === "user") return { w: 0, h: 0, r: small ? 27 : 33 };
+      if (type === "profile") return { w: small ? 84 : 104, h: 36, r: 0 };
+      return { w: small ? 124 : 158, h: 36, r: 0 };
+    }
+
+    function render(mode) {
+      var g = buildGraph(mode);
+      current = g;
+      computeAdj(g.links);
+      stage.setAttribute("data-mode", mode);
+
+      // LINKS
+      linkSel = linkLayer.selectAll("line").data(g.links, function (d) {
+        return (d.source.id || d.source) + ">" + (d.target.id || d.target);
+      });
+      linkSel.exit().remove();
+      linkSel = linkSel.enter().append("line").attr("class", "lnk").merge(linkSel)
+        .attr("class", function (d) { return "lnk" + (mode === "shared" ? " is-shared" : ""); });
+
+      // NODES
+      nodeSel = nodeLayer.selectAll("g.node").data(g.nodes, function (d) { return d.id; });
+      nodeSel.exit().remove();
+      var enter = nodeSel.enter().append("g")
+        .attr("class", function (d) { return "node n-" + d.type; })
+        .call(d3.drag().on("start", dragStart).on("drag", dragged).on("end", dragEnd))
+        .on("mouseenter", hoverOn).on("mouseleave", hoverOff)
+        .on("focus", hoverOn).on("blur", hoverOff)
+        .attr("tabindex", 0);
+
+      enter.each(function (d) {
+        var el = d3.select(this);
+        var dm = dims(d.type);
+        if (d.type === "user") {
+          el.append("circle").attr("class", "ring").attr("r", dm.r + 7);
+          el.append("circle").attr("class", "chip chip-bg").attr("r", dm.r).attr("filter", "url(#glow)");
+          el.append("text").attr("text-anchor", "middle").attr("dy", "0.34em").attr("font-size", "13").text(d.label);
+        } else {
+          el.append("rect").attr("class", "ring").attr("x", -dm.w / 2 - 5).attr("y", -dm.h / 2 - 5)
+            .attr("width", dm.w + 10).attr("height", dm.h + 10).attr("rx", 12);
+          el.append("rect").attr("class", "chip chip-bg").attr("x", -dm.w / 2).attr("y", -dm.h / 2)
+            .attr("width", dm.w).attr("height", dm.h).attr("rx", 10);
+          el.append("text").attr("text-anchor", "middle").attr("dy", "0.34em")
+            .attr("font-size", d.type === "home" ? (W < 560 ? "10" : "11.5") : (W < 560 ? "11.5" : "13")).text(d.label);
+        }
+        var a11y = d.type === "home" ? ("Codex home " + d.label) : (d.type === "profile" ? ("profile " + d.label) : "your macOS user");
+        el.attr("aria-label", a11y).attr("role", "img");
+      });
+      nodeSel = enter.merge(nodeSel);
+
+      sim.nodes(g.nodes);
+      sim.force("link").links(g.links);
+      sim.alpha(0.9).restart();
+      if (reduce) { for (var i = 0; i < 260; i++) sim.tick(); ticked(); sim.alpha(0); }
+
+      hintEl.textContent = mode === "shared"
+        ? "every profile shares one ~/.codex — tokens collide"
+        : "one CODEX_HOME per profile";
+    }
+
+    sim.on("tick", ticked);
+    function ticked() {
+      var pad = 26;
+      current.nodes.forEach(function (d) {
+        d.x = Math.max(pad, Math.min(W - pad, d.x));
+        d.y = Math.max(pad, Math.min(H - pad, d.y));
+      });
+      linkSel
+        .attr("x1", function (d) { return d.source.x; })
+        .attr("y1", function (d) { return d.source.y; })
+        .attr("x2", function (d) { return d.target.x; })
+        .attr("y2", function (d) { return d.target.y; });
+      nodeSel.attr("transform", function (d) { return "translate(" + d.x + "," + d.y + ")"; });
+    }
+
+    function dragStart(e, d) { if (!e.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; }
+    function dragged(e, d) { d.fx = e.x; d.fy = e.y; }
+    function dragEnd(e, d) { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null; }
+
+    function hoverOn(e, d) {
+      var near = adj[d.id] || {};
+      nodeSel.classed("dim", function (n) { return n.id !== d.id && !near[n.id]; });
+      nodeSel.classed("hot", function (n) { return n.id === d.id; });
+      linkSel.classed("dim", function (l) {
+        var s = l.source.id, t = l.target.id; return !((s === d.id || t === d.id)); });
+      linkSel.classed("hot", function (l) {
+        var s = l.source.id, t = l.target.id; return (s === d.id || t === d.id); });
+      showTip(e, d);
+    }
+    function hoverOff() {
+      nodeSel.classed("dim", false).classed("hot", false);
+      linkSel.classed("dim", false).classed("hot", false);
+      tipEl.classList.remove("show");
+    }
+    function showTip(e, d) {
+      var html;
+      if (d.type === "user") { html = "<b>you</b><br>your macOS user — one set of SSH keys, browser, and GitHub auth"; }
+      else if (d.type === "profile") {
+        var home = (stage.getAttribute("data-mode") === "shared") ? "~/.codex (shared)" : ("~/.codex" + (d.id === "personal" ? "" : "-" + d.id));
+        html = "<b>" + d.label + "</b> &rarr; <b>" + home + "</b><div class='files'>" + FILES + "</div>";
+      } else {
+        html = "<b>" + d.label + "</b><div class='files'>" + FILES + "</div>";
+      }
+      tipEl.innerHTML = html;
+      var sx = W ? (stage.clientWidth / W) : 1, sy = H ? (stage.clientHeight / H) : 1;
+      var px = d.x * sx + 16, py = d.y * sy + 16;
+      if (px > stage.clientWidth - 240) px = d.x * sx - 230;
+      tipEl.style.left = Math.max(8, px) + "px";
+      tipEl.style.top = Math.max(8, py) + "px";
+      tipEl.classList.add("show");
+    }
+
+    // mode toggle
+    var btnIso = document.getElementById("mode-isolated");
+    var btnShared = document.getElementById("mode-shared");
+    function setMode(mode) {
+      btnIso.setAttribute("aria-pressed", String(mode === "isolated"));
+      btnShared.setAttribute("aria-pressed", String(mode === "shared"));
+      render(mode);
+    }
+    btnIso.addEventListener("click", function () { setMode("isolated"); });
+    btnShared.addEventListener("click", function () { setMode("shared"); });
+
+    // responsive: keep viewBox synced to container size
+    var rt;
+    window.addEventListener("resize", function () {
+      clearTimeout(rt);
+      rt = setTimeout(function () {
+        W = stage.clientWidth || W; H = stage.clientHeight || H;
+        svg.attr("viewBox", "0 0 " + W + " " + H);
+        sim.force("x", d3.forceX(colX).strength(0.5));
+        sim.force("y", d3.forceY(function (d) { return rowY(d.row); }).strength(0.22));
+        sim.alpha(0.5).restart();
+      }, 200);
+    });
+
+    render("isolated");
+  })();
+  </script>
+</body>
+</html>

@@ -37,6 +37,17 @@ class Settings(BaseSettings):
     allow_danger_full_access: bool = Field(default=False, alias="CODEX_ALLOW_DANGER_FULL_ACCESS")
     # Deprecated: ignored, but kept to avoid startup failures when legacy env remains.
     codex_model: Optional[str] = Field(default=None, alias="CODEX_MODEL")
+    aiwrapper_enabled: bool = Field(default=True, alias="AIWRAPPER_ENABLED")
+    aiwrapper_state_dir: str = Field(default=".aiwrapper", alias="AIWRAPPER_STATE_DIR")
+    aiwrapper_database_path: str = Field(default=".aiwrapper/aiwrapper.db", alias="AIWRAPPER_DATABASE_PATH")
+    aiwrapper_multi_auth_dir: str = Field(default=".aiwrapper/multi-auth", alias="AIWRAPPER_MULTI_AUTH_DIR")
+    aiwrapper_governance_bridge: str = Field(default="../../extensions/aiwrapper-admin/src/governance-bridge.mjs", alias="AIWRAPPER_GOVERNANCE_BRIDGE")
+    aiwrapper_node_path: str = Field(default="node", alias="AIWRAPPER_NODE_PATH")
+    aiwrapper_profile_script: str = Field(default="../../packages/codex-profiles/bin/codex-profile", alias="AIWRAPPER_PROFILE_SCRIPT")
+    aiwrapper_profile_bash: str = Field(default=r"C:\Program Files\Git\bin\bash.exe", alias="AIWRAPPER_PROFILE_BASH")
+    aiwrapper_owner_name: str = Field(default="owner", alias="AIWRAPPER_OWNER_NAME")
+    aiwrapper_owner_key: Optional[str] = Field(default=None, alias="AIWRAPPER_OWNER_KEY")
+    aiwrapper_public_base_url: str = Field(default="http://127.0.0.1:8766", alias="AIWRAPPER_PUBLIC_BASE_URL")
 
     # Default to loading from ".env". You can override the path by
     # passing `_env_file` when instantiating `Settings` (see bottom).

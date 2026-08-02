@@ -24,6 +24,8 @@ class ChatCompletionRequest(BaseModel):
     temperature: Optional[float] = None
     max_tokens: Optional[int] = None
     x_codex: Optional[XCodexOptions] = None
+    reasoning_effort: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
 class ChatMessageResponse(BaseModel):
@@ -61,6 +63,7 @@ class ResponsesRequest(BaseModel):
     input: Any
     stream: Optional[bool] = False
     reasoning: Optional[ResponsesReasoning] = None
+    previous_response_id: Optional[str] = None
 
 
 class ResponsesOutputText(BaseModel):

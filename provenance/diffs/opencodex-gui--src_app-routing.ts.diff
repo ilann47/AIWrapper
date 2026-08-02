@@ -1,0 +1,32 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\app-routing.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\app-routing.ts"
+index bb03f96a..bb42a4b6 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\app-routing.ts"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\app-routing.ts"	
+@@ -15,7 +15,13 @@ export type Page =
+   | "codex-auth"
+   | "api"
+   | "claude"
+-  | "grok";
++  | "grok"
++  | "aiwrapper-chat"
++  | "aiwrapper-users"
++  | "aiwrapper-organizations"
++  | "aiwrapper-sessions"
++  | "aiwrapper-sharing"
++  | "aiwrapper-billing";
+ 
+ export const VALID_PAGES = new Set<Page>([
+   "dashboard",
+@@ -31,6 +37,12 @@ export const VALID_PAGES = new Set<Page>([
+   "api",
+   "claude",
+   "grok",
++  "aiwrapper-chat",
++  "aiwrapper-users",
++  "aiwrapper-organizations",
++  "aiwrapper-sessions",
++  "aiwrapper-sharing",
++  "aiwrapper-billing",
+ ]);
+ 
+ export function readPageFromHash(hash?: string): Page {

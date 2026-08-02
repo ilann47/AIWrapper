@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\codex-multi-auth\\scripts\\verify-vendor-provenance.mjs" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\scripts\\provenance\\verify.mjs"
-index dfb44b7d..99e63486 100644
+index dfb44b7d..9a9b2edd 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\codex-multi-auth\\scripts\\verify-vendor-provenance.mjs"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\scripts\\provenance\\verify.mjs"	
-@@ -1,117 +1,35 @@
+@@ -1,117 +1,40 @@
  #!/usr/bin/env node
 +/** Adapted from codex-multi-auth/scripts/verify-vendor-provenance.mjs (MIT, 89ca9696). */
  import { createHash } from "node:crypto";
@@ -56,6 +56,7 @@ index dfb44b7d..99e63486 100644
 +const root = resolve(import.meta.dirname, "..", "..");
 +const manifest = JSON.parse(await readFile(new URL("../../provenance/manifest.json", import.meta.url), "utf8"));
 +if (!manifest || !Array.isArray(manifest.components)) throw new Error("provenance/manifest.json is missing a valid components array");
++const classifications = new Set(["copied", "directly imported", "adapter", "imported-not-wired", "IMPLEMENTAÇÃO PRÓPRIA"]);
  
 +let count = 0;
  for (const component of manifest.components) {
@@ -123,6 +124,10 @@ index dfb44b7d..99e63486 100644
 -		}
 -	}
 +  if (!component?.id || !component?.functionality || !Array.isArray(component.files) || component.files.length === 0) throw new Error(`Invalid provenance component: ${JSON.stringify(component)}`);
++  if (!classifications.has(component.classification)) throw new Error(`Invalid literal classification for ${component.id}: ${component.classification}`);
++  if (component.classification === "IMPLEMENTAÇÃO PRÓPRIA" && (!component.referenceOnly || typeof component.incompatibility !== "string" || component.incompatibility.length < 30)) {
++    throw new Error(`Own implementation ${component.id} must document its reviewed upstream reference and concrete incompatibility`);
++  }
 +  for (const file of component.files) {
 +    for (const required of ["source", "destination", "sourceCommit", "license", "sourceSha256", "sha256", "diff", "diffSha256", "lines"]) if (file[required] === undefined) throw new Error(`Missing ${required} in ${component.id}`);
 +    const content = await readFile(resolve(root, file.destination));

@@ -1,0 +1,70 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\Dockerfile" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\Dockerfile.codex-wrapper"
+index 31ed2332..e8a2c9c8 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\Dockerfile"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\Dockerfile.codex-wrapper"	
+@@ -1,45 +1,35 @@
+ # syntax=docker/dockerfile:1
++# The runtime stages preserve circlemouth/Codex-Wrapper's Docker architecture.
++FROM node:20-bookworm-slim AS governance
++WORKDIR /src
++COPY packages/codex-multi-auth/package*.json ./packages/codex-multi-auth/
++RUN cd packages/codex-multi-auth && npm ci --ignore-scripts
++COPY packages/codex-multi-auth ./packages/codex-multi-auth
++RUN cd packages/codex-multi-auth && npm run build
+ 
+ FROM python:3.11-slim AS runtime
+-
+-ENV PYTHONUNBUFFERED=1 \
+-    PIP_NO_CACHE_DIR=1
+-
++ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
+ ARG CODEX_UID=1000
+ ARG CODEX_GID=1000
+-
+-# Install system dependencies and Codex CLI runtime
+ RUN apt-get update \
+-    && apt-get install -y --no-install-recommends curl ca-certificates gnupg git build-essential \
++    && apt-get install -y --no-install-recommends curl ca-certificates gnupg git bash \
+     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+     && apt-get install -y --no-install-recommends nodejs \
+     && npm install -g @openai/codex \
+     && npm cache clean --force \
+     && rm -rf /var/lib/apt/lists/*
+-
+-# Create application user
+ RUN groupadd --gid "${CODEX_GID}" codex \
+     && useradd --uid "${CODEX_UID}" --gid "${CODEX_GID}" --create-home codex
+-
+-WORKDIR /app
+-
+-# Install Python dependencies first for better layer caching
+-COPY requirements.txt .
++WORKDIR /opt/aiwrapper/services/codex-wrapper
++COPY services/codex-wrapper/requirements.txt .
+ RUN pip install --no-cache-dir -r requirements.txt
+-
+-# Copy the rest of the project source
+-COPY . /app
+-
+-# Prepare writable locations for Codex CLI
+-RUN mkdir -p /workspace \
+-    && chown -R codex:codex /workspace /home/codex
+-
+-ENV CODEX_PATH=codex \
+-    CODEX_WORKDIR=/workspace \
+-    CODEX_HOME=/home/codex/.codex
+-
++COPY services/codex-wrapper .
++COPY packages/codex-profiles /opt/aiwrapper/packages/codex-profiles
++COPY --from=governance /src/packages/codex-multi-auth /opt/aiwrapper/packages/codex-multi-auth
++COPY extensions/aiwrapper-admin /opt/aiwrapper/extensions/aiwrapper-admin
++RUN mkdir -p /workspace /data /home/codex/.codex \
++    && chown -R codex:codex /workspace /data /home/codex
++ENV CODEX_PATH=codex CODEX_WORKDIR=/workspace CODEX_CONFIG_DIR=/home/codex/.codex
+ USER codex
+-
+-EXPOSE 8000
+-
+-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
++EXPOSE 8766
++CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8766"]

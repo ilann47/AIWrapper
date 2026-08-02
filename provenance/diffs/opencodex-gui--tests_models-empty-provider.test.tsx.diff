@@ -1,0 +1,24 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\tests\\models-empty-provider.test.tsx" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\tests\\models-empty-provider.test.tsx"
+index 646ce37e..f23c0332 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\tests\\models-empty-provider.test.tsx"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\tests\\models-empty-provider.test.tsx"	
+@@ -8,15 +8,15 @@ import { LanguageProvider } from "../src/i18n/provider";
+ import Models from "../src/pages/Models";
+ import { EmptyProviderHint } from "../src/pages/models-provider-hints";
+ import type { ProviderDiscoverySummary } from "../src/models-groups";
+-import { gatherRoutedModels as gatherRoutedModelsDirect } from "../../src/codex/catalog";
+-import { withStubbedProviderFetch } from "../../tests/helpers/catalog-provider-fetch";
++import { gatherRoutedModels as gatherRoutedModelsDirect } from "../../../upstream/opencodex/src/codex/catalog";
++import { withStubbedProviderFetch } from "../../../upstream/opencodex/tests/helpers/catalog-provider-fetch";
+ import {
+   clearModelCache,
+   getProviderDiscoveryStatus,
+   markProviderDiscoveryFailed,
+   type ProviderModelDiscoveryStatus,
+-} from "../../src/codex/model-cache";
+-import { handleManagementAPI } from "../../src/server/management-api";
++} from "../../../upstream/opencodex/src/codex/model-cache";
++import { handleManagementAPI } from "../../../upstream/opencodex/src/server/management-api";
+ 
+ let previousLanguage: unknown;
+ const originalFetch = globalThis.fetch;

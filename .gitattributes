@@ -1,0 +1,4 @@
+provenance/diffs/*.diff -whitespace
+apps/opencodex-gui/** -whitespace
+packages/codex-multi-auth/** -whitespace
+packages/codex-profiles/** -whitespace

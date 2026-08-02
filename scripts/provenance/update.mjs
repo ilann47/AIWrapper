@@ -7,18 +7,19 @@
  * unified diffs and Markdown evidence report.
  */
 import { createHash } from "node:crypto";
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { dirname, extname, join, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const root = resolve(import.meta.dirname, "..", "..");
 const config = JSON.parse(await readFile(join(root, "provenance", "components.json"), "utf8"));
-const textExtensions = new Set([".py", ".ts", ".tsx", ".js", ".mjs", ".json", ".md", ".toml", ".txt", ".yml", ".yaml", ".sh", ""]);
+const textExtensions = new Set([".py", ".ts", ".tsx", ".js", ".mjs", ".json", ".md", ".toml", ".txt", ".yml", ".yaml", ".sh", ".css", ""]);
 const posix = value => value.replaceAll("\\", "/");
+const ignoredNames = new Set([".git", ".pytest_cache", "__pycache__", "node_modules", "dist", "coverage", ".tmp", ".aiwrapper"]);
 
 async function listFiles(dir) {
   const entries = (await readdir(dir, { withFileTypes: true }))
-    .filter(entry => !new Set(["__pycache__", ".pytest_cache"]).has(entry.name) && !entry.name.endsWith(".pyc"));
+    .filter(entry => !ignoredNames.has(entry.name) && !entry.name.endsWith(".pyc"));
   return (await Promise.all(entries.map(async entry => {
     const path = join(dir, entry.name);
     return entry.isDirectory() ? listFiles(path) : [path];
@@ -26,12 +27,20 @@ async function listFiles(dir) {
 }
 
 async function expand(component) {
-  if (component.kind !== "directory") return [{ source: component.source, destination: component.destination }];
+  if (component.kind === "file") return [{ source: component.source, destination: component.destination }];
   const destinationRoot = join(root, component.destination);
   const files = await listFiles(destinationRoot);
-  return files.filter(file => textExtensions.has(extname(file))).map(file => {
+  const excluded = (component.exclude ?? []).map(value => posix(value).replace(/\/$/, ""));
+  return files.filter(file => {
+    if (!textExtensions.has(extname(file))) return false;
+    const rel = posix(relative(destinationRoot, file));
+    return !excluded.some(prefix => rel === prefix || rel.startsWith(`${prefix}/`));
+  }).map(file => {
     const rel = relative(destinationRoot, file);
-    return { source: posix(join(component.source, rel)), destination: posix(join(component.destination, rel)) };
+    return {
+      source: component.kind === "reference-directory" ? component.source : posix(join(component.source, rel)),
+      destination: posix(join(component.destination, rel)),
+    };
   });
 }
 
@@ -48,6 +57,8 @@ function lcsLength(a, b) {
 const hash = content => createHash("sha256").update(content).digest("hex");
 const safeName = value => value.replaceAll(/[^a-zA-Z0-9._-]+/g, "_");
 const manifest = { schemaVersion: 1, generatedAt: new Date().toISOString(), generatorUpstream: config.generatorUpstream, components: [] };
+await rm(join(root, "provenance", "diffs"), { recursive: true, force: true });
+await mkdir(join(root, "provenance", "diffs"), { recursive: true });
 
 for (const component of config.components) {
   const files = [];
@@ -57,7 +68,7 @@ for (const component of config.components) {
     const [sourceBuffer, destinationBuffer] = await Promise.all([readFile(sourcePath), readFile(destinationPath)]);
     const sourceLines = sourceBuffer.toString("utf8").split(/\r?\n/);
     const destinationLines = destinationBuffer.toString("utf8").split(/\r?\n/);
-    const preserved = lcsLength(sourceLines, destinationLines);
+    const preserved = sourceBuffer.equals(destinationBuffer) ? sourceLines.length : lcsLength(sourceLines, destinationLines);
     const sourceOnly = sourceLines.length - preserved;
     const destinationOnly = destinationLines.length - preserved;
     const changed = Math.min(sourceOnly, destinationOnly);
@@ -77,7 +88,7 @@ for (const component of config.components) {
       lines: { source: sourceLines.length, destination: destinationLines.length, preserved, changed, removed, added, reusePercent },
     });
   }
-  manifest.components.push({ id: component.id, functionality: component.functionality, project: component.project, classification: component.classification, incompatibility: component.incompatibility ?? null, parityAudit: component.parityAudit ?? null, files });
+  manifest.components.push({ id: component.id, functionality: component.functionality, project: component.project, classification: component.classification, referenceOnly: component.referenceOnly ?? false, incompatibility: component.incompatibility ?? null, parityAudit: component.parityAudit ?? null, files });
 }
 
 const manifestPath = join(root, "provenance", "manifest.json");

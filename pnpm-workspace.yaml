@@ -1,3 +1,7 @@
 packages:
   - apps/*
   - packages/*
+  - upstream/opencodex
+onlyBuiltDependencies:
+  - bun
+  - esbuild

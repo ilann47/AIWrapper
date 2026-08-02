@@ -1,71 +1,43 @@
 services:
-  # Exact circlemouth/Codex-Wrapper service; opt in with --profile upstream-proxy.
-  codex-wrapper:
-    profiles: [upstream-proxy]
-    build: { context: ./services/codex-wrapper, dockerfile: Dockerfile }
+  # Full lidge-jun/OpenCodex runtime and its imported GUI.
+  opencodex:
+    build: { context: ., dockerfile: Dockerfile.opencodex }
     environment:
-      PROXY_API_KEY: ${CODEX_WRAPPER_INTERNAL_KEY:-}
-      CODEX_HOME: /home/codex/.codex
+      OPENCODEX_API_AUTH_TOKEN: ${OPENCODEX_API_AUTH_TOKEN:-aiwrapper-local-only}
+    ports: ["127.0.0.1:8765:8765"]
+    volumes:
+      - type: bind
+        source: ${CODEX_HOST_HOME:-C:/Users/Public/.codex}
+        target: /home/bun/.codex
+
+  # circlemouth/Codex-Wrapper with thin AIWrapper integration adapters.
+  codex-wrapper:
+    build: { context: ., dockerfile: Dockerfile.codex-wrapper }
+    environment:
+      CODEX_CONFIG_DIR: /home/codex/.codex
       CODEX_WORKDIR: /workspace
       CODEX_PATH: codex
       CODEX_REASONING_EFFORT: ${CODEX_REASONING_EFFORT:-medium}
       CODEX_MAX_PARALLEL_REQUESTS: ${CODEX_MAX_PARALLEL_REQUESTS:-2}
       RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-60}
-    ports: [127.0.0.1:8020:8000]
+      AIWRAPPER_STATE_DIR: /data
+      AIWRAPPER_DATABASE_PATH: /data/aiwrapper.db
+      AIWRAPPER_MULTI_AUTH_DIR: /data/multi-auth
+      AIWRAPPER_GOVERNANCE_BRIDGE: /opt/aiwrapper/extensions/aiwrapper-admin/src/governance-bridge.mjs
+      AIWRAPPER_PROFILE_SCRIPT: /opt/aiwrapper/packages/codex-profiles/bin/codex-profile
+      AIWRAPPER_PROFILE_BASH: /bin/bash
+      AIWRAPPER_OWNER_NAME: ${AIWRAPPER_OWNER_NAME:-owner}
+      AIWRAPPER_OWNER_KEY: ${AIWRAPPER_OWNER_KEY:-}
+      AIWRAPPER_PUBLIC_BASE_URL: http://127.0.0.1:8766
+    ports: ["127.0.0.1:8766:8766"]
     volumes:
       - type: bind
         source: ${CODEX_HOST_HOME:-C:/Users/Public/.codex}
         target: /home/codex/.codex
         read_only: true
-      - type: volume
-        source: codex_workspace
-        target: /workspace
-  postgres:
-    image: postgres:17-alpine
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-aiwrapper}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB:-aiwrapper}
-    volumes: [postgres_data:/var/lib/postgresql/data, ./packages/db/migrations:/docker-entrypoint-initdb.d:ro]
-    healthcheck: { test: [CMD-SHELL, "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"], interval: 5s, timeout: 3s, retries: 20 }
-  redis:
-    image: redis:7-alpine
-    command: redis-server --appendonly yes
-    volumes: [redis_data:/data]
-    healthcheck: { test: [CMD, redis-cli, ping], interval: 5s, timeout: 3s, retries: 20 }
-  api:
-    build: { context: ., dockerfile: Dockerfile.api }
-    environment:
-      HOST: 0.0.0.0
-      PORT: 8080
-      DATABASE_URL: postgres://${POSTGRES_USER:-aiwrapper}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-aiwrapper}
-      REDIS_URL: redis://redis:6379
-      API_KEY_PEPPER: ${API_KEY_PEPPER:?Set API_KEY_PEPPER}
-      CODEX_PROFILE_ROOT: /profiles
-      CORS_ORIGINS: http://127.0.0.1:8088,http://localhost:8088
-    volumes: [codex_profiles:/profiles]
-    depends_on: { postgres: { condition: service_healthy }, redis: { condition: service_healthy } }
-    healthcheck: { test: [CMD, wget, -qO-, http://127.0.0.1:8080/ready], interval: 10s, timeout: 3s, retries: 12 }
-  web:
-    build: { context: ., dockerfile: Dockerfile.web }
-    ports: [127.0.0.1:8088:80]
-    depends_on: { api: { condition: service_healthy } }
-  worker:
-    build: { context: ., dockerfile: Dockerfile.api }
-    command: ["node", "dist/apps/worker/src/index.js"]
-    environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-aiwrapper}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-aiwrapper}
-      REDIS_URL: redis://redis:6379
-    depends_on: { postgres: { condition: service_healthy }, redis: { condition: service_healthy } }
-  prometheus:
-    image: prom/prometheus:v3.5.0
-    volumes: [./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro, prometheus_data:/prometheus]
-    ports: [127.0.0.1:9090:9090]
-  grafana:
-    image: grafana/grafana:12.1.0
-    environment:
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
-    volumes: [grafana_data:/var/lib/grafana, ./infra/grafana/provisioning:/etc/grafana/provisioning:ro]
-    ports: [127.0.0.1:3000:3000]
-    depends_on: [prometheus]
-volumes: { postgres_data: {}, redis_data: {}, codex_profiles: {}, codex_workspace: {}, prometheus_data: {}, grafana_data: {} }
+      - aiwrapper_data:/data
+      - codex_workspace:/workspace
+
+volumes:
+  aiwrapper_data: {}
+  codex_workspace: {}

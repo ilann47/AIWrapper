@@ -1,0 +1,97 @@
+name: Bug report
+description: Report a reproducible problem with codex-profiles.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Do not paste `auth.json`, tokens, cookies, OAuth codes, connector credentials, account identifiers, or private logs.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened?
+      placeholder: codex-profile app personal reused the stock ChatGPT session...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction
+      description: Exact commands and steps to reproduce the issue.
+      placeholder: |
+        1. Run `codex-profile ...`
+        2. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happened instead?
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: macOS 15.6, Ubuntu 24.04, etc.
+    validations:
+      required: true
+
+  - type: input
+    id: shell
+    attributes:
+      label: Shell
+      placeholder: bash 5.2, zsh 5.9, etc.
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Affected scope
+      description: Which surface shows the problem?
+      options:
+        - Codex CLI / CODEX_HOME
+        - "`app default`"
+        - "Named Desktop profile (`app <name>`)"
+        - Both or unsure
+    validations:
+      required: true
+
+  - type: input
+    id: desktop
+    attributes:
+      label: Desktop app version
+      description: For app-launch issues, provide the Desktop app version; do not include account details.
+      placeholder: ChatGPT 26.x (bundle ID if shown by doctor)
+
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Sanitized `codex-profile doctor` output
+      description: Remove account identifiers, paths, or anything private before posting.
+      render: text
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Safety checks
+      options:
+        - label: I did not paste real tokens, auth files, cookies, OAuth codes, connector credentials, account identifiers, or private logs.
+          required: true
+        - label: I identified above whether this affects Codex CLI, `app default`, a named Desktop profile, or more than one scope.
+          required: true

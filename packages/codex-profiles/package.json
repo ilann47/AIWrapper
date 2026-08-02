@@ -1,0 +1,54 @@
+{
+  "name": "codex-profile",
+  "version": "0.8.0",
+  "description": "Named Codex CLI profiles with separate local ChatGPT desktop state.",
+  "license": "MIT",
+  "homepage": "https://ducksss.github.io/codex-profiles/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ducksss/codex-profiles.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Ducksss/codex-profiles/issues"
+  },
+  "keywords": [
+    "ai-tools",
+    "automation",
+    "chatgpt",
+    "chatgpt-desktop",
+    "codex",
+    "codex-cli",
+    "codex-profiles",
+    "developer-tools",
+    "local-state",
+    "named-profiles",
+    "openai",
+    "openai-codex",
+    "productivity",
+    "vibe-coding"
+  ],
+  "bin": {
+    "codex-profile": "bin/codex-profile",
+    "codex-profiles": "bin/codex-profile"
+  },
+  "files": [
+    "bin/codex-profile",
+    "CHANGELOG.md",
+    "docs",
+    "LICENSE",
+    "README.md",
+    "SECURITY.md"
+  ],
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "scripts": {
+    "check": "make check",
+    "pack:check": "npm pack --dry-run --silent",
+    "test": "make test"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

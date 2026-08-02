@@ -1,0 +1,13 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\vite.config.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\vite.config.ts"
+index 68a5045f..d3e4c45e 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\vite.config.ts"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\vite.config.ts"	
+@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
+ 
+ // Bake the parent package version into the bundle as a fallback for moments when the runtime
+ // `/healthz` version is not reachable yet.
+-const version = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version
++const version = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).version
+ const proxyTarget = process.env.OPENCODEX_PROXY_TARGET
+ 
+ // https://vite.dev/config/

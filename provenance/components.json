@@ -3,183 +3,373 @@
     "project": "ndycode/codex-multi-auth",
     "commit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
     "license": "MIT",
-    "files": ["upstream/codex-multi-auth/scripts/update-vendor-provenance.mjs", "upstream/codex-multi-auth/scripts/verify-vendor-provenance.mjs"]
+    "files": [
+      "upstream/codex-multi-auth/scripts/update-vendor-provenance.mjs",
+      "upstream/codex-multi-auth/scripts/verify-vendor-provenance.mjs"
+    ]
   },
   "components": [
     {
+      "id": "opencodex-gui",
+      "functionality": "React/Vite administrative GUI, layout, navigation, dashboard, providers, models, OAuth, API keys, usage, quotas, logs, settings, hooks, state, CSS and themes",
+      "project": "lidge-jun/OpenCodex",
+      "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+      "license": "MIT",
+      "classification": "adapter",
+      "kind": "directory",
+      "source": "upstream/opencodex/gui",
+      "destination": "apps/opencodex-gui",
+      "exclude": ["dist"]
+    },
+    {
       "id": "codex-wrapper-service",
-      "functionality": "OpenAI proxy, Codex execution, streaming, model registry and middleware",
+      "functionality": "FastAPI OpenAI proxy, Codex OAuth execution, model listing, request middleware and SSE streaming",
       "project": "circlemouth/Codex-Wrapper",
       "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
       "license": "MIT",
-      "classification": "copied-and-adapted",
+      "classification": "adapter",
       "kind": "directory",
       "source": "upstream/Codex-Wrapper",
-      "destination": "services/codex-wrapper"
+      "destination": "services/codex-wrapper",
+      "exclude": ["app/aiwrapper", "tests/test_aiwrapper_integration.py", ".aiwrapper"]
     },
     {
-      "id": "budget-guard",
-      "functionality": "Quota window and allow/deny evaluation",
+      "id": "codex-multi-auth-package",
+      "functionality": "Ledger, usage accounting, budget guard, quota policies, account rotation, routing and history",
       "project": "ndycode/codex-multi-auth",
       "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
       "license": "MIT",
-      "classification": "direct-import-with-adapter",
-      "parityAudit": {
-        "retained": ["Calendar budget windows", "Request/token/cost allow decision and reasons"],
-        "lost": ["File-backed budget store is replaced by PostgreSQL persistence"],
-        "decision": "Keep the direct runtime import; the destination is an adapter, so copied-line percentage does not represent executed upstream behavior."
-      },
-      "kind": "file",
-      "source": "upstream/codex-multi-auth/lib/budget-guard.ts",
-      "destination": "packages/quota/src/budget.ts"
+      "classification": "copied",
+      "kind": "directory",
+      "source": "upstream/codex-multi-auth",
+      "destination": "packages/codex-multi-auth",
+      "exclude": ["dist", "node_modules"]
     },
     {
-      "id": "usage-ledger-types",
-      "functionality": "Usage ledger data contracts",
-      "project": "ndycode/codex-multi-auth",
-      "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
-      "license": "MIT",
-      "classification": "original-reimplementation-under-review",
-      "incompatibility": "PostgreSQL fields differ, but that does not justify replacing the complete upstream ledger.",
-      "parityAudit": {
-        "retained": ["Token categories", "Outcome and model metadata"],
-        "lost": ["Account reference", "project grouping", "query and summary contracts"],
-        "decision": "Invalid as a full replacement; reincorporate upstream ledger contracts before calling this integrated."
-      },
-      "kind": "file",
-      "source": "upstream/codex-multi-auth/lib/usage/types.ts",
-      "destination": "packages/usage/src/types.ts"
-    },
-    {
-      "id": "profile-management",
-      "functionality": "CODEX_HOME profile isolation",
+      "id": "codex-profiles-package",
+      "functionality": "CODEX_HOME, auth.json, profiles, cache, configuration and isolation",
       "project": "Ducksss/codex-profiles",
       "sourceCommit": "b0df2dd0ab955eb712436f234bbab984cc017992",
       "license": "MIT",
-      "classification": "original-platform-port",
-      "incompatibility": "The upstream executable is Bash and its desktop lifecycle is macOS-only.",
+      "classification": "copied",
+      "kind": "directory",
+      "source": "upstream/codex-profiles",
+      "destination": "packages/codex-profiles"
+    },
+    {
+      "id": "multi-auth-governance-adapter",
+      "functionality": "Direct runtime bridge from FastAPI to the upstream usage ledger and budget guard",
+      "project": "ndycode/codex-multi-auth",
+      "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
+      "license": "MIT",
+      "classification": "directly imported",
+      "kind": "file",
+      "source": "upstream/codex-multi-auth/lib/usage/index.ts",
+      "destination": "extensions/aiwrapper-admin/src/governance-bridge.mjs",
+      "incompatibility": "FastAPI cannot import the TypeScript module in-process, so this bridge only translates JSON across a Node subprocess while executing the upstream compiled functions unchanged.",
       "parityAudit": {
-        "retained": ["Validated names", "separate CODEX_HOME", "symlink rejection"],
-        "lost": ["Workspace bindings", "guard mode", "profile sharing", "doctor", "upgrade", "desktop launch"],
-        "decision": "Not feature-parity; keep explicitly partial until portable upstream functions are extracted behind a platform shell."
-      },
+        "retained": ["appendUsageEntry", "readUsageEntries", "summarizeUsage", "hashAccountId", "evaluateBudgetGuard"],
+        "lost": [],
+        "decision": "The adapter exposes only the governance operations required by AIWrapper and executes the original upstream implementation without replacing it."
+      }
+    },
+    {
+      "id": "multi-auth-budget-guard",
+      "functionality": "Budget allow/deny evaluation used before every Codex request",
+      "project": "ndycode/codex-multi-auth",
+      "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
+      "license": "MIT",
+      "classification": "directly imported",
+      "kind": "file",
+      "source": "upstream/codex-multi-auth/lib/budget-guard.ts",
+      "destination": "extensions/aiwrapper-admin/src/governance-bridge.mjs",
+      "incompatibility": "FastAPI cannot import the TypeScript budget guard in-process, so the bridge translates JSON and calls evaluateBudgetGuard from the unchanged compiled upstream package.",
+      "parityAudit": {
+        "retained": ["Original request, token and cost limits", "Original allow/deny reasons", "Original window semantics"],
+        "lost": [],
+        "decision": "The upstream evaluator is executed directly; AIWrapper only maps a user quota to its documented input contract."
+      }
+    },
+    {
+      "id": "multi-auth-account-policies",
+      "functionality": "Account policy store available for future multi-OAuth routing",
+      "project": "ndycode/codex-multi-auth",
+      "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
+      "license": "MIT",
+      "classification": "imported-not-wired",
+      "kind": "file",
+      "source": "upstream/codex-multi-auth/lib/account-policy.ts",
+      "destination": "packages/codex-multi-auth/lib/account-policy.ts",
+      "incompatibility": "The current laboratory topology intentionally has one shared ChatGPT OAuth account, so selecting among multiple OAuth accounts would be misleading and is not on the request path.",
+      "parityAudit": {
+        "retained": ["Complete upstream account policy implementation in the copied package"],
+        "lost": [],
+        "decision": "Keep the mature upstream module intact and label it honestly as not wired until the topology has multiple OAuth identities."
+      }
+    },
+    {
+      "id": "multi-auth-routing-profiles",
+      "functionality": "Project routing profiles available for future multi-OAuth routing",
+      "project": "ndycode/codex-multi-auth",
+      "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
+      "license": "MIT",
+      "classification": "imported-not-wired",
+      "kind": "file",
+      "source": "upstream/codex-multi-auth/lib/routing-profiles.ts",
+      "destination": "packages/codex-multi-auth/lib/routing-profiles.ts",
+      "incompatibility": "A per-user quota gateway backed by one ChatGPT OAuth account has no alternate account target to route to; activating this module would falsely suggest provider-side quota isolation.",
+      "parityAudit": {
+        "retained": ["Complete upstream routing profile store and resolution implementation"],
+        "lost": [],
+        "decision": "The module is preserved byte-for-byte and explicitly not wired until multiple independently authorized OAuth accounts are configured."
+      }
+    },
+    {
+      "id": "multi-auth-rotation",
+      "functionality": "Health-based account rotation available for future multi-OAuth routing",
+      "project": "ndycode/codex-multi-auth",
+      "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
+      "license": "MIT",
+      "classification": "imported-not-wired",
+      "kind": "file",
+      "source": "upstream/codex-multi-auth/lib/rotation.ts",
+      "destination": "packages/codex-multi-auth/lib/rotation.ts",
+      "incompatibility": "Rotation requires at least two independently authenticated upstream accounts. AIWrapper currently governs several local users over one OAuth account, so rotating would not change the provider quota owner.",
+      "parityAudit": {
+        "retained": ["Complete upstream health score and token bucket rotation implementation"],
+        "lost": [],
+        "decision": "Preserve the original implementation and avoid a fake integration until a genuine multi-account topology is introduced."
+      }
+    },
+    {
+      "id": "codex-profiles-python-adapter",
+      "functionality": "FastAPI adapter invoking the original codex-profile executable through Bash",
+      "project": "Ducksss/codex-profiles",
+      "sourceCommit": "b0df2dd0ab955eb712436f234bbab984cc017992",
+      "license": "MIT",
+      "classification": "adapter",
       "kind": "file",
       "source": "upstream/codex-profiles/bin/codex-profile",
-      "destination": "packages/profiles/src/profiles.ts"
-    },
-    {
-      "id": "sse",
-      "functionality": "SSE payload framing",
-      "project": "lidge-jun/OpenCodex",
-      "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
-      "license": "MIT",
-      "classification": "original-reimplementation-under-review",
-      "incompatibility": "No accepted incompatibility has been demonstrated.",
+      "destination": "services/codex-wrapper/app/aiwrapper/profiles.py",
+      "incompatibility": "The upstream interface is a Bash executable while FastAPI needs an asynchronous Python call boundary; the adapter launches the unchanged executable instead of porting profile behavior.",
       "parityAudit": {
-        "retained": ["SSE framing", "Event names", "DONE sentinel"],
-        "lost": ["Recursive OpenAI/Anthropic payload rewriting and nested JSON-string handling"],
-        "decision": "Not feature-parity; use the upstream rewrite module before marking SSE transformation integrated."
-      },
-      "kind": "file",
-      "source": "upstream/opencodex/src/server/sse-payload-rewrite.ts",
-      "destination": "packages/protocol/src/sse.ts"
+        "retained": ["Original profile init", "Original profile path resolution", "Original CODEX_HOME layout"],
+        "lost": [],
+        "decision": "No profile logic is reimplemented; additional upstream commands remain available through the copied package and can be exposed later."
+      }
     },
     {
-      "id": "provider-registry",
-      "functionality": "Provider registry",
-      "project": "lidge-jun/OpenCodex",
+      "id": "aiwrapper-admin-extension",
+      "functionality": "Individual-key gate, AIWrapper API client and page integration frame",
+      "project": "lidge-jun/OpenCodex (reviewed integration boundary)",
       "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
-      "license": "MIT",
-      "classification": "original-reimplementation-under-review",
-      "incompatibility": "No accepted incompatibility has been demonstrated.",
+      "license": "MIT / project code",
+      "classification": "IMPLEMENTAÇÃO PRÓPRIA",
+      "referenceOnly": true,
+      "kind": "reference-directory",
+      "source": "upstream/opencodex/gui/src/api.ts",
+      "destination": "extensions/aiwrapper-admin",
+      "incompatibility": "OpenCodex authenticates its own management API but has no AIWrapper per-user key principal, organization permission gate or cross-service client for the Codex-Wrapper extension API; adaptation alone cannot create those domain-specific contracts.",
       "parityAudit": {
-        "retained": ["Provider identifiers", "Availability", "Model preference"],
-        "lost": ["Provider catalog", "Account pools", "Regions", "Pricing", "Validation and defaults"],
-        "decision": "Invalid as a replacement; OpenCodex must become the catalog and the local file must become an adapter."
-      },
-      "kind": "file",
-      "source": "upstream/opencodex/src/providers/registry.ts",
-      "destination": "packages/providers/src/registry.ts"
+        "retained": ["OpenCodex visual tokens and error conventions at the integration boundary"],
+        "lost": [],
+        "decision": "This is an allowed AIWrapper-specific permissions and integration layer; it does not replace the OpenCodex API client used by upstream pages."
+      }
     },
     {
-      "id": "api-contracts",
-      "functionality": "OpenAI-compatible request and response contracts",
+      "id": "aiwrapper-chat-extension",
+      "functionality": "Chat, new/continued sessions, model and effort selection, streaming and response timing",
+      "project": "OpenCodex and Codex-Wrapper (reviewed; no upstream chat UI exists)",
+      "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+      "license": "MIT / project code",
+      "classification": "IMPLEMENTAÇÃO PRÓPRIA",
+      "referenceOnly": true,
+      "kind": "reference-directory",
+      "source": "upstream/opencodex/gui/src/pages/Logs.tsx",
+      "destination": "extensions/aiwrapper-chat",
+      "incompatibility": "Neither OpenCodex GUI nor Codex-Wrapper ships a multi-user persisted chat and session UI. OpenCodex Logs cannot be adapted because it displays proxy logs rather than composing or resuming Codex conversations.",
+      "parityAudit": {
+        "retained": ["OpenCodex page composition and loading/error style"],
+        "lost": [],
+        "decision": "Chat and Sessions are explicitly permitted AIWrapper-owned features and remain outside the imported OpenCodex page modules."
+      }
+    },
+    {
+      "id": "aiwrapper-users-extension",
+      "functionality": "Users, organizations, roles and editable 5-hour/7-day quotas",
+      "project": "OpenCodex (reviewed; no multi-user administration exists)",
+      "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+      "license": "MIT / project code",
+      "classification": "IMPLEMENTAÇÃO PRÓPRIA",
+      "referenceOnly": true,
+      "kind": "reference-directory",
+      "source": "upstream/opencodex/gui/src/pages/ApiKeys.tsx",
+      "destination": "extensions/aiwrapper-users",
+      "incompatibility": "OpenCodex API Keys manages provider credentials, not human users, organizations, roles or individual budgets. Reusing it would conflate security domains and omit the required user lifecycle.",
+      "parityAudit": {
+        "retained": ["OpenCodex cards, tables, controls, loading and error patterns"],
+        "lost": [],
+        "decision": "Users and Organizations are explicitly permitted domain extensions and do not replace OpenCodex API Keys."
+      }
+    },
+    {
+      "id": "aiwrapper-sharing-extension",
+      "functionality": "Conversation sharing administration",
+      "project": "OpenCodex (reviewed; no conversation sharing exists)",
+      "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+      "license": "MIT / project code",
+      "classification": "IMPLEMENTAÇÃO PRÓPRIA",
+      "referenceOnly": true,
+      "kind": "reference-directory",
+      "source": "upstream/opencodex/gui/src/pages/Storage.tsx",
+      "destination": "extensions/aiwrapper-sharing",
+      "incompatibility": "OpenCodex has storage administration but no ACL-backed conversation share entity or public share lifecycle that could be adapted.",
+      "parityAudit": {
+        "retained": ["OpenCodex administrative page patterns"],
+        "lost": [],
+        "decision": "Conversation Sharing is an explicitly permitted AIWrapper extension and leaves OpenCodex Storage intact."
+      }
+    },
+    {
+      "id": "aiwrapper-billing-extension",
+      "functionality": "Internal quota allocation and billing summary",
+      "project": "OpenCodex (reviewed; no multi-user billing exists)",
+      "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+      "license": "MIT / project code",
+      "classification": "IMPLEMENTAÇÃO PRÓPRIA",
+      "referenceOnly": true,
+      "kind": "reference-directory",
+      "source": "upstream/opencodex/gui/src/pages/Usage.tsx",
+      "destination": "extensions/aiwrapper-billing",
+      "incompatibility": "OpenCodex Usage reports provider traffic but does not allocate an internal subscription budget across AIWrapper users or organizations.",
+      "parityAudit": {
+        "retained": ["OpenCodex usage presentation conventions"],
+        "lost": [],
+        "decision": "Billing is an explicitly permitted AIWrapper extension and the original OpenCodex Usage page remains unchanged and available."
+      }
+    },
+    {
+      "id": "aiwrapper-fastapi-domain-extension",
+      "functionality": "Users, organizations, sessions, messages, sharing and permission endpoints attached to Codex-Wrapper",
+      "project": "circlemouth/Codex-Wrapper (reviewed integration boundary)",
+      "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+      "license": "MIT / project code",
+      "classification": "IMPLEMENTAÇÃO PRÓPRIA",
+      "referenceOnly": true,
+      "kind": "reference-directory",
+      "source": "upstream/Codex-Wrapper/app/main.py",
+      "destination": "services/codex-wrapper/app/aiwrapper",
+      "incompatibility": "Codex-Wrapper exposes only OpenAI-compatible proxy routes and has no user, organization, persisted session, share, role or individual-key domain model to adapt.",
+      "parityAudit": {
+        "retained": ["FastAPI dependency injection and HTTP error boundary conventions"],
+        "lost": [],
+        "decision": "These domain endpoints are explicitly permitted AIWrapper features; Codex execution, SSE, OAuth and OpenAI compatibility remain in upstream main.py."
+      }
+    },
+    {
+      "id": "codex-wrapper-container",
+      "functionality": "Containerized Codex-Wrapper runtime with copied governance and profile packages",
       "project": "circlemouth/Codex-Wrapper",
       "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
       "license": "MIT",
-      "classification": "language-port-under-review",
-      "incompatibility": "Python/Pydantic cannot be imported directly by TypeScript/Zod.",
-      "parityAudit": {
-        "retained": ["Messages", "Streaming", "Model", "Reasoning effort", "Responses input"],
-        "lost": ["Generated parity with Pydantic defaults and response variants"],
-        "decision": "Generate JSON Schema or fixtures from Pydantic and test Zod parity; language difference alone is insufficient."
-      },
+      "classification": "adapter",
       "kind": "file",
-      "source": "upstream/Codex-Wrapper/app/schemas.py",
-      "destination": "packages/protocol/src/openai.ts"
+      "source": "upstream/Codex-Wrapper/Dockerfile",
+      "destination": "Dockerfile.codex-wrapper",
+      "incompatibility": "The upstream image only copies Codex-Wrapper; AIWrapper must additionally compile and copy the unmodified multi-auth package and original profile executable used by its thin adapters.",
+      "parityAudit": {
+        "retained": ["Python 3.11 runtime", "Official Codex CLI install", "Unprivileged codex user", "workspace and auth mounts", "uvicorn process"],
+        "lost": [],
+        "decision": "The upstream container architecture is retained and extended only with the two required upstream packages and AIWrapper integration boundary."
+      }
     },
     {
-      "id": "runtime-pool",
-      "functionality": "Persistent Codex process lifecycle",
-      "project": "lidge-jun/OpenCodex",
+      "id": "opencodex-container",
+      "functionality": "Container image for the imported OpenCodex server and GUI fork",
+      "project": "lidge-jun/OpenCodex (reviewed; upstream has no Dockerfile)",
       "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
-      "license": "MIT",
-      "classification": "original-reimplementation-under-review",
-      "incompatibility": "The upstream file does not expose the JSON-RPC pool used here.",
-      "parityAudit": {
-        "retained": ["Persistent processes", "Bounded shutdown"],
-        "lost": ["Discovery", "Command matching", "Stale-server warnings", "Safe termination reporting"],
-        "decision": "Pooling is additional, not a replacement; incorporate upstream discovery and shutdown safety around it."
-      },
+      "license": "MIT / project code",
+      "classification": "IMPLEMENTAÇÃO PRÓPRIA",
+      "referenceOnly": true,
       "kind": "file",
-      "source": "upstream/opencodex/src/codex/app-server-processes.ts",
-      "destination": "packages/codex-runtime/src/pool.ts"
+      "source": "upstream/opencodex/package.json",
+      "destination": "Dockerfile.opencodex",
+      "incompatibility": "OpenCodex has no upstream Dockerfile to import. Its Bun package scripts are therefore invoked unchanged from a minimal container integration file.",
+      "parityAudit": {
+        "retained": ["Pinned Bun version", "Original package install", "Original CLI start command", "Original Vite GUI build"],
+        "lost": [],
+        "decision": "The container adds packaging only and executes the imported OpenCodex server and GUI without replacing either implementation."
+      }
     },
     {
-      "id": "scheduler",
-      "functionality": "Codex concurrency control",
-      "project": "circlemouth/Codex-Wrapper",
-      "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
-      "license": "MIT",
-      "classification": "original-extension-under-review",
-      "incompatibility": "The upstream limiter is process-local and not user-fair.",
-      "parityAudit": {
-        "retained": ["Global concurrency bound", "Wait queue"],
-        "lost": ["Direct subprocess cancellation and upstream semaphore lifecycle"],
-        "decision": "Treat as extension and add parity tests against the original limiter before superseding it."
-      },
+      "id": "opencodex-container-binding",
+      "functionality": "Container-only OpenCodex bind configuration",
+      "project": "lidge-jun/OpenCodex (reviewed configuration schema)",
+      "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+      "license": "MIT / project code",
+      "classification": "IMPLEMENTAÇÃO PRÓPRIA",
+      "referenceOnly": true,
       "kind": "file",
-      "source": "upstream/Codex-Wrapper/app/codex.py",
-      "destination": "packages/queue/src/scheduler.ts"
+      "source": "upstream/opencodex/src/config.ts",
+      "destination": "infra/opencodex/config.docker.json",
+      "incompatibility": "OpenCodex has a configuration schema but no container bind configuration; a two-field instance is required so the unchanged server can listen outside its container namespace.",
+      "parityAudit": {
+        "retained": ["Original hostname and port schema"],
+        "lost": [],
+        "decision": "This is deployment data consumed by the upstream loader and contains no replacement configuration logic."
+      }
+    },
+    {
+      "id": "lab-compose",
+      "functionality": "Local composition of OpenCodex and Codex-Wrapper services",
+      "project": "circlemouth/Codex-Wrapper (reviewed composition boundary)",
+      "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+      "license": "MIT / project code",
+      "classification": "IMPLEMENTAÇÃO PRÓPRIA",
+      "referenceOnly": true,
+      "kind": "file",
+      "source": "upstream/Codex-Wrapper/docker-compose.yml",
+      "destination": "docker-compose.yml",
+      "incompatibility": "The upstream compose starts only Codex-Wrapper and cannot compose the independently imported OpenCodex management server, multi-auth state volume and AIWrapper profile adapter paths.",
+      "parityAudit": {
+        "retained": ["Codex OAuth bind mount", "workspace volume", "loopback-only published ports"],
+        "lost": [],
+        "decision": "Service composition is an allowed integration layer; each service continues running its upstream runtime rather than a replacement."
+      }
     },
     {
       "id": "provenance-generator",
-      "functionality": "Provenance manifest generation",
+      "functionality": "Pairwise source/destination provenance manifest, metrics and unified diff generation",
       "project": "ndycode/codex-multi-auth",
       "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
       "license": "MIT",
-      "classification": "adapted-module",
-      "incompatibility": "Upstream hashes vendored files but does not calculate pairwise line reuse or unified diffs.",
+      "classification": "adapter",
       "kind": "file",
       "source": "upstream/codex-multi-auth/scripts/update-vendor-provenance.mjs",
-      "destination": "scripts/provenance/update.mjs"
+      "destination": "scripts/provenance/update.mjs",
+      "incompatibility": "The upstream generator verifies vendored SHA-256 values but does not compare arbitrary origin/destination pairs or emit line metrics and unified diffs required by AIWrapper.",
+      "parityAudit": {
+        "retained": ["Declarative manifest", "SHA-256 evidence", "fail-closed file traversal"],
+        "lost": [],
+        "decision": "The upstream manifest architecture is preserved and extended with required pairwise evidence rather than replaced."
+      }
     },
     {
       "id": "provenance-verifier",
-      "functionality": "Fail-closed provenance verification",
+      "functionality": "Fail-closed verification of hashes, classifications, diffs and parity audits",
       "project": "ndycode/codex-multi-auth",
       "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
       "license": "MIT",
-      "classification": "adapted-module",
-      "incompatibility": "AIWrapper additionally validates source hashes, diff hashes, metrics and parity audits.",
-      "parityAudit": {
-        "retained": ["Manifest validation", "SHA-256 destination verification", "Fail-closed errors"],
-        "lost": ["Recursive unlisted-file detection is replaced by explicit origin/destination mappings"],
-        "decision": "Preserve the upstream fail-closed verifier architecture while extending it to source and diff integrity plus mandatory low-reuse audits."
-      },
+      "classification": "adapter",
       "kind": "file",
       "source": "upstream/codex-multi-auth/scripts/verify-vendor-provenance.mjs",
-      "destination": "scripts/provenance/verify.mjs"
+      "destination": "scripts/provenance/verify.mjs",
+      "incompatibility": "The upstream verifier has no AIWrapper literal classification, pairwise diff integrity or mandatory own-code incompatibility checks.",
+      "parityAudit": {
+        "retained": ["Fail-closed validation", "destination hash verification", "manifest checks"],
+        "lost": [],
+        "decision": "Upstream verification behavior is retained and strengthened for the acceptance policy."
+      }
     }
   ]
 }
