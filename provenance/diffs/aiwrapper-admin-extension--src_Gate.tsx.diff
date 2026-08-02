@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\api.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\Gate.tsx"
-index ec1546551..8341dfa37 100644
+index ec1546551..27804f80c 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\api.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\Gate.tsx"	
-@@ -1,213 +1,52 @@
+@@ -1,213 +1,53 @@
 -let installed = false;
 -/** Shared 401 refresh gate — concurrent waiters join one prompt / token resolution. */
 -let resolutionInFlight: Promise<string | null> | null = null;
@@ -222,13 +222,14 @@ index ec1546551..8341dfa37 100644
 +import { useAIWrapper } from "./auth";
 +
 +export function AIWrapperGate({ children }: { children: ReactNode }) {
-+  const { principal, baseUrl, connect } = useAIWrapper();
++  const { principal, restoring, baseUrl, connect } = useAIWrapper();
 +  const [token, setToken] = useState("");
 +  const [busy, setBusy] = useState(false);
 +  const [error, setError] = useState("");
 +  const t = useT();
 +
 +  if (principal) return children;
++  if (restoring) return <section className="aiw-gate panel" role="status">{t("aiw.connect.restoring")}</section>;
 +  return (
 +    <section className="aiw-gate panel">
 +      <IconKey aria-hidden />

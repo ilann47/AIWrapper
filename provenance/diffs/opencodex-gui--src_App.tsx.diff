@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\App.tsx" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\App.tsx"
-index d60e839b8..2ec665cdb 100644
+index d60e839b8..b94355618 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\App.tsx"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\App.tsx"	
-@@ -14,7 +14,7 @@ import Claude from "./pages/Claude";
+@@ -14,14 +14,26 @@ import Claude from "./pages/Claude";
  import Grok from "./pages/Grok";
  import Startup from "./pages/Startup";
  import ErrorBoundary from "./components/ErrorBoundary";
@@ -11,8 +11,9 @@ index d60e839b8..2ec665cdb 100644
  import { useI18n, useT, LOCALES, type Locale, type TKey } from "./i18n/shared";
  import { Select, Switch } from "./ui";
  import { installApiAuthFetch } from "./api";
-@@ -22,6 +22,16 @@ import { readJsonIfOk } from "./fetch-json";
- import { type Page } from "./app-routing";
+ import { readJsonIfOk } from "./fetch-json";
+-import { type Page } from "./app-routing";
++import { readSharedTokenFromHash, type Page } from "./app-routing";
  import { useAppRouteState } from "./use-app-route-state";
  import { requestProxyStop } from "./stop-proxy";
 +import { AIWrapperProvider, useAIWrapper } from "../../../extensions/aiwrapper-admin/src/auth";
@@ -22,13 +23,15 @@ index d60e839b8..2ec665cdb 100644
 +import OrganizationsPage from "../../../extensions/aiwrapper-users/src/OrganizationsPage";
 +import SharingPage from "../../../extensions/aiwrapper-sharing/src/SharingPage";
 +import BillingPage from "../../../extensions/aiwrapper-billing/src/BillingPage";
++import SharedConversationPage from "../../../extensions/aiwrapper-sharing/src/SharedConversationPage";
 +import AdminOverviewPanel from "../../../extensions/aiwrapper-admin/src/AdminOverviewPanel";
 +import "../../../extensions/aiwrapper-admin/src/styles.css";
 +import "../../../extensions/aiwrapper-chat/src/styles.css";
++import "../../../extensions/aiwrapper-sharing/src/styles.css";
  
  installApiAuthFetch();
  
-@@ -41,27 +51,52 @@ const PAGE_TKEY: Record<Page, TKey> = {
+@@ -41,27 +53,53 @@ const PAGE_TKEY: Record<Page, TKey> = {
    api: "nav.api",
    claude: "nav.claude",
    grok: "nav.grok",
@@ -38,6 +41,7 @@ index d60e839b8..2ec665cdb 100644
 +  "aiwrapper-sessions": "nav.aiwrapperSessions",
 +  "aiwrapper-sharing": "nav.aiwrapperSharing",
 +  "aiwrapper-billing": "nav.aiwrapperBilling",
++  "aiwrapper-shared": "aiw.shared.title",
  };
  
  const API_BASE = import.meta.env.VITE_API_BASE || "";
@@ -80,11 +84,11 @@ index d60e839b8..2ec665cdb 100644
  
  const THEME_ICON = { light: IconSun, dark: IconMoon, system: IconMonitor } as const;
  const THEME_TKEY: Record<Theme, TKey> = { light: "theme.light", dark: "theme.dark", system: "theme.system" };
-+const USER_PAGES = new Set<Page>(["aiwrapper-chat", "aiwrapper-sessions", "aiwrapper-sharing", "aiwrapper-billing"]);
++const USER_PAGES = new Set<Page>(["aiwrapper-chat", "aiwrapper-sessions", "aiwrapper-sharing", "aiwrapper-billing", "aiwrapper-shared"]);
  
  function readRuntimeVersion(data: unknown): string | null {
    if (!data || typeof data !== "object" || !("version" in data)) return null;
-@@ -74,11 +109,19 @@ function readStoredTheme(): Theme {
+@@ -74,11 +112,19 @@ function readStoredTheme(): Theme {
    return t === "light" || t === "dark" ? t : "system";
  }
  
@@ -105,7 +109,18 @@ index d60e839b8..2ec665cdb 100644
  
    // Narrow screens: the sidebar becomes an off-canvas drawer behind a hamburger toggle.
    const [navOpen, setNavOpen] = useState(false);
-@@ -237,7 +280,9 @@ export default function App() {
+@@ -198,6 +244,10 @@ export default function App() {
+     }
+   };
+ 
++  if (page === "aiwrapper-shared") {
++    return <SharedConversationPage token={readSharedTokenFromHash()} />;
++  }
++
+   const brand = (
+     <div className="brand">
+       <span className="brand-logo" role="img" aria-label={t("app.logoAria")} />
+@@ -237,7 +287,9 @@ export default function App() {
              account pool. It is now promoted to the second slot instead: there is only
              one layout, so that filter would have hidden the page permanently.
            */}
@@ -116,7 +131,7 @@ index d60e839b8..2ec665cdb 100644
              <div key={id} className={`nav-entry${id === "claude" ? ` nav-entry-claude${page === id ? " active" : ""}` : ""}`}>
                <button type="button" className={`nav-item${page === id ? " active" : ""}`} data-page={id}
                  onClick={() => {
-@@ -257,7 +302,8 @@ export default function App() {
+@@ -257,7 +309,8 @@ export default function App() {
                  />
                )}
              </div>
@@ -126,7 +141,7 @@ index d60e839b8..2ec665cdb 100644
          </nav>
          <div className="sidebar-foot">
            <div className="lang-toggle">
-@@ -296,7 +342,7 @@ export default function App() {
+@@ -296,7 +349,7 @@ export default function App() {
              detailsLabel={t("errorBoundary.details")}
              reloadLabel={t("errorBoundary.reload")}
            >
@@ -135,7 +150,7 @@ index d60e839b8..2ec665cdb 100644
              {page === "startup" && <Startup apiBase={API_BASE} />}
              {page === "providers" && <Providers apiBase={API_BASE} />}
              {page === "models" && <Models apiBase={API_BASE} />}
-@@ -309,9 +355,19 @@ export default function App() {
+@@ -309,9 +362,19 @@ export default function App() {
              {page === "api" && <ApiKeys apiBase={API_BASE} />}
              {page === "claude" && <Claude apiBase={API_BASE} />}
              {page === "grok" && <Grok apiBase={API_BASE} />}

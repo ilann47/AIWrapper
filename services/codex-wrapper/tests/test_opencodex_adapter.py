@@ -102,5 +102,6 @@ def test_cors_is_allowlisted_and_liveness_is_public():
 
     assert accepted.status_code == 200
     assert accepted.headers["access-control-allow-origin"] == allowed
+    assert accepted.headers["access-control-allow-credentials"] == "true"
     assert rejected.status_code == 200
     assert "access-control-allow-origin" not in rejected.headers

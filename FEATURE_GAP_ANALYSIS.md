@@ -48,6 +48,9 @@ Audit date: 2026-08-01. Exact line counts, reuse percentages and unified diffs a
 - Browser access is origin-allowlisted and request rate limiting is attributed to the authenticated AIWrapper principal rather than only to a shared reverse-proxy IP.
 - The Docker image now includes the 9router runtime bridge that was previously absent from the production stage, so RTK no longer silently fails open solely because of packaging.
 - The imported OpenCodex dashboard now embeds an administrator-only AIWrapper operations strip, using the original polling/stat composition for user, conversation, active-request, queue, throughput, failure, block and latency metrics.
+- OpenCodex's memory-only, origin-bound GUI-session architecture now protects AIWrapper users: the individual key is exchanged once, access credentials stay in memory, an HttpOnly refresh is rotated, and user disable/key rotation revokes active sessions.
+- Conversation sharing is complete rather than decorative: public read-only routes, one-time secret links, hashed persistence, 1/7/30-day expiration, owner revocation and a themed public transcript are wired end to end.
+- SQLite startup migrations now add indexed auth, audit, message, session and share paths. Security/governance events are persisted and exposed to administrators in the existing dashboard extension.
 
 ## Parity audit
 

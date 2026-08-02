@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\docker-compose.yml" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\docker-compose.yml"
-index e729bc004..5084c8f91 100644
+index e729bc004..c525bbaab 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\docker-compose.yml"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\docker-compose.yml"	
-@@ -1,24 +1,63 @@
+@@ -1,24 +1,67 @@
  services:
 +  # Full lidge-jun/OpenCodex runtime and its imported GUI.
 +  opencodex:
@@ -54,6 +54,10 @@ index e729bc004..5084c8f91 100644
 +      AIWRAPPER_OWNER_NAME: ${AIWRAPPER_OWNER_NAME:-owner}
 +      AIWRAPPER_OWNER_KEY: ${AIWRAPPER_OWNER_KEY:-}
 +      AIWRAPPER_PUBLIC_BASE_URL: http://127.0.0.1:8766
++      AIWRAPPER_WEB_BASE_URL: http://127.0.0.1:8765
++      AIWRAPPER_ACCESS_SESSION_SECONDS: ${AIWRAPPER_ACCESS_SESSION_SECONDS:-300}
++      AIWRAPPER_REFRESH_SESSION_SECONDS: ${AIWRAPPER_REFRESH_SESSION_SECONDS:-2592000}
++      AIWRAPPER_SESSION_COOKIE_SECURE: ${AIWRAPPER_SESSION_COOKIE_SECURE:-false}
 +      AIWRAPPER_EXECUTION_BACKEND: opencodex
 +      AIWRAPPER_OPENCODEX_BASE_URL: http://opencodex:8765
 +      AIWRAPPER_OPENCODEX_API_KEY: ${OPENCODEX_API_AUTH_TOKEN:?Set OPENCODEX_API_AUTH_TOKEN in .env}

@@ -41,7 +41,8 @@ from .aiwrapper.opencodex import (
     opencodex_health,
     stream_with_opencodex,
 )
-from .aiwrapper.router import router as aiwrapper_router
+from .aiwrapper.router import public_router as aiwrapper_public_router, router as aiwrapper_router
+from .aiwrapper.auth import router as aiwrapper_auth_router
 from .aiwrapper.store import store as aiwrapper_store
 
 app = FastAPI()
@@ -50,11 +51,14 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.aiwrapper_cors_origin_list,
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_headers=["Authorization", "Content-Type", "X-AIWrapper-Session"],
+    allow_credentials=True,
     expose_headers=["X-AIWrapper-RTK-Saved-Bytes"],
 )
 
 if settings.aiwrapper_enabled:
+    app.include_router(aiwrapper_auth_router, dependencies=[Depends(rate_limiter)])
+    app.include_router(aiwrapper_public_router, dependencies=[Depends(rate_limiter)])
     app.include_router(
         aiwrapper_router,
         dependencies=[Depends(verify_api_key), Depends(rate_limiter)],

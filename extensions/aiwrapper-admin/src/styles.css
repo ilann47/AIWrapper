@@ -17,6 +17,7 @@
 .aiw-admin-overview__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
 .aiw-admin-overview__head h3, .aiw-admin-overview__head p { margin: 0; }
 .aiw-admin-overview__head p { margin-top: 4px; color: var(--muted); }
+.aiw-audit-strip h4 { margin: 0 0 var(--space-2); }
 .aiw-quota-input { width: 112px; }
 @media (max-width: 700px) {
   .aiw-form-grid { grid-template-columns: 1fr; }

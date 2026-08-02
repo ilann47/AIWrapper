@@ -1,0 +1,329 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\src\\server\\management-auth.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\auth.py"
+index 52fd46401..4c299b760 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\src\\server\\management-auth.ts"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\auth.py"	
+@@ -1,216 +1,108 @@
+-import { randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
+-import {
+-  chmodSync,
+-  closeSync,
+-  fsyncSync,
+-  linkSync,
+-  lstatSync,
+-  mkdirSync,
+-  openSync,
+-  readFileSync,
+-  unlinkSync,
+-  writeFileSync,
+-} from "node:fs";
+-import { dirname, join } from "node:path";
+-import { adminApiTokenFilePath } from "../lib/admin-secrets";
+-import { hardenSecretDir, hardenSecretPath } from "../lib/windows-secret-acl";
+-import type { OcxConfig } from "../types";
+-import {
+-  isAllowedManagementOrigin,
+-  isApiAuthRequired,
+-  isDataPlaneAdmissionSecret,
+-  isLoopbackHostname,
+-  managementRequestOrigin,
+-  parseHttpHost,
+-} from "./auth-cors";
+-
+-const GUI_SESSION_TTL_MS = 5 * 60_000;
+-const GUI_SESSION_LIMIT = 128;
+-
+-interface GuiSessionRecord {
+-  csrfToken: string;
+-  origin: string;
+-  expiresAt: number;
+-}
+-
+-export interface GuiSessionBootstrap extends GuiSessionRecord {
+-  token: string;
+-}
+-
+-export type ManagementAuthState =
+-  | {
+-    available: true;
+-    token: string;
+-    source: "environment" | "file";
+-    sessions: Map<string, GuiSessionRecord>;
+-  }
+-  | { available: false; reason: string };
+-
+-function fail(reason: string): ManagementAuthState {
+-  return { available: false, reason };
+-}
+-
+-function assertSafeDirectory(path: string): void {
+-  mkdirSync(path, { recursive: true, mode: 0o700 });
+-  const stat = lstatSync(path);
+-  if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error("management token directory is not a regular directory");
+-  chmodSync(path, 0o700);
+-  const hardened = hardenSecretDir(path, { required: true });
+-  if (!hardened.ok) throw new Error("management token directory ACL hardening did not complete");
+-}
+-
+-function readExistingToken(path: string): string {
+-  const stat = lstatSync(path);
+-  if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 512) {
+-    throw new Error("management token path is not a regular secret file");
+-  }
+-  chmodSync(path, 0o600);
+-  const hardened = hardenSecretPath(path, { required: true });
+-  if (!hardened.ok) throw new Error("management token file ACL hardening did not complete");
+-  const token = readFileSync(path, "utf8").trim();
+-  if (!/^ocx_admin_[A-Za-z0-9_-]{43}$/.test(token)) throw new Error("management token file is invalid");
+-  return token;
+-}
+-
+-function removeBestEffort(path: string): void {
+-  try { unlinkSync(path); } catch { /* fail-closed state is preserved by the caller */ }
+-}
+-
+-function createTokenFile(path: string): string {
+-  const directory = dirname(path);
+-  const token = `ocx_admin_${randomBytes(32).toString("base64url")}`;
+-  const temporary = join(directory, `.${randomUUID()}.admin-token.tmp`);
+-  let linked = false;
+-  let fd: number | null = null;
+-  try {
+-    fd = openSync(temporary, "wx", 0o600);
+-    writeFileSync(fd, `${token}\n`, "utf8");
+-    fsyncSync(fd);
+-    closeSync(fd);
+-    fd = null;
+-    chmodSync(temporary, 0o600);
+-    const temporaryHardened = hardenSecretPath(temporary, { required: true });
+-    if (!temporaryHardened.ok) throw new Error("management token temporary ACL hardening did not complete");
+-    try {
+-      linkSync(temporary, path);
+-      linked = true;
+-    } catch (error) {
+-      if ((error as NodeJS.ErrnoException).code === "EEXIST") return readExistingToken(path);
+-      throw error;
+-    }
+-    const finalHardened = hardenSecretPath(path, { required: true });
+-    if (!finalHardened.ok) throw new Error("management token file ACL hardening did not complete");
+-    return token;
+-  } catch (error) {
+-    if (linked) removeBestEffort(path);
+-    throw error;
+-  } finally {
+-    if (fd !== null) {
+-      try { closeSync(fd); } catch { /* best effort */ }
+-    }
+-    removeBestEffort(temporary);
+-  }
+-}
+-
+-function ready(token: string, source: "environment" | "file", config: OcxConfig): ManagementAuthState {
+-  if (isDataPlaneAdmissionSecret(token, config)) {
+-    return fail("management credential conflicts with a data-plane credential");
+-  }
+-  return { available: true, token, source, sessions: new Map() };
+-}
+-
+-export function initializeManagementAuthState(config: OcxConfig): ManagementAuthState {
+-  const environmentToken = process.env.OPENCODEX_ADMIN_AUTH_TOKEN?.trim();
+-  if (environmentToken) {
+-    return ready(environmentToken, "environment", config);
+-  }
+-  try {
+-    const path = adminApiTokenFilePath();
+-    assertSafeDirectory(dirname(path));
+-    let token: string;
+-    try {
+-      token = readExistingToken(path);
+-    } catch (error) {
+-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+-      token = createTokenFile(path);
+-    }
+-    return ready(token, "file", config);
+-  } catch (error) {
+-    return fail(error instanceof Error ? error.message : "management token initialization failed");
+-  }
+-}
+-
+-function equalSecret(actual: string, expected: string): boolean {
+-  const encoder = new TextEncoder();
+-  const left = encoder.encode(actual);
+-  const right = encoder.encode(expected);
+-  return left.length === right.length && timingSafeEqual(left, right);
+-}
+-
+-function removeExpiredSessions(state: Extract<ManagementAuthState, { available: true }>, now = Date.now()): void {
+-  for (const [token, session] of state.sessions) {
+-    if (session.expiresAt <= now) state.sessions.delete(token);
+-  }
+-}
+-
+-function randomSessionSecret(prefix: "ocx_session_"): string {
+-  return `${prefix}${randomBytes(32).toString("base64url")}`;
+-}
+-
+-export function issueGuiSession(
+-  req: Request,
+-  config: OcxConfig,
+-  state: ManagementAuthState,
+-): GuiSessionBootstrap | null {
+-  if (isApiAuthRequired(config) || !state.available || req.method !== "GET" || !isAllowedManagementOrigin(req, config)) return null;
+-  const host = parseHttpHost(req.headers.get("Host"));
+-  if (!host || !isLoopbackHostname(host.hostname)) return null;
+-  const origin = managementRequestOrigin(req, config);
+-  if (!origin) return null;
+-  const now = Date.now();
+-  removeExpiredSessions(state, now);
+-  while (state.sessions.size >= GUI_SESSION_LIMIT) {
+-    const oldest = state.sessions.keys().next().value as string | undefined;
+-    if (!oldest) break;
+-    state.sessions.delete(oldest);
+-  }
+-  const token = randomSessionSecret("ocx_session_");
+-  const session: GuiSessionRecord = {
+-    csrfToken: randomBytes(32).toString("base64url"),
+-    origin,
+-    expiresAt: now + GUI_SESSION_TTL_MS,
+-  };
+-  state.sessions.set(token, session);
+-  return { token, ...session };
+-}
+-
+-export function requireManagementAuth(
+-  req: Request,
+-  state: ManagementAuthState,
+-  config?: OcxConfig,
+-): Response | null {
+-  if (!state.available) {
+-    return Response.json({ error: "management API unavailable" }, { status: 503 });
+-  }
+-  const actual = req.headers.get("x-opencodex-api-key")?.trim()
+-    || req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
+-  if (actual && equalSecret(actual, state.token)) return null;
+-  if (actual && config) {
+-    removeExpiredSessions(state);
+-    const session = state.sessions.get(actual);
+-    if (session) {
+-      const requestOrigin = managementRequestOrigin(req, config);
+-      const claimedOrigin = req.headers.get("x-opencodex-gui-origin");
+-      const browserOrigin = req.headers.get("Origin");
+-      const sameOrigin = requestOrigin === session.origin
+-        && claimedOrigin === session.origin
+-        && (!browserOrigin || browserOrigin === session.origin);
+-      const safeMethod = req.method === "GET" || req.method === "HEAD";
+-      const csrf = req.headers.get("x-opencodex-csrf-token")?.trim();
+-      if (sameOrigin && (safeMethod || (browserOrigin === session.origin && !!csrf && equalSecret(csrf, session.csrfToken)))) {
+-        return null;
+-      }
+-    }
+-  }
+-  return Response.json({ error: "opencodex admin token required" }, { status: 401 });
+-}
++"""Browser session adapter based on OpenCodex's origin-bound GUI session design."""
++
++from __future__ import annotations
++
++from typing import Any, Optional
++
++from fastapi import APIRouter, HTTPException, Request, Response, status
++
++from ..config import settings
++from .store import store
++
++
++router = APIRouter(prefix="/auth", tags=["AIWrapper authentication"])
++COOKIE_NAME = "aiwrapper_refresh"
++
++
++def _origin(request: Request) -> str:
++    origin = (request.headers.get("origin") or "").strip().rstrip("/")
++    if not origin or origin not in settings.aiwrapper_cors_origin_list:
++        raise HTTPException(status_code=403, detail="Browser origin is not allowed")
++    return origin
++
++
++def _bearer(request: Request) -> str:
++    value = request.headers.get("authorization", "")
++    if not value.lower().startswith("bearer "):
++        raise HTTPException(status_code=401, detail="Individual AIWrapper key required")
++    token = value[7:].strip()
++    if not token:
++        raise HTTPException(status_code=401, detail="Individual AIWrapper key required")
++    return token
++
++
++def _principal(user: dict[str, Any]) -> dict[str, str]:
++    return {"userId": user["id"], "profileId": user["profile_name"], "role": user["role"]}
++
++
++def _set_refresh_cookie(response: Response, token: str) -> None:
++    response.set_cookie(
++        key=COOKIE_NAME,
++        value=token,
++        max_age=settings.aiwrapper_refresh_session_seconds,
++        httponly=True,
++        secure=settings.aiwrapper_session_cookie_secure,
++        samesite="strict",
++        path="/auth",
++    )
++
++
++def _clear_refresh_cookie(response: Response) -> None:
++    response.delete_cookie(
++        key=COOKIE_NAME,
++        httponly=True,
++        secure=settings.aiwrapper_session_cookie_secure,
++        samesite="strict",
++        path="/auth",
++    )
++
++
++@router.post("/sessions", status_code=status.HTTP_201_CREATED)
++async def create_session(request: Request, response: Response):
++    origin = _origin(request)
++    user = store.authenticate_api_key(_bearer(request))
++    if not user:
++        raise HTTPException(status_code=401, detail="Invalid individual AIWrapper key")
++    session = store.create_auth_session(
++        user["id"],
++        origin,
++        settings.aiwrapper_access_session_seconds,
++        settings.aiwrapper_refresh_session_seconds,
++    )
++    _set_refresh_cookie(response, session.pop("refreshToken"))
++    return {**session, "principal": _principal(user)}
++
++
++@router.post("/sessions/refresh")
++async def refresh_session(request: Request, response: Response):
++    origin = _origin(request)
++    if request.headers.get("x-aiwrapper-session") != "refresh":
++        raise HTTPException(status_code=403, detail="Session refresh header required")
++    refresh_token: Optional[str] = request.cookies.get(COOKIE_NAME)
++    if not refresh_token:
++        raise HTTPException(status_code=401, detail="No refresh session")
++    session = store.refresh_auth_session(
++        refresh_token,
++        origin,
++        settings.aiwrapper_access_session_seconds,
++        settings.aiwrapper_refresh_session_seconds,
++    )
++    if not session:
++        _clear_refresh_cookie(response)
++        raise HTTPException(status_code=401, detail="Refresh session expired or revoked")
++    user = store.user_by_id(session.pop("userId"))
++    if not user:
++        _clear_refresh_cookie(response)
++        raise HTTPException(status_code=401, detail="User is disabled")
++    _set_refresh_cookie(response, session.pop("refreshToken"))
++    return {**session, "principal": _principal(user)}
++
++
++@router.delete("/sessions/current", status_code=status.HTTP_204_NO_CONTENT)
++async def delete_session(request: Request, response: Response):
++    origin = _origin(request)
++    user = store.authenticate(_bearer(request), origin)
++    refresh_token = request.cookies.get(COOKIE_NAME)
++    if user and refresh_token:
++        store.revoke_auth_session(refresh_token, user["id"])
++    _clear_refresh_cookie(response)

@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\app-routing.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\app-routing.ts"
-index bb03f96a8..bb42a4b6f 100644
+index bb03f96a8..136173747 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\app-routing.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\app-routing.ts"	
-@@ -15,7 +15,13 @@ export type Page =
+@@ -15,7 +15,14 @@ export type Page =
    | "codex-auth"
    | "api"
    | "claude"
@@ -13,11 +13,12 @@ index bb03f96a8..bb42a4b6f 100644
 +  | "aiwrapper-organizations"
 +  | "aiwrapper-sessions"
 +  | "aiwrapper-sharing"
-+  | "aiwrapper-billing";
++  | "aiwrapper-billing"
++  | "aiwrapper-shared";
  
  export const VALID_PAGES = new Set<Page>([
    "dashboard",
-@@ -31,6 +37,12 @@ export const VALID_PAGES = new Set<Page>([
+@@ -31,12 +38,20 @@ export const VALID_PAGES = new Set<Page>([
    "api",
    "claude",
    "grok",
@@ -27,6 +28,31 @@ index bb03f96a8..bb42a4b6f 100644
 +  "aiwrapper-sessions",
 +  "aiwrapper-sharing",
 +  "aiwrapper-billing",
++  "aiwrapper-shared",
  ]);
  
  export function readPageFromHash(hash?: string): Page {
+   const raw = normalizeHashPath(
+     hash ?? (typeof window !== "undefined" ? window.location.hash : ""),
+   );
++  if (raw.startsWith("shared/") && raw.slice("shared/".length).trim()) return "aiwrapper-shared";
+   // Sub-views use a "/" suffix (e.g. #logs/debug); the first segment is the page id.
+   const pageId = raw.split("/")[0] as Page;
+   // Legacy: Debug used to be a standalone page; it now lives as a tab on Logs.
+@@ -53,10 +68,16 @@ export const DASHBOARD_TAB_HASHES = ["dashboard/providers", "dashboard/models"]
+ 
+ export function hashBelongsToPage(rawHash: string, page: Page): boolean {
+   return rawHash === page
++    || (page === "aiwrapper-shared" && rawHash.startsWith("shared/") && rawHash.length > "shared/".length)
+     || (page === "logs" && rawHash === "logs/debug")
+     || (page === "dashboard" && (DASHBOARD_TAB_HASHES as readonly string[]).includes(rawHash));
+ }
+ 
++export function readSharedTokenFromHash(hash?: string): string {
++  const raw = normalizeHashPath(hash ?? (typeof window !== "undefined" ? window.location.hash : ""));
++  return raw.startsWith("shared/") ? raw.slice("shared/".length) : "";
++}
++
+ 
+ /** Result of resolving an incoming hash. */
+ export type AppHashChangeAction = {

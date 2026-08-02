@@ -12,6 +12,7 @@ from ..codex import codex_parallel_status
 
 
 router = APIRouter()
+public_router = APIRouter()
 
 
 def principal(request: Request) -> dict[str, Any]:
@@ -86,9 +87,20 @@ async def admin_overview(request: Request):
         "counts": store.overview_counts(),
         "runtime": codex_parallel_status(),
         "usage": usage,
+        "audit": store.list_audit_events(10),
         "throughputPerMinute": round(float(totals.get("requests", 0)) / elapsed_minutes, 3),
         "window": {"since": since_ms, "until": now_ms},
     }
+
+
+@router.get("/admin/audit")
+async def audit_events(request: Request):
+    administrator(request)
+    try:
+        limit = int(request.query_params.get("limit", "200"))
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail="limit must be an integer") from error
+    return {"data": store.list_audit_events(limit)}
 
 
 @router.post("/admin/users", status_code=201)
@@ -215,6 +227,25 @@ async def create_share(request: Request):
     user = principal(request)
     body = await request.json()
     try:
-        return store.create_share(user["id"], str(body.get("sessionId", "")))
+        expires = body.get("expiresInHours")
+        expires_in_hours = int(expires) if expires is not None else None
+        if expires_in_hours is not None and not 1 <= expires_in_hours <= 720:
+            raise ValueError("expiresInHours must be between 1 and 720")
+        return store.create_share(user["id"], str(body.get("sessionId", "")), expires_in_hours)
     except ValueError as error:
-        raise HTTPException(status_code=404, detail=str(error)) from error
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.delete("/v1/shares/{share_id}", status_code=204)
+async def revoke_share(share_id: str, request: Request):
+    user = principal(request)
+    if not store.revoke_share(user["id"], share_id):
+        raise HTTPException(status_code=404, detail="Share not found")
+
+
+@public_router.get("/public/shares/{token}")
+async def public_share(token: str):
+    result = store.public_share(token)
+    if not result:
+        raise HTTPException(status_code=404, detail="Shared conversation not found or no longer available")
+    return result

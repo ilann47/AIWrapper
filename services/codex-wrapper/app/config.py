@@ -58,6 +58,10 @@ class Settings(BaseSettings):
     aiwrapper_owner_name: str = Field(default="owner", alias="AIWRAPPER_OWNER_NAME")
     aiwrapper_owner_key: Optional[str] = Field(default=None, alias="AIWRAPPER_OWNER_KEY")
     aiwrapper_public_base_url: str = Field(default="http://127.0.0.1:8766", alias="AIWRAPPER_PUBLIC_BASE_URL")
+    aiwrapper_web_base_url: str = Field(default="http://127.0.0.1:8765", alias="AIWRAPPER_WEB_BASE_URL")
+    aiwrapper_access_session_seconds: int = Field(default=300, alias="AIWRAPPER_ACCESS_SESSION_SECONDS")
+    aiwrapper_refresh_session_seconds: int = Field(default=2592000, alias="AIWRAPPER_REFRESH_SESSION_SECONDS")
+    aiwrapper_session_cookie_secure: bool = Field(default=False, alias="AIWRAPPER_SESSION_COOKIE_SECURE")
 
     @property
     def aiwrapper_cors_origin_list(self) -> list[str]:

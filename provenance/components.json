@@ -56,6 +56,58 @@
       }
     },
     {
+      "id": "opencodex-origin-bound-browser-session-server",
+      "functionality": "Origin-bound short-lived browser sessions, refresh rotation, bounded credential lifetime and logout revocation",
+      "project": "lidge-jun/OpenCodex",
+      "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/opencodex/src/server/management-auth.ts",
+      "destination": "services/codex-wrapper/app/aiwrapper/auth.py",
+      "incompatibility": "OpenCodex's management session is an in-memory Bun object injected into same-origin HTML. AIWrapper is a separate FastAPI service on another port and needs sessions associated with persisted human users, so direct import is impossible. The adapter preserves origin binding, short access lifetime, random secrets, rotation, limits and revocation while storing only hashes in SQLite.",
+      "parityAudit": {
+        "retained": ["Cryptographically random short-lived access session", "Origin binding", "Bounded lifetime", "Session revocation", "No browser storage of the long-lived credential"],
+        "lost": ["Same-origin HTML meta-tag injection"],
+        "decision": "Use an HttpOnly origin-bound refresh cookie at the cross-process boundary and keep the access token in frontend memory, matching the upstream security invariants without pretending the servers are same-origin."
+      }
+    },
+    {
+      "id": "opencodex-memory-only-session-client",
+      "functionality": "Memory-only access credential, silent refresh after reload and proactive renewal before expiry",
+      "project": "lidge-jun/OpenCodex",
+      "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/opencodex/gui/src/api.ts",
+      "destination": "extensions/aiwrapper-admin/src/auth.tsx",
+      "incompatibility": "OpenCodex renews by refetching same-origin HTML meta tags. AIWrapper's user API is cross-port and cannot inject those tags into OpenCodex's document, so the integration must call the refresh-cookie endpoint instead.",
+      "parityAudit": {
+        "retained": ["Credential remains memory-only", "Silent session restoration", "Automatic renewal", "No localStorage or sessionStorage secret", "Logout clears live state"],
+        "lost": ["Meta-tag bootstrap, replaced by an HttpOnly refresh exchange"],
+        "decision": "Adapt only the bootstrap transport; preserve the upstream memory-only client security model."
+      }
+    },
+    {
+      "id": "aiwrapper-revocable-public-sharing",
+      "functionality": "One-time secret share creation, hashed-token persistence, expiry, public read-only transcript and owner revocation",
+      "project": "OpenCodex and 9router reviewed; no equivalent conversation-share lifecycle exists",
+      "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+      "license": "MIT / project code",
+      "classification": "IMPLEMENTAÇÃO PRÓPRIA",
+      "referenceOnly": true,
+      "kind": "file",
+      "source": "upstream/opencodex/gui/src/pages/Storage.tsx",
+      "destination": "extensions/aiwrapper-sharing/src/SharedConversationPage.tsx",
+      "incompatibility": "OpenCodex Storage manages local artifacts and 9router chat has no ACL-backed public conversation entity, expiring secret URL, revocation endpoint or unauthenticated transcript view. Adapting either cannot create this missing domain lifecycle.",
+      "parityAudit": {
+        "retained": ["OpenCodex page, panel, empty, error and theme conventions", "Existing AIWrapper chat Markdown transcript presentation"],
+        "lost": [],
+        "decision": "Implement the explicitly required sharing domain as an additive extension while leaving the complete upstream Storage and chat surfaces available."
+      }
+    },
+    {
       "id": "opencodex-readiness-contract",
       "functionality": "OpenCodex identity-aware readiness and model discovery used by the Codex-Wrapper gateway",
       "project": "lidge-jun/OpenCodex",

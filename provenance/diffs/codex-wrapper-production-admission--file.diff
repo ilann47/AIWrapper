@@ -1,5 +1,5 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\main.py" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\main.py"
-index 6647bca55..49665f6f9 100644
+index 6647bca55..18f75e8fb 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\main.py"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\main.py"	
 @@ -4,9 +4,9 @@ import time
@@ -14,7 +14,7 @@ index 6647bca55..49665f6f9 100644
  
  from .codex import CodexError, run_codex, run_codex_last_message
  from .config import settings
-@@ -24,49 +24,142 @@ from .schemas import (
+@@ -24,49 +24,146 @@ from .schemas import (
      ChatCompletionRequest,
      ChatCompletionResponse,
      ChatMessageResponse,
@@ -35,7 +35,8 @@ index 6647bca55..49665f6f9 100644
 +    opencodex_health,
 +    stream_with_opencodex,
 +)
-+from .aiwrapper.router import router as aiwrapper_router
++from .aiwrapper.router import public_router as aiwrapper_public_router, router as aiwrapper_router
++from .aiwrapper.auth import router as aiwrapper_auth_router
 +from .aiwrapper.store import store as aiwrapper_store
  
  app = FastAPI()
@@ -47,11 +48,14 @@ index 6647bca55..49665f6f9 100644
 -    allow_headers=["*"],
 +    allow_origins=settings.aiwrapper_cors_origin_list,
 +    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-+    allow_headers=["Authorization", "Content-Type"],
++    allow_headers=["Authorization", "Content-Type", "X-AIWrapper-Session"],
++    allow_credentials=True,
 +    expose_headers=["X-AIWrapper-RTK-Saved-Bytes"],
  )
  
 +if settings.aiwrapper_enabled:
++    app.include_router(aiwrapper_auth_router, dependencies=[Depends(rate_limiter)])
++    app.include_router(aiwrapper_public_router, dependencies=[Depends(rate_limiter)])
 +    app.include_router(
 +        aiwrapper_router,
 +        dependencies=[Depends(verify_api_key), Depends(rate_limiter)],
@@ -175,7 +179,7 @@ index 6647bca55..49665f6f9 100644
      if alias_effort and "reasoning_effort" not in x_overrides:
          x_overrides["reasoning_effort"] = alias_effort
      overrides = x_overrides or None
-@@ -84,39 +177,108 @@ async def chat_completions(req: ChatCompletionRequest):
+@@ -84,39 +181,108 @@ async def chat_completions(req: ChatCompletionRequest):
              raise HTTPException(status_code=400, detail=str(e))
  
      image_paths: List[str] = []
@@ -307,7 +311,7 @@ index 6647bca55..49665f6f9 100644
          raise HTTPException(
              status_code=status,
              detail={
-@@ -133,19 +295,31 @@ async def chat_completions(req: ChatCompletionRequest):
+@@ -133,19 +299,31 @@ async def chat_completions(req: ChatCompletionRequest):
                  pass
  
  
@@ -352,7 +356,7 @@ index 6647bca55..49665f6f9 100644
  
      # Normalize input → messages
      try:
-@@ -166,6 +340,13 @@ async def responses_endpoint(req: ResponsesRequest):
+@@ -166,6 +344,13 @@ async def responses_endpoint(req: ResponsesRequest):
          except ValueError as e:
              raise HTTPException(status_code=400, detail=str(e))
  
@@ -366,7 +370,7 @@ index 6647bca55..49665f6f9 100644
      prompt, image_urls = build_prompt_and_images(messages)
  
      resp_id = f"resp_{uuid.uuid4().hex}"
-@@ -175,20 +356,30 @@ async def responses_endpoint(req: ResponsesRequest):
+@@ -175,20 +360,30 @@ async def responses_endpoint(req: ResponsesRequest):
      codex_overrides = overrides or None
  
      image_paths: List[str] = []
@@ -407,7 +411,7 @@ index 6647bca55..49665f6f9 100644
                  try:
                      created_evt = {
                          "id": resp_id,
-@@ -200,7 +391,8 @@ async def responses_endpoint(req: ResponsesRequest):
+@@ -200,7 +395,8 @@ async def responses_endpoint(req: ResponsesRequest):
                      yield f"event: response.created\ndata: {json.dumps(created_evt)}\n\n".encode()
  
                      buf: list[str] = []
@@ -417,7 +421,7 @@ index 6647bca55..49665f6f9 100644
                          if text:
                              buf.append(text)
                              delta_evt = {"id": resp_id, "delta": text}
-@@ -221,12 +413,30 @@ async def responses_endpoint(req: ResponsesRequest):
+@@ -221,12 +417,30 @@ async def responses_endpoint(req: ResponsesRequest):
                                  content=[ResponsesOutputText(text=final_text)],
                              )
                          ],
@@ -448,7 +452,7 @@ index 6647bca55..49665f6f9 100644
                      yield b"data: [DONE]\n\n"
  
              headers = {
-@@ -236,7 +446,21 @@ async def responses_endpoint(req: ResponsesRequest):
+@@ -236,7 +450,21 @@ async def responses_endpoint(req: ResponsesRequest):
              }
              return StreamingResponse(event_gen(), media_type="text/event-stream", headers=headers)
          else:
@@ -471,7 +475,7 @@ index 6647bca55..49665f6f9 100644
              resp = ResponsesObject(
                  id=resp_id,
                  created=created,
-@@ -248,10 +472,22 @@ async def responses_endpoint(req: ResponsesRequest):
+@@ -248,10 +476,22 @@ async def responses_endpoint(req: ResponsesRequest):
                          content=[ResponsesOutputText(text=final)],
                      )
                  ],

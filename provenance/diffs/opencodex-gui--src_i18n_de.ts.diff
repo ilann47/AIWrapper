@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\de.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\de.ts"
-index 5e85333ed..23bc679f9 100644
+index 5e85333ed..b6d27eb41 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\de.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\de.ts"	
-@@ -10,6 +10,137 @@ export const de: Record<TKey, string> = {
+@@ -10,6 +10,159 @@ export const de: Record<TKey, string> = {
    "nav.subagents": "Sub-Agenten",
    "nav.logs": "Protokolle & Diagnose",
    "nav.usage": "Nutzung",
@@ -27,6 +27,10 @@ index 5e85333ed..23bc679f9 100644
 +  "aiw.overview.p95Latency": "P95-Latenz",
 +  "aiw.overview.errors": "Fehler",
 +  "aiw.overview.blocked": "Blockiert",
++  "aiw.overview.audit": "Letzte Sicherheits- und Governance-Ereignisse",
++  "aiw.overview.event": "Ereignis",
++  "aiw.overview.target": "Ziel",
++  "aiw.overview.when": "Zeitpunkt",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -36,6 +40,7 @@ index 5e85333ed..23bc679f9 100644
 +  "aiw.connect.description": "Verwende deinen individuellen Schlüssel. Er bestimmt, welchem Benutzer Quote und Nutzung zugeordnet werden.",
 +  "aiw.connect.key": "Individueller API-Schlüssel",
 +  "aiw.connect.connecting": "Verbindung wird hergestellt…",
++  "aiw.connect.restoring": "Sichere Sitzung wird wiederhergestellt…",
 +  "aiw.connect.action": "Verbinden",
 +  "aiw.disconnect": "Trennen",
 +  "aiw.chat.title": "Chat",
@@ -109,6 +114,23 @@ index 5e85333ed..23bc679f9 100644
 +  "aiw.sharing.empty": "Keine freigegebenen Unterhaltungen",
 +  "aiw.sharing.link": "Link",
 +  "aiw.sharing.created": "Erstellt",
++  "aiw.sharing.session": "Unterhaltung",
++  "aiw.sharing.expiration": "Ablauf",
++  "aiw.sharing.oneDay": "1 Tag",
++  "aiw.sharing.sevenDays": "7 Tage",
++  "aiw.sharing.thirtyDays": "30 Tage",
++  "aiw.sharing.noExpiration": "Kein Ablauf",
++  "aiw.sharing.createdReady": "Link erstellt und kopiert. Er wird nur jetzt angezeigt.",
++  "aiw.sharing.hiddenLink": "Geheimer Link ausgeblendet; bei Verlust neu erstellen.",
++  "aiw.sharing.linkUnavailable": "Der Server hat keinen einmaligen geheimen Link geliefert.",
++  "aiw.sharing.actions": "Aktionen",
++  "aiw.sharing.revoke": "Link widerrufen",
++  "aiw.sharing.revokeConfirm": "Diesen freigegebenen Link jetzt widerrufen?",
++  "aiw.shared.title": "Freigegebene Unterhaltung",
++  "aiw.shared.loading": "Freigegebene Unterhaltung wird geladen…",
++  "aiw.shared.unavailable": "Diese Freigabe ist abgelaufen, wurde widerrufen oder existiert nicht.",
++  "aiw.shared.readOnly": "Schreibgeschützte Unterhaltung",
++  "aiw.shared.empty": "Diese Unterhaltung enthält keine Nachrichten.",
 +  "aiw.billing.title": "Abrechnung und Quote",
 +  "aiw.billing.subtitle": "Benutzerbezogene Abrechnung aus dem integrierten Nutzungs-Ledger.",
 +  "aiw.billing.units": "Gewichtete Einheiten",

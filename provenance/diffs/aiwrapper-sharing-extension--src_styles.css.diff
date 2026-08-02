@@ -1,8 +1,8 @@
-diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\pages\\Storage.tsx" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-sharing\\src\\SharingPage.tsx"
-index 0fc3e9e9b..b45112477 100644
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\pages\\Storage.tsx" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-sharing\\src\\styles.css"
+index 0fc3e9e9b..dd65f5030 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\pages\\Storage.tsx"	
-+++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-sharing\\src\\SharingPage.tsx"	
-@@ -1,1275 +1,37 @@
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-sharing\\src\\styles.css"	
+@@ -1,1275 +1,11 @@
 -import { useCallback, useEffect, useRef, useState } from "react";
 -import { useI18n, type TFn, type TKey, type Locale } from "../i18n/shared";
 -import { EmptyState } from "../ui";
@@ -176,34 +176,7 @@ index 0fc3e9e9b..b45112477 100644
 -function LargestFilesPanel({ buckets, locale, t }: { buckets: StorageBucket[]; locale: Locale; t: TFn }) {
 -  const withLargest = buckets.filter(bucket => (bucket.largest?.length ?? 0) > 0);
 -  if (withLargest.length === 0) return null;
-+import { useEffect, useState } from "react";
-+import { IconCheck, IconLink, IconPlus, IconTrash } from "../../../apps/opencodex-gui/src/icons";
-+import { useT } from "../../../apps/opencodex-gui/src/i18n/shared";
-+import { EmptyState, Notice } from "../../../apps/opencodex-gui/src/ui";
-+import { PageFrame } from "../../aiwrapper-admin/src/PageFrame";
-+import { useAIWrapper } from "../../aiwrapper-admin/src/auth";
-+import type { SessionRecord } from "../../aiwrapper-admin/src/client";
-+
-+interface ShareRecord { id: string; sessionId: string; url: string | null; expiresAt?: string; createdAt: string }
-+
-+export default function SharingPage() {
-+  const { client } = useAIWrapper();
-+  const t = useT();
-+  const [sessions, setSessions] = useState<SessionRecord[]>([]);
-+  const [shares, setShares] = useState<ShareRecord[]>([]);
-+  const [sessionId, setSessionId] = useState("");
-+  const [expiresInHours, setExpiresInHours] = useState("168");
-+  const [createdUrl, setCreatedUrl] = useState("");
-+  const [error, setError] = useState("");
-+  const load = async () => {
-+    if (!client) return;
-+    try {
-+      const [sessionResult, shareResult] = await Promise.all([client.get<{ data: SessionRecord[] }>("/v1/sessions"), client.get<{ data: ShareRecord[] }>("/v1/shares")]);
-+      setSessions(sessionResult.data); setShares(shareResult.data); setSessionId(current => current || sessionResult.data[0]?.id || ""); setError("");
-+    } catch (reason) { setError(reason instanceof Error ? reason.message : String(reason)); }
-+  };
-+  useEffect(() => { void load(); }, [client]);
-   return (
+-  return (
 -    <section className="panel" style={{ marginTop: 16 }} aria-labelledby="storage-largest-title">
 -      <h3 id="storage-largest-title" className="panel-title">{t("storage.section.largest")}</h3>
 -      {withLargest.map(bucket => (
@@ -399,12 +372,7 @@ index 0fc3e9e9b..b45112477 100644
 -        <button type="button" className="btn btn-sm" disabled={busy} onClick={() => void runPreview()}>
 -          {t("storage.cleanup.preview")}
 -        </button>
-+    <PageFrame title="aiw.sharing.title" subtitle="aiw.sharing.subtitle">
-+      <div className="aiw-stack">
-+        <section className="panel"><div className="panel-head"><h3 className="panel-title">{t("aiw.sharing.create")}</h3></div><div className="aiw-toolbar"><select className="input" aria-label={t("aiw.sharing.session")} value={sessionId} onChange={event => setSessionId(event.target.value)}>{sessions.map(session => <option key={session.id} value={session.id}>{session.title || t("aiw.chat.untitled")}</option>)}</select><select className="input" aria-label={t("aiw.sharing.expiration")} value={expiresInHours} onChange={event => setExpiresInHours(event.target.value)}><option value="24">{t("aiw.sharing.oneDay")}</option><option value="168">{t("aiw.sharing.sevenDays")}</option><option value="720">{t("aiw.sharing.thirtyDays")}</option><option value="">{t("aiw.sharing.noExpiration")}</option></select><button type="button" className="btn btn-primary" disabled={!sessionId} onClick={async () => { if (!client) return; try { const created = await client.send<ShareRecord>("/v1/shares", "POST", { sessionId, expiresInHours: expiresInHours ? Number(expiresInHours) : undefined }); if (!created.url) throw new Error(t("aiw.sharing.linkUnavailable")); setCreatedUrl(created.url); await navigator.clipboard.writeText(created.url); await load(); } catch (reason) { setError(reason instanceof Error ? reason.message : String(reason)); } }}><IconPlus /> {t("aiw.sharing.createAction")}</button></div>{createdUrl ? <div className="aiw-share-created"><IconCheck /><div><strong>{t("aiw.sharing.createdReady")}</strong><code>{createdUrl}</code></div><button className="btn btn-sm" type="button" onClick={() => void navigator.clipboard.writeText(createdUrl)}>{t("aiw.chat.copy")}</button></div> : null}</section>
-+        {error && <Notice tone="err">{error}</Notice>}
-+        {shares.length === 0 ? <EmptyState icon={<IconLink />} title={t("aiw.sharing.empty")} /> : <section className="panel aiw-table-wrap"><table className="tbl"><thead><tr><th>{t("aiw.sharing.link")}</th><th>{t("aiw.sharing.created")}</th><th>{t("aiw.sharing.expiration")}</th><th><span className="sr-only">{t("aiw.sharing.actions")}</span></th></tr></thead><tbody>{shares.map(share => <tr key={share.id}><td>{share.url ? <a href={share.url} target="_blank" rel="noreferrer"><code>{share.url}</code></a> : <span className="muted">{t("aiw.sharing.hiddenLink")}</span>}</td><td>{new Date(share.createdAt).toLocaleString()}</td><td>{share.expiresAt ? new Date(share.expiresAt).toLocaleString() : t("aiw.sharing.noExpiration")}</td><td><button type="button" className="btn btn-danger btn-sm" aria-label={t("aiw.sharing.revoke")} onClick={async () => { if (!client || !confirm(t("aiw.sharing.revokeConfirm"))) return; await client.send(`/v1/shares/${share.id}`, "DELETE"); await load(); }}><IconTrash /></button></td></tr>)}</tbody></table></section>}
-       </div>
+-      </div>
 -
 -      {status && <p className="muted" style={{ marginTop: 12 }}>{status}</p>}
 -      {error && !confirmOpen && <p style={{ marginTop: 12, color: "var(--red)" }}>{error}</p>}
@@ -1308,6 +1276,16 @@ index 0fc3e9e9b..b45112477 100644
 -        </>
 -      )}
 -    </>
-+    </PageFrame>
-   );
- }
+-  );
+-}
++.aiw-public-share { width: min(920px, calc(100% - 32px)); margin: 5vh auto; display: grid; gap: var(--space-4); }
++.aiw-public-share__head { display: flex; align-items: center; gap: var(--space-3); }
++.aiw-public-share__head > svg { width: 32px; height: 32px; color: var(--primary); }
++.aiw-public-share__head h1 { margin: 2px 0 0; font-size: clamp(1.5rem, 4vw, 2.4rem); }
++.aiw-public-share__meta { display: flex; align-items: center; gap: var(--space-3); color: var(--muted); }
++.aiw-public-share__transcript { display: grid; gap: var(--space-3); padding: var(--space-4); }
++.aiw-public-share__transcript .aiw-message { max-width: 88%; }
++.aiw-public-share__transcript time { color: var(--muted); font-size: var(--text-caption); }
++.aiw-share-created { display: flex; align-items: center; gap: var(--space-3); margin: 0 var(--space-4) var(--space-4); padding: var(--space-3); border: 1px solid color-mix(in srgb, var(--green) 45%, var(--border)); border-radius: var(--radius-sm); }
++.aiw-share-created > div { min-width: 0; flex: 1; display: grid; gap: 4px; }
++.aiw-share-created code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

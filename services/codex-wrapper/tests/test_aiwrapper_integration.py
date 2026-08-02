@@ -1,10 +1,14 @@
 import asyncio
+import importlib
 from pathlib import Path
+
+from fastapi.testclient import TestClient
 
 from app.aiwrapper.governance import governance
 from app.aiwrapper.nine_router import nine_router
 from app.aiwrapper.store import AIWrapperStore
 from app.config import settings
+from app.main import app
 
 
 def test_aiwrapper_store_users_sessions_organizations_and_shares(tmp_path):
@@ -26,6 +30,69 @@ def test_aiwrapper_store_users_sessions_organizations_and_shares(tmp_path):
     assert organization["name"] == "Lab"
     share = store.create_share(created["id"], session["id"])
     assert share["sessionId"] == session["id"]
+    share_token = share["url"].split("/#shared/", 1)[1]
+    assert store.public_share(share_token)["messages"][-1]["content"] == "world"
+    assert share_token not in database.read_bytes().decode("utf-8", errors="ignore")
+    assert store.revoke_share(created["id"], share["id"]) is True
+    assert store.public_share(share_token) is None
+
+    auth = store.create_auth_session(created["id"], "http://127.0.0.1:8765", 300, 3600)
+    assert store.authenticate(auth["accessToken"], "http://127.0.0.1:8765")["id"] == created["id"]
+    assert store.authenticate(auth["accessToken"], "https://attacker.invalid") is None
+    refreshed = store.refresh_auth_session(auth["refreshToken"], "http://127.0.0.1:8765", 300, 3600)
+    assert refreshed and refreshed["accessToken"] != auth["accessToken"]
+    assert store.authenticate(auth["accessToken"], "http://127.0.0.1:8765") is None
+    assert store.list_audit_events()[0]["action"] == "auth.session.refreshed"
+
+
+def test_browser_session_and_public_share_end_to_end(tmp_path, monkeypatch):
+    store_module = importlib.import_module("app.aiwrapper.store")
+    auth_module = importlib.import_module("app.aiwrapper.auth")
+    router_module = importlib.import_module("app.aiwrapper.router")
+    local_store = AIWrapperStore(str(tmp_path / "flow.db"))
+    created = local_store.create_user("Browser User", "user", "browser-user", str(tmp_path / ".codex-browser"), 100, 500)
+    conversation = local_store.session(created["id"], None, "gpt-5", "hello")
+    local_store.append_assistant(conversation["id"], "world")
+    monkeypatch.setattr(store_module, "store", local_store)
+    monkeypatch.setattr(auth_module, "store", local_store)
+    monkeypatch.setattr(router_module, "store", local_store)
+    monkeypatch.setattr(settings, "aiwrapper_cors_origins", "http://127.0.0.1:8765")
+
+    origin = "http://127.0.0.1:8765"
+    client = TestClient(app)
+    login = client.post("/auth/sessions", headers={"Authorization": f"Bearer {created['apiKey']['secret']}", "Origin": origin})
+    assert login.status_code == 201
+    access = login.json()["accessToken"]
+    assert access.startswith("aiw_session_")
+    assert "HttpOnly" in login.headers["set-cookie"]
+    assert "SameSite=strict" in login.headers["set-cookie"]
+
+    me = client.get("/v1/me", headers={"Authorization": f"Bearer {access}", "Origin": origin})
+    assert me.status_code == 200
+    assert me.json()["userId"] == created["id"]
+
+    refresh = client.post("/auth/sessions/refresh", headers={"Origin": origin, "X-AIWrapper-Session": "refresh"})
+    assert refresh.status_code == 200
+    refreshed_access = refresh.json()["accessToken"]
+    assert refreshed_access != access
+
+    share = client.post(
+        "/v1/shares",
+        headers={"Authorization": f"Bearer {refreshed_access}", "Origin": origin},
+        json={"sessionId": conversation["id"], "expiresInHours": 24},
+    )
+    assert share.status_code == 201
+    share_token = share.json()["url"].split("/#shared/", 1)[1]
+    public = client.get(f"/public/shares/{share_token}")
+    assert public.status_code == 200
+    assert [row["content"] for row in public.json()["messages"]] == ["hello", "world"]
+
+    revoked = client.delete(
+        f"/v1/shares/{share.json()['id']}",
+        headers={"Authorization": f"Bearer {refreshed_access}", "Origin": origin},
+    )
+    assert revoked.status_code == 204
+    assert client.get(f"/public/shares/{share_token}").status_code == 404
 
 
 def test_rotating_owner_key_updates_the_local_recovery_file(tmp_path):

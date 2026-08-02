@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\en.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\en.ts"
-index 26aa5f653..487873819 100644
+index 26aa5f653..ebdada388 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\en.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\en.ts"	
-@@ -10,6 +10,137 @@ export const en = {
+@@ -10,6 +10,159 @@ export const en = {
    "nav.subagents": "Subagents",
    "nav.logs": "Logs & Debug",
    "nav.usage": "Usage",
@@ -27,6 +27,10 @@ index 26aa5f653..487873819 100644
 +  "aiw.overview.p95Latency": "P95 latency",
 +  "aiw.overview.errors": "Errors",
 +  "aiw.overview.blocked": "Blocked",
++  "aiw.overview.audit": "Recent security and governance events",
++  "aiw.overview.event": "Event",
++  "aiw.overview.target": "Target",
++  "aiw.overview.when": "When",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -36,6 +40,7 @@ index 26aa5f653..487873819 100644
 +  "aiw.connect.description": "Use your individual key. It identifies the user whose quota and usage ledger will be charged.",
 +  "aiw.connect.key": "Individual API key",
 +  "aiw.connect.connecting": "Connecting…",
++  "aiw.connect.restoring": "Restoring your secure session…",
 +  "aiw.connect.action": "Connect",
 +  "aiw.disconnect": "Disconnect",
 +  "aiw.chat.title": "Chat",
@@ -109,6 +114,23 @@ index 26aa5f653..487873819 100644
 +  "aiw.sharing.empty": "No shared conversations",
 +  "aiw.sharing.link": "Link",
 +  "aiw.sharing.created": "Created",
++  "aiw.sharing.session": "Conversation",
++  "aiw.sharing.expiration": "Expiration",
++  "aiw.sharing.oneDay": "1 day",
++  "aiw.sharing.sevenDays": "7 days",
++  "aiw.sharing.thirtyDays": "30 days",
++  "aiw.sharing.noExpiration": "No expiration",
++  "aiw.sharing.createdReady": "Link created and copied. It is shown only now.",
++  "aiw.sharing.hiddenLink": "Secret link hidden; create another if it was lost.",
++  "aiw.sharing.linkUnavailable": "The server did not return the one-time secret link.",
++  "aiw.sharing.actions": "Actions",
++  "aiw.sharing.revoke": "Revoke link",
++  "aiw.sharing.revokeConfirm": "Revoke this shared link now?",
++  "aiw.shared.title": "Shared conversation",
++  "aiw.shared.loading": "Loading shared conversation…",
++  "aiw.shared.unavailable": "This shared conversation expired, was revoked, or does not exist.",
++  "aiw.shared.readOnly": "Read-only shared conversation",
++  "aiw.shared.empty": "This conversation has no messages.",
 +  "aiw.billing.title": "Billing and quota",
 +  "aiw.billing.subtitle": "Per-user accounting derived from the integrated usage ledger.",
 +  "aiw.billing.units": "Weighted units",

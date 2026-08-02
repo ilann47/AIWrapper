@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-02T04:19:01.403Z",
+  "generatedAt": "2026-08-02T04:45:58.725Z",
   "generatorUpstream": {
     "project": "ndycode/codex-multi-auth",
     "commit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
@@ -368,16 +368,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "ded6ebfd26dbcbb90c3fcccba21bd081a1f7a392e73426ef35043f18e0c2e1cc",
-          "sha256": "a7de5c1950d0cc18f68191073356c9da962c1e352040b634f10a0f407d8efb8a",
+          "sha256": "3240086056d65476e97f9ab44a982ee9bc96319528bfa0490cb84a4a2bdee675",
           "diff": "provenance/diffs/opencodex-gui--src_app-routing.ts.diff",
-          "diffSha256": "40814a2a6ebef2b682bf5ae14ef64c6cc026323630afc13013d1ff45cb071ec0",
+          "diffSha256": "4569ea5ec81a728be489e0db2a6824ecd9170d3f804e58f1621ec24868245b95",
           "lines": {
             "source": 93,
-            "destination": 105,
+            "destination": 114,
             "preserved": 92,
             "changed": 1,
             "removed": 0,
-            "added": 12,
+            "added": 21,
             "reusePercent": 98.92
           }
         },
@@ -387,17 +387,17 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "68d2ddf4ec49dae13487a4593c6ba25b906ff41f160fba96ff3e84d03ec63707",
-          "sha256": "89107d067028d60b986e7678495c89f0d32c8e267b1fb936d2333f78ce212625",
+          "sha256": "0d76448904c93cae7209d0e7f532b856293f4472e31c82af8322184e8cec1db3",
           "diff": "provenance/diffs/opencodex-gui--src_App.tsx.diff",
-          "diffSha256": "afd6318aeeb932f070e545483d6859faad05cd4935839f030854b3361b06cb82",
+          "diffSha256": "b4904579637b7f13f2ce3fe318b3b08d792be4d94966254bfc1b878bd8d9cdf4",
           "lines": {
             "source": 318,
-            "destination": 374,
-            "preserved": 310,
-            "changed": 8,
+            "destination": 381,
+            "preserved": 309,
+            "changed": 9,
             "removed": 0,
-            "added": 56,
-            "reusePercent": 97.48
+            "added": 63,
+            "reusePercent": 97.17
           }
         },
         {
@@ -1698,16 +1698,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "3d0d5b807df91e18824f186caa190f69d146aed7cbb5a42ba12128e5ec74e480",
-          "sha256": "10874212fb96b52478c3b0811dbd7e336da2eacad76a9c9ab5b8b27b4c5789ef",
+          "sha256": "f9074d59b69ebb68836470aa44d2737b4b6f956b875a4a659f64a62843421b8d",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_de.ts.diff",
-          "diffSha256": "f21671118b7d33e9042005818665f27215a277be538bb9b0067f4d96e692db6d",
+          "diffSha256": "5ae595c8c10593331f385e04b0d9d9ee33e5d953a658791415376f5faf62796e",
           "lines": {
             "source": 1487,
-            "destination": 1618,
+            "destination": 1640,
             "preserved": 1487,
             "changed": 0,
             "removed": 0,
-            "added": 131,
+            "added": 153,
             "reusePercent": 100
           }
         },
@@ -1717,16 +1717,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "09084a0703ed3a9adc0ac00dea9aa372a1a2a4a0f7b800affead04fea5a1afa6",
-          "sha256": "120b8cd77675cc72515cfd2733ed96129c711df6a65af37a3eeb9f5260b2a406",
+          "sha256": "5544459bc515a39bfd744503fcbb15656587cddd3e78b2d0d01ca23ccf752b59",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_en.ts.diff",
-          "diffSha256": "84735dde886ee4bbbcfd76fa0f08bbb0762f548b8abf8373af8b70e32bc25ae1",
+          "diffSha256": "e486d7baa7ffa0154beb55622d933fe51e8ae8d8c126bb85e56c56edb23f781d",
           "lines": {
             "source": 1514,
-            "destination": 1645,
+            "destination": 1667,
             "preserved": 1514,
             "changed": 0,
             "removed": 0,
-            "added": 131,
+            "added": 153,
             "reusePercent": 100
           }
         },
@@ -1755,16 +1755,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "d7449a464d2dc077af41b39d0c81e4d55f0b5589f58af181cbef3b34be0a54f0",
-          "sha256": "b47a52b05d667c4aa96fc254f35ed29a243cd8c7d0f35e74fe65b4bfc0ac229a",
+          "sha256": "b2b494542150791d6e049e2cb91c83d5bc7d52d7a9df1d3001a92e56c44f8c8f",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_ja.ts.diff",
-          "diffSha256": "4c578162d559fc07469c125b4876f66cd8445f0a7500949e51cccaf3f6b049bf",
+          "diffSha256": "081f2cd8cce04b9478026bbc3b86079064d0eb000d3a8493b892d93988eaabc8",
           "lines": {
             "source": 1508,
-            "destination": 1639,
+            "destination": 1661,
             "preserved": 1508,
             "changed": 0,
             "removed": 0,
-            "added": 131,
+            "added": 153,
             "reusePercent": 100
           }
         },
@@ -1774,16 +1774,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "5b2b64b2cd03ffbc16d15a6bad3c4163f7007927e3f602ee20e12fb96234e6e0",
-          "sha256": "c9060d5eb1080581b933bb6d058ecb4618f79be53fc26cb10cc66dc2083ab1f1",
+          "sha256": "7c84fb0a10ad4fc58310bce8910e852517e2a908b9e6897f0dab920ec4c9e3ab",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_ko.ts.diff",
-          "diffSha256": "f27f52523edb65a0e7cc40994e4edbf61d6ce06a51ae1bd3d8c74094641b7913",
+          "diffSha256": "2958c82b7293f23ac74cc8af3ea30ff6fbb384982ba83c2d689adc6fe607a5c5",
           "lines": {
             "source": 1508,
-            "destination": 1639,
+            "destination": 1661,
             "preserved": 1508,
             "changed": 0,
             "removed": 0,
-            "added": 131,
+            "added": 153,
             "reusePercent": 100
           }
         },
@@ -1812,16 +1812,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "95c74a1b27980cfab1931395f5ffe800f3c0ddf9f101cb5badb360343de26e6a",
-          "sha256": "d744108853474fd9e16426da8e511ba1b5a762eb3ef256c5d97a647c5f87904b",
+          "sha256": "beb023ea4718f1a1df9803d275027c6f80bd5d8c05b5f4b587e0b13c29de15bb",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_ru.ts.diff",
-          "diffSha256": "3214a8ad1ecc8bd54314ca220b447b4f79dceb04f7a698fb63fa1d274e9fa255",
+          "diffSha256": "e7e6d9daa2b1459ab16d41c39df111f7f1ac7816337355e908fdd175ec574498",
           "lines": {
             "source": 1510,
-            "destination": 1641,
+            "destination": 1663,
             "preserved": 1510,
             "changed": 0,
             "removed": 0,
-            "added": 131,
+            "added": 153,
             "reusePercent": 100
           }
         },
@@ -1850,16 +1850,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "b6b8fdb362c7a8a7d29ca6cc7c34772aec34b7ddfe66ba6521087990d644893f",
-          "sha256": "4722043f305df30ea0a7f250a48ee413155b362addd60e0270ca834c35159a2f",
+          "sha256": "4ab5ec4e26ff913b588be2990c1da971624d425142695ba3ae5306efaf3d5275",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_zh.ts.diff",
-          "diffSha256": "5a547c3e4137d96a9dc60bb2fe83b9cb283ef78b49ccf250bb6c9118e80d0373",
+          "diffSha256": "00af61437ec534c2229a43e64372105fdb79ddc42a0d816407c5a0a2add0c2f3",
           "lines": {
             "source": 1508,
-            "destination": 1639,
+            "destination": 1661,
             "preserved": 1508,
             "changed": 0,
             "removed": 0,
-            "added": 131,
+            "added": 153,
             "reusePercent": 100
           }
         },
@@ -4757,17 +4757,17 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "3a7fbbd6e0d012f1d26fb87c2cbdccd063c266d76e09ac79257fa6b0b4eabeb9",
-          "sha256": "3a7fbbd6e0d012f1d26fb87c2cbdccd063c266d76e09ac79257fa6b0b4eabeb9",
+          "sha256": "0531c25dee7fb6407b8779fda4218934ab4c360af0005eb4a1f19df256e66d77",
           "diff": "provenance/diffs/opencodex-gui--tests_providers-hash-history.test.tsx.diff",
-          "diffSha256": "52c062977333ccbf2ab2474b0b7f507fe8174cce3a69baa43aea0236269baa92",
+          "diffSha256": "af62cc587b07d5223f6ab3145871bd042c760618cea9b7b9abb391416b1a7ad3",
           "lines": {
             "source": 218,
-            "destination": 218,
-            "preserved": 218,
-            "changed": 0,
+            "destination": 225,
+            "preserved": 217,
+            "changed": 1,
             "removed": 0,
-            "added": 0,
-            "reusePercent": 100
+            "added": 7,
+            "reusePercent": 99.54
           }
         },
         {
@@ -5198,17 +5198,138 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT / project adapter code",
           "sourceSha256": "eef0df875931fac192496053a84247721ab83fb7d65f09e1e0f3d071ef9791ad",
-          "sha256": "051e582e4846e7c7e5ea67b1a72593e8521efe0216950983431fbfeec2fbc3d3",
+          "sha256": "e01b17f1a4efc93ce114bf228002fe52cb895ffaa78c02f77b7352058686e601",
           "diff": "provenance/diffs/opencodex-aiwrapper-operations-overview--file.diff",
-          "diffSha256": "229a023681b2698414d67934be70e081f5236aa44749c1fdd53e5d638e554a27",
+          "diffSha256": "5a4b4f219583118f782db45d5d9f3df21f1746d6719a044fb787727d6fe37267",
           "lines": {
             "source": 127,
-            "destination": 68,
+            "destination": 73,
             "preserved": 10,
-            "changed": 58,
-            "removed": 59,
+            "changed": 63,
+            "removed": 54,
             "added": 0,
             "reusePercent": 7.87
+          }
+        }
+      ]
+    },
+    {
+      "id": "opencodex-origin-bound-browser-session-server",
+      "functionality": "Origin-bound short-lived browser sessions, refresh rotation, bounded credential lifetime and logout revocation",
+      "project": "lidge-jun/OpenCodex",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "OpenCodex's management session is an in-memory Bun object injected into same-origin HTML. AIWrapper is a separate FastAPI service on another port and needs sessions associated with persisted human users, so direct import is impossible. The adapter preserves origin binding, short access lifetime, random secrets, rotation, limits and revocation while storing only hashes in SQLite.",
+      "parityAudit": {
+        "retained": [
+          "Cryptographically random short-lived access session",
+          "Origin binding",
+          "Bounded lifetime",
+          "Session revocation",
+          "No browser storage of the long-lived credential"
+        ],
+        "lost": [
+          "Same-origin HTML meta-tag injection"
+        ],
+        "decision": "Use an HttpOnly origin-bound refresh cookie at the cross-process boundary and keep the access token in frontend memory, matching the upstream security invariants without pretending the servers are same-origin."
+      },
+      "files": [
+        {
+          "source": "upstream/opencodex/src/server/management-auth.ts",
+          "destination": "services/codex-wrapper/app/aiwrapper/auth.py",
+          "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+          "license": "MIT / project adapter code",
+          "sourceSha256": "775f69d8302b74083194235e1d27a8ac004bf9338cb7d0cc8e6c1d6e6dbc00ba",
+          "sha256": "af6cfe552c3457b4d3df329efeeae8ce7b3e6d05e7301afca30fae23314a07e4",
+          "diff": "provenance/diffs/opencodex-origin-bound-browser-session-server--file.diff",
+          "diffSha256": "f1af2335e6e7d313f24931d59880823e017fbf0ca207da18bb891e0d7a84cbd0",
+          "lines": {
+            "source": 217,
+            "destination": 109,
+            "preserved": 17,
+            "changed": 92,
+            "removed": 108,
+            "added": 0,
+            "reusePercent": 7.83
+          }
+        }
+      ]
+    },
+    {
+      "id": "opencodex-memory-only-session-client",
+      "functionality": "Memory-only access credential, silent refresh after reload and proactive renewal before expiry",
+      "project": "lidge-jun/OpenCodex",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "OpenCodex renews by refetching same-origin HTML meta tags. AIWrapper's user API is cross-port and cannot inject those tags into OpenCodex's document, so the integration must call the refresh-cookie endpoint instead.",
+      "parityAudit": {
+        "retained": [
+          "Credential remains memory-only",
+          "Silent session restoration",
+          "Automatic renewal",
+          "No localStorage or sessionStorage secret",
+          "Logout clears live state"
+        ],
+        "lost": [
+          "Meta-tag bootstrap, replaced by an HttpOnly refresh exchange"
+        ],
+        "decision": "Adapt only the bootstrap transport; preserve the upstream memory-only client security model."
+      },
+      "files": [
+        {
+          "source": "upstream/opencodex/gui/src/api.ts",
+          "destination": "extensions/aiwrapper-admin/src/auth.tsx",
+          "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+          "license": "MIT / project adapter code",
+          "sourceSha256": "842638eabe899201df1e976b6ea9f7a633cd95fac861d47abbb747424e3d8398",
+          "sha256": "3818f8b9ba834bc2904f08b6cd5ab8235766148137f1d34e7bec7c20934c952f",
+          "diff": "provenance/diffs/opencodex-memory-only-session-client--file.diff",
+          "diffSha256": "1988a754087a838815ad5a7e29dfeb4b2719cbb85a7ee68843fd83dcfddfcb2a",
+          "lines": {
+            "source": 214,
+            "destination": 68,
+            "preserved": 15,
+            "changed": 53,
+            "removed": 146,
+            "added": 0,
+            "reusePercent": 7.01
+          }
+        }
+      ]
+    },
+    {
+      "id": "aiwrapper-revocable-public-sharing",
+      "functionality": "One-time secret share creation, hashed-token persistence, expiry, public read-only transcript and owner revocation",
+      "project": "OpenCodex and 9router reviewed; no equivalent conversation-share lifecycle exists",
+      "classification": "IMPLEMENTAÇÃO PRÓPRIA",
+      "referenceOnly": true,
+      "incompatibility": "OpenCodex Storage manages local artifacts and 9router chat has no ACL-backed public conversation entity, expiring secret URL, revocation endpoint or unauthenticated transcript view. Adapting either cannot create this missing domain lifecycle.",
+      "parityAudit": {
+        "retained": [
+          "OpenCodex page, panel, empty, error and theme conventions",
+          "Existing AIWrapper chat Markdown transcript presentation"
+        ],
+        "lost": [],
+        "decision": "Implement the explicitly required sharing domain as an additive extension while leaving the complete upstream Storage and chat surfaces available."
+      },
+      "files": [
+        {
+          "source": "upstream/opencodex/gui/src/pages/Storage.tsx",
+          "destination": "extensions/aiwrapper-sharing/src/SharedConversationPage.tsx",
+          "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+          "license": "MIT / project code",
+          "sourceSha256": "8f1bad3955b063674ce37c8b3fb32c60e28ac2d278aa76d0f6f4a76036a26234",
+          "sha256": "7b0f96df4e1d7fb084c4f5b06eedaf95082717b496c140556e05682431f8b751",
+          "diff": "provenance/diffs/aiwrapper-revocable-public-sharing--file.diff",
+          "diffSha256": "6fd3b284f80acccb0cb96e08f0abb0175985c1f1123ff5bcf261f082830b1a5c",
+          "lines": {
+            "source": 1276,
+            "destination": 65,
+            "preserved": 15,
+            "changed": 50,
+            "removed": 1211,
+            "added": 0,
+            "reusePercent": 1.18
           }
         }
       ]
@@ -5276,16 +5397,16 @@
           "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
           "license": "MIT / project adapter code",
           "sourceSha256": "e40cdd42970dffd2148095756800d793475ee3daae61bc70fec39e7e9a3145af",
-          "sha256": "435fad0c105193da81b5dd2ec3a22ed5c515f27c90b5a2f0d12a3c3bbdac8460",
+          "sha256": "38186438583ad96ac1b39ec64dfef4bb0d80c5af1d0b8332f9efcae5e07c7ef6",
           "diff": "provenance/diffs/codex-wrapper-production-admission--file.diff",
-          "diffSha256": "0f959eff386a27e36e033fd323ca28c6515918efa24175f9d87712352adcb429",
+          "diffSha256": "8953b10f16db2192ccd2df43df40b5de8c8249a835b46d1310f6591c0b46b061",
           "lines": {
             "source": 269,
-            "destination": 505,
+            "destination": 509,
             "preserved": 202,
             "changed": 67,
             "removed": 0,
-            "added": 236,
+            "added": 240,
             "reusePercent": 75.09
           }
         }
@@ -5325,16 +5446,16 @@
           "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
           "license": "MIT",
           "sourceSha256": "ea7965f6bf02016a3a03887a774fd10eeacce42b5426b61c1ef989cee373604d",
-          "sha256": "ae499fd3ac0bfa6f6399deb22726c82b45930e1deafb02ed059e70f213546775",
+          "sha256": "cf6c9e8477d65737e86f59306c299f7920f948938a8fc8fc4abc079e759b228a",
           "diff": "provenance/diffs/codex-wrapper-service--app_config.py.diff",
-          "diffSha256": "e1eb652e685b37fbcc589171fd18bb2c6b29b238a70e56608853541584473e3c",
+          "diffSha256": "08b87be9d8be3e4fe2bf4c70569d645d46c2230e4b922c9764a58afd8af168ee",
           "lines": {
             "source": 52,
-            "destination": 77,
+            "destination": 81,
             "preserved": 52,
             "changed": 0,
             "removed": 0,
-            "added": 25,
+            "added": 29,
             "reusePercent": 100
           }
         },
@@ -5344,9 +5465,9 @@
           "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
           "license": "MIT",
           "sourceSha256": "f6de7b670c88217a825014a0671d3eacfcfd3bc45ffe9c91d2b62e6b7abe3ecc",
-          "sha256": "b33c1d8df2ab07034220b536b70430b0e61d6c17cddf956fa5227023e1efd4d7",
+          "sha256": "140287a29d25b7762bfe18a60a2885b843957a1e3afebd6d181070f2002dd48c",
           "diff": "provenance/diffs/codex-wrapper-service--app_deps.py.diff",
-          "diffSha256": "f6b6bd800818ed4d10c9b42acef8df448627b6bc6739c8b7ae537a84362310f8",
+          "diffSha256": "ca7ed62a9f7e83d307fe401d97ccbe2dcdfe06ff5b0df4c0464bf2da5cef510c",
           "lines": {
             "source": 38,
             "destination": 49,
@@ -5382,16 +5503,16 @@
           "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
           "license": "MIT",
           "sourceSha256": "e40cdd42970dffd2148095756800d793475ee3daae61bc70fec39e7e9a3145af",
-          "sha256": "435fad0c105193da81b5dd2ec3a22ed5c515f27c90b5a2f0d12a3c3bbdac8460",
+          "sha256": "38186438583ad96ac1b39ec64dfef4bb0d80c5af1d0b8332f9efcae5e07c7ef6",
           "diff": "provenance/diffs/codex-wrapper-service--app_main.py.diff",
-          "diffSha256": "0f959eff386a27e36e033fd323ca28c6515918efa24175f9d87712352adcb429",
+          "diffSha256": "8953b10f16db2192ccd2df43df40b5de8c8249a835b46d1310f6591c0b46b061",
           "lines": {
             "source": 269,
-            "destination": 505,
+            "destination": 509,
             "preserved": 202,
             "changed": 67,
             "removed": 0,
-            "added": 236,
+            "added": 240,
             "reusePercent": 75.09
           }
         },
@@ -24286,15 +24407,15 @@
           "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
           "license": "MIT / project adapter configuration",
           "sourceSha256": "ffcb7ba6b9a681dbbdb7e9c79f64ca2320188f7efede616735ceb4ec120113c3",
-          "sha256": "7dd766481617d774d2c09dc129a670d27697116e0bd8631a87b8306ade0f368a",
+          "sha256": "2acf8caf2640cc0895c96be58ad7c52c711c1d089e27ccddf53fd439b5b57fac",
           "diff": "provenance/diffs/nine-router-oauth-security-boundary--file.diff",
-          "diffSha256": "0a69016fd257c66e43317cf1bdda7e70d89cf5e3d1cfda4550f85a8e01637caa",
+          "diffSha256": "d60827a496d2272c9bc6499aac502e472b895e1231971d7168db1a5e9be12fa2",
           "lines": {
             "source": 86,
-            "destination": 47,
+            "destination": 52,
             "preserved": 2,
-            "changed": 45,
-            "removed": 39,
+            "changed": 50,
+            "removed": 34,
             "added": 0,
             "reusePercent": 2.33
           }
@@ -24684,15 +24805,15 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT / project code",
           "sourceSha256": "842638eabe899201df1e976b6ea9f7a633cd95fac861d47abbb747424e3d8398",
-          "sha256": "051e582e4846e7c7e5ea67b1a72593e8521efe0216950983431fbfeec2fbc3d3",
+          "sha256": "e01b17f1a4efc93ce114bf228002fe52cb895ffaa78c02f77b7352058686e601",
           "diff": "provenance/diffs/aiwrapper-admin-extension--src_AdminOverviewPanel.tsx.diff",
-          "diffSha256": "147b17d8b5a8fcbe280133e03e28138dd323d91f1a6f01d754097f358f0c0f59",
+          "diffSha256": "d285e6334967c891489e026b3247ad22a39aa5bdf45c3339f14aee12baa880cd",
           "lines": {
             "source": 214,
-            "destination": 68,
+            "destination": 73,
             "preserved": 8,
-            "changed": 60,
-            "removed": 146,
+            "changed": 65,
+            "removed": 141,
             "added": 0,
             "reusePercent": 3.74
           }
@@ -24703,17 +24824,17 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT / project code",
           "sourceSha256": "842638eabe899201df1e976b6ea9f7a633cd95fac861d47abbb747424e3d8398",
-          "sha256": "2e1a333cc12746d6407a78bac09248f159fb1f48dbd3b6c23bf1be38172afc47",
+          "sha256": "3818f8b9ba834bc2904f08b6cd5ab8235766148137f1d34e7bec7c20934c952f",
           "diff": "provenance/diffs/aiwrapper-admin-extension--src_auth.tsx.diff",
-          "diffSha256": "c8208333356d7bc5ab7b33f0326bd774367b29a1ee82e8e2bdd691a13b8682bb",
+          "diffSha256": "1988a754087a838815ad5a7e29dfeb4b2719cbb85a7ee68843fd83dcfddfcb2a",
           "lines": {
             "source": 214,
-            "destination": 39,
-            "preserved": 11,
-            "changed": 28,
-            "removed": 175,
+            "destination": 68,
+            "preserved": 15,
+            "changed": 53,
+            "removed": 146,
             "added": 0,
-            "reusePercent": 5.14
+            "reusePercent": 7.01
           }
         },
         {
@@ -24722,17 +24843,17 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT / project code",
           "sourceSha256": "842638eabe899201df1e976b6ea9f7a633cd95fac861d47abbb747424e3d8398",
-          "sha256": "251fdb3fd8657cc24b8884c3f6a77d47eef89839933ed5767ea11d389da71d43",
+          "sha256": "9f927d0c9495d3e8e4b5a849d18d1a78f5bfe98ba2620da189995e182e4f1fff",
           "diff": "provenance/diffs/aiwrapper-admin-extension--src_client.ts.diff",
-          "diffSha256": "a7d6942c9fb5d4b3a8af011a9af3d4926134fb3ff186e5f9424a7b7ecd152ecf",
+          "diffSha256": "272687d5705c1e0f8be8c6e9c6cbd23d69b5c66b93fd8134f69e9880d59d5dbb",
           "lines": {
             "source": 214,
-            "destination": 113,
-            "preserved": 21,
-            "changed": 92,
-            "removed": 101,
+            "destination": 157,
+            "preserved": 29,
+            "changed": 128,
+            "removed": 57,
             "added": 0,
-            "reusePercent": 9.81
+            "reusePercent": 13.55
           }
         },
         {
@@ -24741,15 +24862,15 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT / project code",
           "sourceSha256": "842638eabe899201df1e976b6ea9f7a633cd95fac861d47abbb747424e3d8398",
-          "sha256": "c14d72b0e700bbd0cc143c7e13e7aec2f6d7cfb5b2fb45d921508e6e79524fae",
+          "sha256": "e9cf06ac4e0a7be3077a6e391cb47fa6592fce53e1339b9a82ad3e54c3388fe1",
           "diff": "provenance/diffs/aiwrapper-admin-extension--src_Gate.tsx.diff",
-          "diffSha256": "2a34e42767e6cdf6f1e374fe22f000fa470a445c8aa44e37ccba6826763a48c0",
+          "diffSha256": "9ccb67918a017c7b608ab07ff4541794341c9114b921f6dab475df4365199ef7",
           "lines": {
             "source": 214,
-            "destination": 53,
+            "destination": 54,
             "preserved": 4,
-            "changed": 49,
-            "removed": 161,
+            "changed": 50,
+            "removed": 160,
             "added": 0,
             "reusePercent": 1.87
           }
@@ -24779,9 +24900,9 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT / project code",
           "sourceSha256": "842638eabe899201df1e976b6ea9f7a633cd95fac861d47abbb747424e3d8398",
-          "sha256": "06fe25620020fc2e03ef760204de9ef83f1531fd97692363c3668eadd9799c7d",
+          "sha256": "089693556c32397edce853bf9299863054495d8129e9e0a5169e8865f26300fd",
           "diff": "provenance/diffs/aiwrapper-admin-extension--src_PageFrame.tsx.diff",
-          "diffSha256": "c69ffe9d14075167d8789bee150f41f479fda60429faced32917e8f980e64341",
+          "diffSha256": "342d87233a68fc4e6336fbac092de5492f770ca2969fc6f378105b76c4d15007",
           "lines": {
             "source": 214,
             "destination": 25,
@@ -24798,15 +24919,15 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT / project code",
           "sourceSha256": "842638eabe899201df1e976b6ea9f7a633cd95fac861d47abbb747424e3d8398",
-          "sha256": "f4050f500a1671f6f826cd748f3b5dbdf07810ea58b22f2df1f18296696fd066",
+          "sha256": "d2bac4a4ee0ffacd4fc0d338756fa2664421586e7494256d0cb1456bafcd2793",
           "diff": "provenance/diffs/aiwrapper-admin-extension--src_styles.css.diff",
-          "diffSha256": "93ebb5cb30ed55814b93e46de90ad27dfac08b6017d4b302761424e0b80632bf",
+          "diffSha256": "5987dcff3b125e44e2df4d851edaa6cc7d6625c7c1a3ba503ff7595b15e435dc",
           "lines": {
             "source": 214,
-            "destination": 38,
+            "destination": 39,
             "preserved": 3,
-            "changed": 35,
-            "removed": 176,
+            "changed": 36,
+            "removed": 175,
             "added": 0,
             "reusePercent": 1.4
           }
@@ -24940,21 +25061,59 @@
       "files": [
         {
           "source": "upstream/opencodex/gui/src/pages/Storage.tsx",
+          "destination": "extensions/aiwrapper-sharing/src/SharedConversationPage.tsx",
+          "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+          "license": "MIT / project code",
+          "sourceSha256": "8f1bad3955b063674ce37c8b3fb32c60e28ac2d278aa76d0f6f4a76036a26234",
+          "sha256": "7b0f96df4e1d7fb084c4f5b06eedaf95082717b496c140556e05682431f8b751",
+          "diff": "provenance/diffs/aiwrapper-sharing-extension--src_SharedConversationPage.tsx.diff",
+          "diffSha256": "6fd3b284f80acccb0cb96e08f0abb0175985c1f1123ff5bcf261f082830b1a5c",
+          "lines": {
+            "source": 1276,
+            "destination": 65,
+            "preserved": 15,
+            "changed": 50,
+            "removed": 1211,
+            "added": 0,
+            "reusePercent": 1.18
+          }
+        },
+        {
+          "source": "upstream/opencodex/gui/src/pages/Storage.tsx",
           "destination": "extensions/aiwrapper-sharing/src/SharingPage.tsx",
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT / project code",
           "sourceSha256": "8f1bad3955b063674ce37c8b3fb32c60e28ac2d278aa76d0f6f4a76036a26234",
-          "sha256": "a1ab95115f8573372e248f32ad78942445007336b8623f1abd0d954810248045",
+          "sha256": "9e7e30742932102f20026e02d28b246c78b71b443fe76dc8373270eba5ce426a",
           "diff": "provenance/diffs/aiwrapper-sharing-extension--src_SharingPage.tsx.diff",
-          "diffSha256": "160a40402bc4205ea26445dec6c0f9517e6ae6ef6b970ddde573f982e2ef8991",
+          "diffSha256": "d32df4ac3cfda52f5c4c14bb009d3567b72da5b5295fc6ea79235a230c841bc3",
           "lines": {
             "source": 1276,
-            "destination": 36,
+            "destination": 38,
             "preserved": 9,
-            "changed": 27,
-            "removed": 1240,
+            "changed": 29,
+            "removed": 1238,
             "added": 0,
             "reusePercent": 0.71
+          }
+        },
+        {
+          "source": "upstream/opencodex/gui/src/pages/Storage.tsx",
+          "destination": "extensions/aiwrapper-sharing/src/styles.css",
+          "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+          "license": "MIT / project code",
+          "sourceSha256": "8f1bad3955b063674ce37c8b3fb32c60e28ac2d278aa76d0f6f4a76036a26234",
+          "sha256": "da41b723f33d94ddf57133750871b2d1660a65254566934abee6b5c73122fc42",
+          "diff": "provenance/diffs/aiwrapper-sharing-extension--src_styles.css.diff",
+          "diffSha256": "40303e5b6297740922ecfbaf2775176275a3589d9d0c19d6ebfd539bcd79a348",
+          "lines": {
+            "source": 1276,
+            "destination": 12,
+            "preserved": 1,
+            "changed": 11,
+            "removed": 1264,
+            "added": 0,
+            "reusePercent": 0.08
           }
         }
       ]
@@ -25010,6 +25169,25 @@
         "decision": "These domain endpoints are explicitly permitted AIWrapper features; Codex execution, SSE, OAuth and OpenAI compatibility remain in upstream main.py."
       },
       "files": [
+        {
+          "source": "upstream/Codex-Wrapper/app/main.py",
+          "destination": "services/codex-wrapper/app/aiwrapper/auth.py",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT / project code",
+          "sourceSha256": "e40cdd42970dffd2148095756800d793475ee3daae61bc70fec39e7e9a3145af",
+          "sha256": "af6cfe552c3457b4d3df329efeeae8ce7b3e6d05e7301afca30fae23314a07e4",
+          "diff": "provenance/diffs/aiwrapper-fastapi-domain-extension--auth.py.diff",
+          "diffSha256": "b31233ace9d436634d88186b7deabe9f2368b32da5919b3ae694b51cba29e559",
+          "lines": {
+            "source": 269,
+            "destination": 109,
+            "preserved": 23,
+            "changed": 86,
+            "removed": 160,
+            "added": 0,
+            "reusePercent": 8.55
+          }
+        },
         {
           "source": "upstream/Codex-Wrapper/app/main.py",
           "destination": "services/codex-wrapper/app/aiwrapper/governance.py",
@@ -25073,17 +25251,17 @@
           "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
           "license": "MIT / project code",
           "sourceSha256": "e40cdd42970dffd2148095756800d793475ee3daae61bc70fec39e7e9a3145af",
-          "sha256": "05ee4386f8edf894fc75d53bd123cabf5d72e66c24df274ee6f0bffc6c485f33",
+          "sha256": "d3ca2daa78b5b4ec37016d7508511ce6c4d2103c0bcdfc1b78b03cd93080660e",
           "diff": "provenance/diffs/aiwrapper-fastapi-domain-extension--router.py.diff",
-          "diffSha256": "659f58d93e04195496eb256c0d98fb8f7e1ebee90877ef50718b893f960612cb",
+          "diffSha256": "0512080ae73f32a451eb3a3821ed09d78c41af82477c9d4031870f89343a34d9",
           "lines": {
             "source": 269,
-            "destination": 221,
-            "preserved": 34,
-            "changed": 187,
-            "removed": 48,
+            "destination": 252,
+            "preserved": 35,
+            "changed": 217,
+            "removed": 17,
             "added": 0,
-            "reusePercent": 12.64
+            "reusePercent": 13.01
           }
         },
         {
@@ -25092,17 +25270,17 @@
           "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
           "license": "MIT / project code",
           "sourceSha256": "e40cdd42970dffd2148095756800d793475ee3daae61bc70fec39e7e9a3145af",
-          "sha256": "b0ae5fbf62b77e09c4c9a376818c40c19f5a8fa22ffcee90873cc73c21383bc0",
+          "sha256": "49b277c1cfc91d91fb287e88ec0c409cf8a756e93e8332af01f4e7df3376f61d",
           "diff": "provenance/diffs/aiwrapper-fastapi-domain-extension--store.py.diff",
-          "diffSha256": "b3a655a31bf6b536d5598b855b03f35687efd17086555b0ee6e44ca6966131f5",
+          "diffSha256": "6a7984eb99d9982855cffd402ce7778e07696f6dfc147df3e336cb020af50a4d",
           "lines": {
             "source": 269,
-            "destination": 281,
-            "preserved": 33,
-            "changed": 236,
+            "destination": 466,
+            "preserved": 34,
+            "changed": 235,
             "removed": 0,
-            "added": 12,
-            "reusePercent": 12.27
+            "added": 197,
+            "reusePercent": 12.64
           }
         },
         {
@@ -25264,16 +25442,16 @@
           "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
           "license": "MIT / project code",
           "sourceSha256": "e46ad7f7ed22f461f966eb98568c7023849fc802560e25c6965b12979548393e",
-          "sha256": "b28a3f224124031d0eed3eb16cb81327344244dc190b70f15276c1c85499fab3",
+          "sha256": "c01015768553371c6a272ceeb582d64fb616ef3782f164e27591612e83eac5c1",
           "diff": "provenance/diffs/lab-compose--file.diff",
-          "diffSha256": "86c3f977f9b6b300e2601094fe855956e238a5d2ce53527e43329405c84629ab",
+          "diffSha256": "b0a14d60cf0c2c16e1ad08f98ff5ab48cbc6f08f55e3d8fc710d6df7da906c4d",
           "lines": {
             "source": 25,
-            "destination": 64,
+            "destination": 68,
             "preserved": 9,
             "changed": 16,
             "removed": 0,
-            "added": 39,
+            "added": 43,
             "reusePercent": 36
           }
         }

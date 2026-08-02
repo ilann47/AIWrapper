@@ -18,7 +18,7 @@ async def verify_api_key(request: Request, credentials: Optional[HTTPAuthorizati
     if settings.aiwrapper_enabled:
         from .aiwrapper.store import store
         token = credentials.credentials if credentials else ""
-        principal = store.authenticate(token) if token else None
+        principal = store.authenticate(token, request.headers.get("origin")) if token else None
         if not principal and settings.proxy_api_key and token == settings.proxy_api_key:
             principal = next((user for user in store.list_users() if user["role"] == "owner"), None)
         if not principal:

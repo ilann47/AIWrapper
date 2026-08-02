@@ -21,7 +21,8 @@ export type Page =
   | "aiwrapper-organizations"
   | "aiwrapper-sessions"
   | "aiwrapper-sharing"
-  | "aiwrapper-billing";
+  | "aiwrapper-billing"
+  | "aiwrapper-shared";
 
 export const VALID_PAGES = new Set<Page>([
   "dashboard",
@@ -43,12 +44,14 @@ export const VALID_PAGES = new Set<Page>([
   "aiwrapper-sessions",
   "aiwrapper-sharing",
   "aiwrapper-billing",
+  "aiwrapper-shared",
 ]);
 
 export function readPageFromHash(hash?: string): Page {
   const raw = normalizeHashPath(
     hash ?? (typeof window !== "undefined" ? window.location.hash : ""),
   );
+  if (raw.startsWith("shared/") && raw.slice("shared/".length).trim()) return "aiwrapper-shared";
   // Sub-views use a "/" suffix (e.g. #logs/debug); the first segment is the page id.
   const pageId = raw.split("/")[0] as Page;
   // Legacy: Debug used to be a standalone page; it now lives as a tab on Logs.
@@ -65,8 +68,14 @@ export const DASHBOARD_TAB_HASHES = ["dashboard/providers", "dashboard/models"] 
 
 export function hashBelongsToPage(rawHash: string, page: Page): boolean {
   return rawHash === page
+    || (page === "aiwrapper-shared" && rawHash.startsWith("shared/") && rawHash.length > "shared/".length)
     || (page === "logs" && rawHash === "logs/debug")
     || (page === "dashboard" && (DASHBOARD_TAB_HASHES as readonly string[]).includes(rawHash));
+}
+
+export function readSharedTokenFromHash(hash?: string): string {
+  const raw = normalizeHashPath(hash ?? (typeof window !== "undefined" ? window.location.hash : ""));
+  return raw.startsWith("shared/") ? raw.slice("shared/".length) : "";
 }
 
 

@@ -19,7 +19,7 @@ import { useI18n, useT, LOCALES, type Locale, type TKey } from "./i18n/shared";
 import { Select, Switch } from "./ui";
 import { installApiAuthFetch } from "./api";
 import { readJsonIfOk } from "./fetch-json";
-import { type Page } from "./app-routing";
+import { readSharedTokenFromHash, type Page } from "./app-routing";
 import { useAppRouteState } from "./use-app-route-state";
 import { requestProxyStop } from "./stop-proxy";
 import { AIWrapperProvider, useAIWrapper } from "../../../extensions/aiwrapper-admin/src/auth";
@@ -29,9 +29,11 @@ import UsersPage from "../../../extensions/aiwrapper-users/src/UsersPage";
 import OrganizationsPage from "../../../extensions/aiwrapper-users/src/OrganizationsPage";
 import SharingPage from "../../../extensions/aiwrapper-sharing/src/SharingPage";
 import BillingPage from "../../../extensions/aiwrapper-billing/src/BillingPage";
+import SharedConversationPage from "../../../extensions/aiwrapper-sharing/src/SharedConversationPage";
 import AdminOverviewPanel from "../../../extensions/aiwrapper-admin/src/AdminOverviewPanel";
 import "../../../extensions/aiwrapper-admin/src/styles.css";
 import "../../../extensions/aiwrapper-chat/src/styles.css";
+import "../../../extensions/aiwrapper-sharing/src/styles.css";
 
 installApiAuthFetch();
 
@@ -57,6 +59,7 @@ const PAGE_TKEY: Record<Page, TKey> = {
   "aiwrapper-sessions": "nav.aiwrapperSessions",
   "aiwrapper-sharing": "nav.aiwrapperSharing",
   "aiwrapper-billing": "nav.aiwrapperBilling",
+  "aiwrapper-shared": "aiw.shared.title",
 };
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
@@ -96,7 +99,7 @@ const NAV_GROUPS: { label: TKey; adminOnly?: boolean; items: NavEntry[] }[] = [
 
 const THEME_ICON = { light: IconSun, dark: IconMoon, system: IconMonitor } as const;
 const THEME_TKEY: Record<Theme, TKey> = { light: "theme.light", dark: "theme.dark", system: "theme.system" };
-const USER_PAGES = new Set<Page>(["aiwrapper-chat", "aiwrapper-sessions", "aiwrapper-sharing", "aiwrapper-billing"]);
+const USER_PAGES = new Set<Page>(["aiwrapper-chat", "aiwrapper-sessions", "aiwrapper-sharing", "aiwrapper-billing", "aiwrapper-shared"]);
 
 function readRuntimeVersion(data: unknown): string | null {
   if (!data || typeof data !== "object" || !("version" in data)) return null;
@@ -240,6 +243,10 @@ function AppContent() {
       alert(outcome.message);
     }
   };
+
+  if (page === "aiwrapper-shared") {
+    return <SharedConversationPage token={readSharedTokenFromHash()} />;
+  }
 
   const brand = (
     <div className="brand">

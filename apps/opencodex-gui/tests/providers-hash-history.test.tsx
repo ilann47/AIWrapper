@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, test, describe } from "bun:test";
 import { Window } from "happy-dom";
 import { normalizeHashPath, replaceHash, navigateHash } from "../src/hash-routing";
-import { hashBelongsToPage, readPageFromHash, resolveAppHashChange } from "../src/app-routing";
+import { hashBelongsToPage, readPageFromHash, readSharedTokenFromHash, resolveAppHashChange } from "../src/app-routing";
 
 /**
  * Hash routing contract after WP5 removed the Classic/Workspace split.
@@ -72,6 +72,13 @@ describe("route resolution", () => {
     expect(resolveAppHashChange("dashboard/models").replaceTo).toBeNull();
     expect(resolveAppHashChange("providers/nope").replaceTo).toBe("providers");
     expect(resolveAppHashChange("models/nope").replaceTo).toBe("models");
+  });
+
+  test("public share hashes preserve the one-time token without exposing it as a page id", () => {
+    const hash = "#shared/aiw_share_example-token";
+    expect(readPageFromHash(hash)).toBe("aiwrapper-shared");
+    expect(readSharedTokenFromHash(hash)).toBe("aiw_share_example-token");
+    expect(resolveAppHashChange("shared/aiw_share_example-token").replaceTo).toBeNull();
   });
 
   test("legacy #debug still maps onto the Logs tab", () => {

@@ -1,10 +1,11 @@
 import hashlib
+import json
 import os
 import secrets
 import sqlite3
 import threading
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -15,12 +16,20 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _after(seconds: int) -> str:
+    return (datetime.now(timezone.utc) + timedelta(seconds=max(1, seconds))).isoformat()
+
+
 def _hash_key(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
 def _secret() -> str:
     return f"aiw_{secrets.token_urlsafe(32)}"
+
+
+def _session_secret(kind: str) -> str:
+    return f"aiw_{kind}_{secrets.token_urlsafe(32)}"
 
 
 class AIWrapperStore:
@@ -32,6 +41,7 @@ class AIWrapperStore:
         self._connection = sqlite3.connect(path, check_same_thread=False)
         self._connection.row_factory = sqlite3.Row
         self._connection.execute("PRAGMA journal_mode=WAL")
+        self._connection.execute("PRAGMA foreign_keys=ON")
         self._migrate()
         self._bootstrap_owner()
 
@@ -66,15 +76,52 @@ class AIWrapperStore:
                 );
                 CREATE TABLE IF NOT EXISTS shares (
                     id TEXT PRIMARY KEY, session_id TEXT NOT NULL, user_id TEXT NOT NULL,
-                    token TEXT NOT NULL UNIQUE, created_at TEXT NOT NULL,
+                    token_hash TEXT NOT NULL UNIQUE, created_at TEXT NOT NULL,
                     expires_at TEXT, revoked_at TEXT
                 );
+                CREATE TABLE IF NOT EXISTS auth_sessions (
+                    id TEXT PRIMARY KEY, user_id TEXT NOT NULL,
+                    access_token_hash TEXT NOT NULL UNIQUE,
+                    refresh_token_hash TEXT NOT NULL UNIQUE,
+                    origin TEXT NOT NULL, created_at TEXT NOT NULL,
+                    access_expires_at TEXT NOT NULL, refresh_expires_at TEXT NOT NULL,
+                    last_seen_at TEXT NOT NULL, revoked_at TEXT,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                );
+                CREATE TABLE IF NOT EXISTS audit_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT,
+                    action TEXT NOT NULL, target_type TEXT, target_id TEXT,
+                    metadata TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_sessions_user_updated ON sessions(user_id, status, updated_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id, id);
+                CREATE INDEX IF NOT EXISTS idx_shares_user_created ON shares(user_id, created_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_auth_access ON auth_sessions(access_token_hash, access_expires_at);
+                CREATE INDEX IF NOT EXISTS idx_auth_refresh ON auth_sessions(refresh_token_hash, refresh_expires_at);
+                CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_events(created_at DESC);
             """)
             session_columns = {
                 row["name"] for row in self._connection.execute("PRAGMA table_info(sessions)").fetchall()
             }
             if "favorite" not in session_columns:
                 self._connection.execute("ALTER TABLE sessions ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0")
+            share_columns = {
+                row["name"] for row in self._connection.execute("PRAGMA table_info(shares)").fetchall()
+            }
+            if "token_hash" not in share_columns:
+                self._connection.executescript("""
+                    CREATE TABLE shares_v2 (
+                        id TEXT PRIMARY KEY, session_id TEXT NOT NULL, user_id TEXT NOT NULL,
+                        token_hash TEXT NOT NULL UNIQUE, created_at TEXT NOT NULL,
+                        expires_at TEXT, revoked_at TEXT
+                    );
+                """)
+                for row in self._connection.execute("SELECT * FROM shares").fetchall():
+                    self._connection.execute(
+                        "INSERT INTO shares_v2 VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        (row["id"], row["session_id"], row["user_id"], _hash_key(row["token"]), row["created_at"], row["expires_at"], row["revoked_at"]),
+                    )
+                self._connection.executescript("DROP TABLE shares; ALTER TABLE shares_v2 RENAME TO shares; CREATE INDEX idx_shares_user_created ON shares(user_id, created_at DESC);")
 
     def _bootstrap_owner(self) -> None:
         row = self._connection.execute("SELECT id FROM users WHERE role = 'owner' LIMIT 1").fetchone()
@@ -97,13 +144,112 @@ class AIWrapperStore:
     def _dict(row: sqlite3.Row | None) -> Optional[dict[str, Any]]:
         return dict(row) if row else None
 
-    def authenticate(self, token: str) -> Optional[dict[str, Any]]:
+    def authenticate_api_key(self, token: str) -> Optional[dict[str, Any]]:
         with self._lock:
             row = self._connection.execute(
                 "SELECT * FROM users WHERE api_key_hash = ? AND status = 'active'",
                 (_hash_key(token),),
             ).fetchone()
         return self._dict(row)
+
+    def authenticate(self, token: str, origin: Optional[str] = None) -> Optional[dict[str, Any]]:
+        user = self.authenticate_api_key(token)
+        if user:
+            return user
+        if not origin:
+            return None
+        now = _now()
+        with self._lock, self._connection:
+            row = self._connection.execute(
+                """SELECT u.* FROM auth_sessions a JOIN users u ON u.id = a.user_id
+                   WHERE a.access_token_hash = ? AND a.revoked_at IS NULL
+                     AND a.access_expires_at > ? AND a.origin = ? AND u.status = 'active'""",
+                (_hash_key(token), now, origin.rstrip("/")),
+            ).fetchone()
+            if row:
+                self._connection.execute(
+                    "UPDATE auth_sessions SET last_seen_at = ? WHERE access_token_hash = ?",
+                    (now, _hash_key(token)),
+                )
+        return self._dict(row)
+
+    def user_by_id(self, user_id: str) -> Optional[dict[str, Any]]:
+        with self._lock:
+            row = self._connection.execute("SELECT * FROM users WHERE id = ? AND status = 'active'", (user_id,)).fetchone()
+        return self._dict(row)
+
+    def create_auth_session(self, user_id: str, origin: str, access_seconds: int, refresh_seconds: int) -> dict[str, Any]:
+        access_token = _session_secret("session")
+        refresh_token = _session_secret("refresh")
+        now = _now()
+        with self._lock, self._connection:
+            self._connection.execute(
+                "DELETE FROM auth_sessions WHERE refresh_expires_at <= ? OR revoked_at IS NOT NULL",
+                (now,),
+            )
+            self._connection.execute(
+                """INSERT INTO auth_sessions
+                   (id, user_id, access_token_hash, refresh_token_hash, origin, created_at,
+                    access_expires_at, refresh_expires_at, last_seen_at, revoked_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)""",
+                (str(uuid.uuid4()), user_id, _hash_key(access_token), _hash_key(refresh_token), origin, now,
+                 _after(access_seconds), _after(refresh_seconds), now),
+            )
+        self.audit_event(user_id, "auth.session.created", "user", user_id, {"origin": origin})
+        return {"accessToken": access_token, "refreshToken": refresh_token, "expiresIn": access_seconds}
+
+    def refresh_auth_session(self, refresh_token: str, origin: str, access_seconds: int, refresh_seconds: int) -> Optional[dict[str, Any]]:
+        now = _now()
+        next_access = _session_secret("session")
+        next_refresh = _session_secret("refresh")
+        with self._lock, self._connection:
+            row = self._connection.execute(
+                """SELECT a.id, a.user_id FROM auth_sessions a JOIN users u ON u.id = a.user_id
+                   WHERE a.refresh_token_hash = ? AND a.origin = ? AND a.revoked_at IS NULL
+                     AND a.refresh_expires_at > ? AND u.status = 'active'""",
+                (_hash_key(refresh_token), origin, now),
+            ).fetchone()
+            if not row:
+                return None
+            self._connection.execute(
+                """UPDATE auth_sessions SET access_token_hash = ?, refresh_token_hash = ?,
+                   access_expires_at = ?, refresh_expires_at = ?, last_seen_at = ? WHERE id = ?""",
+                (_hash_key(next_access), _hash_key(next_refresh), _after(access_seconds), _after(refresh_seconds), now, row["id"]),
+            )
+        self.audit_event(row["user_id"], "auth.session.refreshed", "auth_session", row["id"], {"origin": origin})
+        return {"accessToken": next_access, "refreshToken": next_refresh, "expiresIn": access_seconds, "userId": row["user_id"]}
+
+    def revoke_auth_session(self, refresh_token: str, user_id: Optional[str] = None) -> bool:
+        clauses = ["refresh_token_hash = ?", "revoked_at IS NULL"]
+        params: list[Any] = [_hash_key(refresh_token)]
+        if user_id:
+            clauses.append("user_id = ?")
+            params.append(user_id)
+        with self._lock, self._connection:
+            row = self._connection.execute(
+                f"SELECT id, user_id FROM auth_sessions WHERE {' AND '.join(clauses)}",
+                params,
+            ).fetchone()
+            if not row:
+                return False
+            self._connection.execute("UPDATE auth_sessions SET revoked_at = ? WHERE id = ?", (_now(), row["id"]))
+        self.audit_event(row["user_id"], "auth.session.revoked", "auth_session", row["id"])
+        return True
+
+    def audit_event(self, user_id: Optional[str], action: str, target_type: Optional[str] = None, target_id: Optional[str] = None, metadata: Optional[dict[str, Any]] = None) -> None:
+        with self._lock, self._connection:
+            self._connection.execute(
+                "INSERT INTO audit_events (user_id, action, target_type, target_id, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                (user_id, action, target_type, target_id, json.dumps(metadata or {}, separators=(",", ":"), sort_keys=True), _now()),
+            )
+
+    def list_audit_events(self, limit: int = 200) -> list[dict[str, Any]]:
+        with self._lock:
+            rows = self._connection.execute(
+                "SELECT * FROM audit_events ORDER BY id DESC LIMIT ?",
+                (max(1, min(1000, limit)),),
+            ).fetchall()
+        return [{**dict(row), "metadata": json.loads(row["metadata"])} for row in rows]
 
     def health(self) -> bool:
         with self._lock:
@@ -130,6 +276,7 @@ class AIWrapperStore:
                 "INSERT INTO users VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?, ?)",
                 (user_id, name, role, _hash_key(token), profile_name, codex_home, quota_5h, quota_7d, created_at),
             )
+        self.audit_event(user_id, "user.created", "user", user_id, {"name": name, "role": role})
         return {"id": user_id, "name": name, "role": role, "status": "active", "profile_name": profile_name, "codex_home": codex_home, "quota_5h": quota_5h, "quota_7d": quota_7d, "apiKey": {"secret": token}}
 
     def update_user(self, user_id: str, values: dict[str, Any]) -> Optional[dict[str, Any]]:
@@ -139,8 +286,13 @@ class AIWrapperStore:
             sql = ", ".join(f"{key} = ?" for key, _ in updates)
             with self._lock, self._connection:
                 self._connection.execute(f"UPDATE users SET {sql} WHERE id = ?", (*[value for _, value in updates], user_id))
+                if any(key == "status" and value != "active" for key, value in updates):
+                    self._connection.execute("UPDATE auth_sessions SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL", (_now(), user_id))
         with self._lock:
-            return self._dict(self._connection.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone())
+            result = self._dict(self._connection.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone())
+        if result and updates:
+            self.audit_event(user_id, "user.updated", "user", user_id, {key: value for key, value in updates})
+        return result
 
     def rotate_key(self, user_id: str) -> dict[str, str]:
         token = _secret()
@@ -149,10 +301,12 @@ class AIWrapperStore:
             if not user:
                 raise ValueError("User not found")
             self._connection.execute("UPDATE users SET api_key_hash = ? WHERE id = ?", (_hash_key(token), user_id))
+            self._connection.execute("UPDATE auth_sessions SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL", (_now(), user_id))
         if user["role"] == "owner" and not settings.aiwrapper_owner_key:
             key_path = Path(settings.aiwrapper_state_dir).resolve() / "bootstrap-owner.key"
             key_path.parent.mkdir(parents=True, exist_ok=True)
             key_path.write_text(token, encoding="utf-8")
+        self.audit_event(user_id, "user.key_rotated", "user", user_id)
         return {"secret": token}
 
     def session(self, user_id: str, session_id: Optional[str], model: str, prompt: str) -> dict[str, Any]:
@@ -222,6 +376,7 @@ class AIWrapperStore:
     def archive_session(self, user_id: str, session_id: str) -> None:
         with self._lock, self._connection:
             self._connection.execute("UPDATE sessions SET status = 'archived', updated_at = ? WHERE id = ? AND user_id = ?", (_now(), session_id, user_id))
+        self.audit_event(user_id, "conversation.archived", "session", session_id)
 
     def update_session(self, user_id: str, session_id: str, values: dict[str, Any]) -> Optional[dict[str, Any]]:
         updates: list[tuple[str, Any]] = []
@@ -255,6 +410,7 @@ class AIWrapperStore:
         organization_id = str(uuid.uuid4())
         with self._lock, self._connection:
             self._connection.execute("INSERT INTO organizations VALUES (?, ?, 100, ?)", (organization_id, name, _now()))
+        self.audit_event(None, "organization.created", "organization", organization_id, {"name": name})
         return {"id": organization_id, "name": name, "memberCount": 0, "quotaPercent": 100}
 
     def list_shares(self, user_id: str) -> list[dict[str, Any]]:
@@ -262,19 +418,48 @@ class AIWrapperStore:
             rows = self._connection.execute("SELECT * FROM shares WHERE user_id = ? AND revoked_at IS NULL ORDER BY created_at DESC", (user_id,)).fetchall()
         return [self._share_json(dict(row)) for row in rows]
 
-    def create_share(self, user_id: str, session_id: str) -> dict[str, Any]:
+    def create_share(self, user_id: str, session_id: str, expires_in_hours: Optional[int] = None) -> dict[str, Any]:
         with self._lock:
             owned = self._connection.execute("SELECT id FROM sessions WHERE id = ? AND user_id = ?", (session_id, user_id)).fetchone()
         if not owned:
             raise ValueError("Session not found")
-        row = {"id": str(uuid.uuid4()), "session_id": session_id, "user_id": user_id, "token": secrets.token_urlsafe(24), "created_at": _now(), "expires_at": None, "revoked_at": None}
+        token = secrets.token_urlsafe(32)
+        row = {"id": str(uuid.uuid4()), "session_id": session_id, "user_id": user_id, "token_hash": _hash_key(token), "created_at": _now(), "expires_at": _after(expires_in_hours * 3600) if expires_in_hours else None, "revoked_at": None}
         with self._lock, self._connection:
             self._connection.execute("INSERT INTO shares VALUES (?, ?, ?, ?, ?, ?, ?)", tuple(row.values()))
-        return self._share_json(row)
+        self.audit_event(user_id, "share.created", "session", session_id, {"shareId": row["id"], "expiresAt": row["expires_at"]})
+        return self._share_json(row, token)
+
+    def revoke_share(self, user_id: str, share_id: str) -> bool:
+        with self._lock, self._connection:
+            row = self._connection.execute("SELECT session_id FROM shares WHERE id = ? AND user_id = ? AND revoked_at IS NULL", (share_id, user_id)).fetchone()
+            if not row:
+                return False
+            self._connection.execute("UPDATE shares SET revoked_at = ? WHERE id = ?", (_now(), share_id))
+        self.audit_event(user_id, "share.revoked", "session", row["session_id"], {"shareId": share_id})
+        return True
+
+    def public_share(self, token: str) -> Optional[dict[str, Any]]:
+        now = _now()
+        with self._lock:
+            row = self._connection.execute(
+                """SELECT sh.id AS share_id, s.*
+                   FROM shares sh JOIN sessions s ON s.id = sh.session_id
+                   WHERE sh.token_hash = ? AND sh.revoked_at IS NULL
+                     AND (sh.expires_at IS NULL OR sh.expires_at > ?) AND s.status = 'active'""",
+                (_hash_key(token), now),
+            ).fetchone()
+        if not row:
+            return None
+        return {
+            "shareId": row["share_id"],
+            "session": self._session_json(dict(row)),
+            "messages": self.session_messages(row["id"]),
+        }
 
     @staticmethod
-    def _share_json(row: dict[str, Any]) -> dict[str, Any]:
-        return {"id": row["id"], "sessionId": row["session_id"], "url": f"{settings.aiwrapper_public_base_url}/share/{row['token']}", "createdAt": row["created_at"], "expiresAt": row["expires_at"]}
+    def _share_json(row: dict[str, Any], token: Optional[str] = None) -> dict[str, Any]:
+        return {"id": row["id"], "sessionId": row["session_id"], "url": f"{settings.aiwrapper_web_base_url}/#shared/{token}" if token else None, "createdAt": row["created_at"], "expiresAt": row["expires_at"]}
 
 
 store = AIWrapperStore(settings.aiwrapper_database_path)

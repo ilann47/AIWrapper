@@ -6,6 +6,18 @@ export interface AIWrapperPrincipal {
   role: AIWrapperRole;
 }
 
+export interface AIWrapperSessionResponse {
+  accessToken: string;
+  expiresIn: number;
+  principal: AIWrapperPrincipal;
+}
+
+export interface AIWrapperBrowserSession {
+  client: AIWrapperClient;
+  principal: AIWrapperPrincipal;
+  expiresAt: number;
+}
+
 export interface ModelRecord {
   id: string;
   displayName?: string;
@@ -34,6 +46,29 @@ export class AIWrapperClient {
     this.token = token;
   }
 
+  static async createSession(baseUrl: string, apiKey: string): Promise<AIWrapperBrowserSession> {
+    const response = await fetch(`${baseUrl}/auth/sessions`, {
+      method: "POST",
+      credentials: "include",
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (!response.ok) throw new Error(await response.text());
+    const session = await response.json() as AIWrapperSessionResponse;
+    return { client: new AIWrapperClient(baseUrl, session.accessToken), principal: session.principal, expiresAt: Date.now() + session.expiresIn * 1000 };
+  }
+
+  static async refreshSession(baseUrl: string): Promise<AIWrapperBrowserSession | null> {
+    const response = await fetch(`${baseUrl}/auth/sessions/refresh`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "X-AIWrapper-Session": "refresh" },
+    });
+    if (response.status === 401) return null;
+    if (!response.ok) throw new Error(await response.text());
+    const session = await response.json() as AIWrapperSessionResponse;
+    return { client: new AIWrapperClient(baseUrl, session.accessToken), principal: session.principal, expiresAt: Date.now() + session.expiresIn * 1000 };
+  }
+
   async request<T>(path: string, init?: RequestInit): Promise<T> {
     const response = await fetch(`${this.baseUrl}${path}`, {
       ...init,
@@ -53,6 +88,15 @@ export class AIWrapperClient {
 
   get<T>(path: string): Promise<T> {
     return this.request<T>(path);
+  }
+
+  async deleteSession(): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/auth/sessions/current`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { Authorization: `Bearer ${this.token}` },
+    });
+    if (!response.ok && response.status !== 401) throw new Error(await response.text());
   }
 
   send<T>(path: string, method: "POST" | "PATCH" | "DELETE", body?: unknown): Promise<T> {

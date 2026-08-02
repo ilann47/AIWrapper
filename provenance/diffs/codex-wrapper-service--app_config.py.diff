@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\config.py" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\config.py"
-index 44e97b833..7704ac7bd 100644
+index 44e97b833..21e13f8c9 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\config.py"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\config.py"	
-@@ -37,6 +37,31 @@ class Settings(BaseSettings):
+@@ -37,6 +37,35 @@ class Settings(BaseSettings):
      allow_danger_full_access: bool = Field(default=False, alias="CODEX_ALLOW_DANGER_FULL_ACCESS")
      # Deprecated: ignored, but kept to avoid startup failures when legacy env remains.
      codex_model: Optional[str] = Field(default=None, alias="CODEX_MODEL")
@@ -27,6 +27,10 @@ index 44e97b833..7704ac7bd 100644
 +    aiwrapper_owner_name: str = Field(default="owner", alias="AIWRAPPER_OWNER_NAME")
 +    aiwrapper_owner_key: Optional[str] = Field(default=None, alias="AIWRAPPER_OWNER_KEY")
 +    aiwrapper_public_base_url: str = Field(default="http://127.0.0.1:8766", alias="AIWRAPPER_PUBLIC_BASE_URL")
++    aiwrapper_web_base_url: str = Field(default="http://127.0.0.1:8765", alias="AIWRAPPER_WEB_BASE_URL")
++    aiwrapper_access_session_seconds: int = Field(default=300, alias="AIWRAPPER_ACCESS_SESSION_SECONDS")
++    aiwrapper_refresh_session_seconds: int = Field(default=2592000, alias="AIWRAPPER_REFRESH_SESSION_SECONDS")
++    aiwrapper_session_cookie_secure: bool = Field(default=False, alias="AIWRAPPER_SESSION_COOKIE_SECURE")
 +
 +    @property
 +    def aiwrapper_cors_origin_list(self) -> list[str]:

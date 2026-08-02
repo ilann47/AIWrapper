@@ -14,6 +14,7 @@ type AdminOverview = {
   runtime: { active: number; queued: number; limit: number };
   usage: { totals?: Totals; latency?: { averageMs: number; p95Ms: number; measuredRequests: number } };
   throughputPerMinute: number;
+  audit: { id: number; action: string; target_type?: string; target_id?: string; created_at: string }[];
 };
 
 function formatDuration(value?: number) {
@@ -62,6 +63,10 @@ export default function AdminOverviewPanel() {
         <div className="stat"><div className="label">{t("aiw.overview.errors")}</div><div className="value">{totals?.failures ?? 0}</div></div>
         <div className="stat"><div className="label">{t("aiw.overview.blocked")}</div><div className="value">{totals?.blocked ?? 0}</div></div>
       </div>
+      {resource.data?.audit.length ? <div className="aiw-audit-strip">
+        <h4>{t("aiw.overview.audit")}</h4>
+        <div className="aiw-table-wrap"><table className="tbl"><thead><tr><th>{t("aiw.overview.event")}</th><th>{t("aiw.overview.target")}</th><th>{t("aiw.overview.when")}</th></tr></thead><tbody>{resource.data.audit.map(event => <tr key={event.id}><td><code>{event.action}</code></td><td>{event.target_type ?? "—"}</td><td>{new Date(event.created_at).toLocaleString()}</td></tr>)}</tbody></table></div>
+      </div> : null}
     </section>
   );
 }

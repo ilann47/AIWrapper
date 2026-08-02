@@ -5,13 +5,14 @@ import { Notice } from "../../../apps/opencodex-gui/src/ui";
 import { useAIWrapper } from "./auth";
 
 export function AIWrapperGate({ children }: { children: ReactNode }) {
-  const { principal, baseUrl, connect } = useAIWrapper();
+  const { principal, restoring, baseUrl, connect } = useAIWrapper();
   const [token, setToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const t = useT();
 
   if (principal) return children;
+  if (restoring) return <section className="aiw-gate panel" role="status">{t("aiw.connect.restoring")}</section>;
   return (
     <section className="aiw-gate panel">
       <IconKey aria-hidden />

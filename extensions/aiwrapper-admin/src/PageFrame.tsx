@@ -15,7 +15,7 @@ export function PageFrame({ title, subtitle, children }: { title: TKey; subtitle
         </div>
         <div className="aiw-identity">
           <span className="badge badge-muted">{principal?.role}</span>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={disconnect}>{t("aiw.disconnect")}</button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => void disconnect()}>{t("aiw.disconnect")}</button>
         </div>
       </div>
       {children}

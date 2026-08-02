@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\pages\\dashboard-overview-head.tsx" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\AdminOverviewPanel.tsx"
-index 87293ae51..016981630 100644
+index 87293ae51..7118403a4 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\pages\\dashboard-overview-head.tsx"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\AdminOverviewPanel.tsx"	
-@@ -1,126 +1,67 @@
+@@ -1,126 +1,72 @@
 -import { IconAlert, IconInfo } from "../icons";
 -import { type TKey, useT } from "../i18n/shared";
 -import { formatTokens } from "../format-tokens";
@@ -39,6 +39,7 @@ index 87293ae51..016981630 100644
 +  runtime: { active: number; queued: number; limit: number };
 +  usage: { totals?: Totals; latency?: { averageMs: number; p95Ms: number; measuredRequests: number } };
 +  throughputPerMinute: number;
++  audit: { id: number; action: string; target_type?: string; target_id?: string; created_at: string }[];
 +};
 +
 +function formatDuration(value?: number) {
@@ -184,6 +185,10 @@ index 87293ae51..016981630 100644
 +        <div className="stat"><div className="label">{t("aiw.overview.errors")}</div><div className="value">{totals?.failures ?? 0}</div></div>
 +        <div className="stat"><div className="label">{t("aiw.overview.blocked")}</div><div className="value">{totals?.blocked ?? 0}</div></div>
 +      </div>
++      {resource.data?.audit.length ? <div className="aiw-audit-strip">
++        <h4>{t("aiw.overview.audit")}</h4>
++        <div className="aiw-table-wrap"><table className="tbl"><thead><tr><th>{t("aiw.overview.event")}</th><th>{t("aiw.overview.target")}</th><th>{t("aiw.overview.when")}</th></tr></thead><tbody>{resource.data.audit.map(event => <tr key={event.id}><td><code>{event.action}</code></td><td>{event.target_type ?? "—"}</td><td>{new Date(event.created_at).toLocaleString()}</td></tr>)}</tbody></table></div>
++      </div> : null}
 +    </section>
    );
  }
