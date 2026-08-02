@@ -71,6 +71,7 @@ export const de: Record<TKey, string> = {
   "aiw.notifications.yesterday": "Gestern",
   "aiw.notifications.earlier": "Früher",
   "aiw.notifications.empty": "Alles erledigt.",
+  "aiw.notifications.newArrivals": "{count} neu — neueste anzeigen",
   "nav.section.chat": "Chat",
   "nav.section.admin": "Administration",
   "nav.section.monitoring": "Monitoring",

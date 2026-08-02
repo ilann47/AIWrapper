@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-02T07:36:43.473Z",
+  "generatedAt": "2026-08-02T07:48:24.833Z",
   "generatorUpstream": {
     "project": "ndycode/codex-multi-auth",
     "commit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
@@ -1698,16 +1698,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "3d0d5b807df91e18824f186caa190f69d146aed7cbb5a42ba12128e5ec74e480",
-          "sha256": "d1cdc718e073964126144fc184943278b217a75811894d43075a9e44377963cb",
+          "sha256": "75d53d922518c9eb4f42aca909b1980e09a3082d3dbf7c0ac1f1cbcd334c6d49",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_de.ts.diff",
-          "diffSha256": "0d8ae2a3d979d45320a0cd269a995ac0cb4ee5d7ae37082156be7ed2e7f9cd00",
+          "diffSha256": "2cc3e4eda8ec9e03f2220d31f9662dd37ffcbfea3bf8847b3a59c93cf5e02bc0",
           "lines": {
             "source": 1487,
-            "destination": 1684,
+            "destination": 1685,
             "preserved": 1487,
             "changed": 0,
             "removed": 0,
-            "added": 197,
+            "added": 198,
             "reusePercent": 100
           }
         },
@@ -1717,16 +1717,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "09084a0703ed3a9adc0ac00dea9aa372a1a2a4a0f7b800affead04fea5a1afa6",
-          "sha256": "89a224868e76f598da29d24899e49e4c1e556349b480f3102e2cfecdecb2aca8",
+          "sha256": "abd1b6a4eb38bb7590a7b85316de2e163379a9d57a83e413545326cccebeccc2",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_en.ts.diff",
-          "diffSha256": "51d4305620f7d06e094c2a3e273c5b496588a1d1eb78c42fb73a288e20e8e4a1",
+          "diffSha256": "de953eec048f590e592c76a7782934b418ebcdac83014bad685fe585fff50f49",
           "lines": {
             "source": 1514,
-            "destination": 1711,
+            "destination": 1712,
             "preserved": 1514,
             "changed": 0,
             "removed": 0,
-            "added": 197,
+            "added": 198,
             "reusePercent": 100
           }
         },
@@ -1755,16 +1755,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "d7449a464d2dc077af41b39d0c81e4d55f0b5589f58af181cbef3b34be0a54f0",
-          "sha256": "a675768f1aa856928d25d8417a9b7b2d1d3b179954a999b48a8d72aca7852d2c",
+          "sha256": "22d65e85a0e78b4dbe95cd337ca30694d20fc5954c64d73252be28ea4831742a",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_ja.ts.diff",
-          "diffSha256": "90c82baa6412d242db7f63c695b19639d13152b6c834a77364c207338c3ee0c4",
+          "diffSha256": "28945c60d974782491d70b8094960da1ffae6cf2937186d05e5c0162b3d163ef",
           "lines": {
             "source": 1508,
-            "destination": 1705,
+            "destination": 1706,
             "preserved": 1508,
             "changed": 0,
             "removed": 0,
-            "added": 197,
+            "added": 198,
             "reusePercent": 100
           }
         },
@@ -1774,16 +1774,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "5b2b64b2cd03ffbc16d15a6bad3c4163f7007927e3f602ee20e12fb96234e6e0",
-          "sha256": "e490ff72c159f2fa577f30b9c147b368d9db3c33e1040f3a240c7d87ee14c0c3",
+          "sha256": "8a8db1d966efeb42827db8ae67a465ba9668d67d8020cf13738bd3433b8ea032",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_ko.ts.diff",
-          "diffSha256": "6b47227c1f7aa16f6f19cb8a3c3bb4436197636c94b4d6eb902a2b390e46f0ee",
+          "diffSha256": "ac777073430481b4e74303eacbddbff5b5c7eb89cc6f78fac47a62f7f86af087",
           "lines": {
             "source": 1508,
-            "destination": 1705,
+            "destination": 1706,
             "preserved": 1508,
             "changed": 0,
             "removed": 0,
-            "added": 197,
+            "added": 198,
             "reusePercent": 100
           }
         },
@@ -1812,16 +1812,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "95c74a1b27980cfab1931395f5ffe800f3c0ddf9f101cb5badb360343de26e6a",
-          "sha256": "3b89bf501cd244a328851224a62011bfa2041dfd5f2202f985419865bfeec767",
+          "sha256": "dc9bd938b3404347ef4a867bdfa1a34f9fb96953ad3c42238c385434215bf5e4",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_ru.ts.diff",
-          "diffSha256": "7e1066c24a930af3995e01a9954f609207761b13794c3dd155dc67698b1bf844",
+          "diffSha256": "3c639d09da232dc352bba77134bfffb45996f940688e0bcd9679e7625dd54032",
           "lines": {
             "source": 1510,
-            "destination": 1707,
+            "destination": 1708,
             "preserved": 1510,
             "changed": 0,
             "removed": 0,
-            "added": 197,
+            "added": 198,
             "reusePercent": 100
           }
         },
@@ -1850,16 +1850,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "b6b8fdb362c7a8a7d29ca6cc7c34772aec34b7ddfe66ba6521087990d644893f",
-          "sha256": "56160fc3053d4cf1c17a6e2fc022c5ff85a7f8b4c7284b785bfe739a32073cd3",
+          "sha256": "0ef0f6a0472b39b5700745596165ef9a921fdbb58421e03463391c3d9e2bd56d",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_zh.ts.diff",
-          "diffSha256": "6d7f49fc42a9153432217f909200e82f63fb0f409e13e56ffce2f6724c0655ac",
+          "diffSha256": "023f34b7b9bede165169758010f60dbf1d8ad84ff1f950e104bd92d11decde49",
           "lines": {
             "source": 1508,
-            "destination": 1705,
+            "destination": 1706,
             "preserved": 1508,
             "changed": 0,
             "removed": 0,
-            "added": 197,
+            "added": 198,
             "reusePercent": 100
           }
         },
@@ -24971,6 +24971,8 @@
           "mark all read",
           "per-row read, resolve and clear",
           "live-arrival Sonner toast",
+          "N-new reveal affordance",
+          "scroll-anchor preservation",
           "Escape close"
         ],
         "lost": [
@@ -24981,7 +24983,7 @@
           "host-window focus suppression",
           "Radix popover positioning"
         ],
-        "decision": "Reuse the complete portable lifecycle modules and adapt the mature interaction architecture to the authenticated AIWrapper REST feed; importing the original UI would require a second proprietary application host."
+        "decision": "Reuse the complete portable lifecycle, occurrence, arrival and scroll-anchor modules and adapt the mature interaction architecture to the authenticated AIWrapper REST feed; importing the original UI would require a second proprietary application host."
       },
       "files": [
         {
@@ -24990,17 +24992,101 @@
           "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
           "license": "MIT / project adapter code",
           "sourceSha256": "264db93c09af58b8961e67d37f8d8eeb60e39084c5133c0675b4bdf0b779f781",
-          "sha256": "15f184e42358d8c1e11bd5109a44753f0af8edb7178a77d1babb537a523c9935",
+          "sha256": "42f1b1cdb5d6a69159b194a431ff2cc5ab5b5af6ba89da8d871bf593293fc8f2",
           "diff": "provenance/diffs/traycer-notification-center-ui--file.diff",
-          "diffSha256": "02bfe32f002aad414b9bc47a9bccbcb56d2c165cc471db657d9e255285ef91e6",
+          "diffSha256": "dc50f820fa2604a259a6fa84ec59970863287c9201391db4057c90d293b82cfa",
           "lines": {
             "source": 905,
-            "destination": 212,
-            "preserved": 38,
-            "changed": 174,
-            "removed": 693,
+            "destination": 244,
+            "preserved": 40,
+            "changed": 204,
+            "removed": 661,
             "added": 0,
-            "reusePercent": 4.2
+            "reusePercent": 4.42
+          }
+        }
+      ]
+    },
+    {
+      "id": "traycer-notification-live-arrivals",
+      "functionality": "Distinguish genuine live notification prepends and recurrences from older-page appends, with N-new reveal state",
+      "project": "traycerai/traycer",
+      "classification": "copied",
+      "referenceOnly": false,
+      "incompatibility": "The hook is portable except for its occurrence-entry type import from Traycer's merged host/cloud store. That import is replaced by the structurally identical local interface; detection and state algorithms are preserved.",
+      "parityAudit": {
+        "retained": [
+          "cold-start baseline",
+          "new-feed prepend detection",
+          "same-feed recurrence detection",
+          "pagination exclusion",
+          "visibility intersection",
+          "at-top baseline joining",
+          "reveal reset"
+        ],
+        "lost": [],
+        "decision": "Copy the complete executable algorithm and adapt only the external type boundary."
+      },
+      "files": [
+        {
+          "source": "upstream/traycer/clients/gui-app/src/hooks/notifications/use-notification-center-arrivals.ts",
+          "destination": "extensions/aiwrapper-notifications/src/notification-center-arrivals.ts",
+          "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
+          "license": "MIT",
+          "sourceSha256": "2f1db376a60b016a55f150ce06feb3695a19aaec7270504c4791adf734fb1c59",
+          "sha256": "977a4fb9f7ca735b35cd935bdd26895c3ed570a0af86adae1b184c14ef7ef3f8",
+          "diff": "provenance/diffs/traycer-notification-live-arrivals--file.diff",
+          "diffSha256": "60086ceb8d6eeb87d37d56ef698c208f94e3ac66f8626ffcb24ab92e781fa003",
+          "lines": {
+            "source": 151,
+            "destination": 112,
+            "preserved": 100,
+            "changed": 12,
+            "removed": 39,
+            "added": 0,
+            "reusePercent": 66.23
+          }
+        }
+      ]
+    },
+    {
+      "id": "traycer-notification-scroll-anchor",
+      "functionality": "Preserve the reader's visual notification position across live inserts and lifecycle reordering",
+      "project": "traycerai/traycer",
+      "classification": "copied",
+      "referenceOnly": false,
+      "incompatibility": "None; the React and DOM-only hook is copied into the deployable extension boundary.",
+      "parityAudit": {
+        "retained": [
+          "8px top threshold",
+          "single-pass row measurement",
+          "first visible anchor",
+          "successor/predecessor fallback",
+          "user scroll delta",
+          "layout-effect correction",
+          "scroll-to-top"
+        ],
+        "lost": [],
+        "decision": "Preserve the complete upstream algorithm and its data-notification-id DOM contract."
+      },
+      "files": [
+        {
+          "source": "upstream/traycer/clients/gui-app/src/hooks/notifications/use-notification-center-scroll-anchor.ts",
+          "destination": "extensions/aiwrapper-notifications/src/notification-center-scroll-anchor.ts",
+          "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
+          "license": "MIT",
+          "sourceSha256": "0303ea24528c6da354504eb157d918d1663fab9120e88edc79e0b5b715a58bf5",
+          "sha256": "2009bfc3d5f6e0c119530d38bc6ac21e3dc25555049af26aadfcf33311cd64f9",
+          "diff": "provenance/diffs/traycer-notification-scroll-anchor--file.diff",
+          "diffSha256": "bad59bff2e06722a7d35df2f2f5a4497612590c29f52ba9fc44b4b38a6be97c6",
+          "lines": {
+            "source": 201,
+            "destination": 166,
+            "preserved": 156,
+            "changed": 10,
+            "removed": 35,
+            "added": 0,
+            "reusePercent": 77.61
           }
         }
       ]

@@ -71,6 +71,7 @@ export const ja: Record<TKey, string> = {
   "aiw.notifications.yesterday": "昨日",
   "aiw.notifications.earlier": "以前",
   "aiw.notifications.empty": "新しい通知はありません。",
+  "aiw.notifications.newArrivals": "新着 {count} 件 — 最新を表示",
   "nav.section.chat": "Chat",
   "nav.section.admin": "Administration",
   "nav.section.monitoring": "Monitoring",

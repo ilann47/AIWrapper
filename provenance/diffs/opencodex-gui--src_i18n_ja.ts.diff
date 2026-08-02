@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ja.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ja.ts"
-index 47b1de3f0..0cda8127e 100644
+index 47b1de3f0..4d39d40cf 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ja.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ja.ts"	
-@@ -10,6 +10,200 @@ export const ja: Record<TKey, string> = {
+@@ -10,6 +10,201 @@ export const ja: Record<TKey, string> = {
    "nav.subagents": "サブエージェント",
    "nav.logs": "ログ & デバッグ",
    "nav.usage": "使用量",
@@ -67,6 +67,7 @@ index 47b1de3f0..0cda8127e 100644
 +  "aiw.notifications.yesterday": "昨日",
 +  "aiw.notifications.earlier": "以前",
 +  "aiw.notifications.empty": "新しい通知はありません。",
++  "aiw.notifications.newArrivals": "新着 {count} 件 — 最新を表示",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -203,7 +204,7 @@ index 47b1de3f0..0cda8127e 100644
    "common.github": "GitHub",
    "common.save": "保存",
    "common.saving": "保存中…",
-@@ -993,6 +1187,9 @@ export const ja: Record<TKey, string> = {
+@@ -993,6 +1188,9 @@ export const ja: Record<TKey, string> = {
    "nav.codexAuth": "Codex 認証",
    "nav.api": "API",
    "nav.openMenu": "メニューを開く",

@@ -71,6 +71,7 @@ export const en = {
   "aiw.notifications.yesterday": "Yesterday",
   "aiw.notifications.earlier": "Earlier",
   "aiw.notifications.empty": "You're all caught up.",
+  "aiw.notifications.newArrivals": "{count} new — show latest",
   "nav.section.chat": "Chat",
   "nav.section.admin": "Administration",
   "nav.section.monitoring": "Monitoring",

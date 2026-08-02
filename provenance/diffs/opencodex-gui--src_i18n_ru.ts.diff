@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ru.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ru.ts"
-index e0ae4bdf4..05861c559 100644
+index e0ae4bdf4..75e7b6ff7 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ru.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ru.ts"	
-@@ -10,6 +10,200 @@ export const ru: Record<TKey, string> = {
+@@ -10,6 +10,201 @@ export const ru: Record<TKey, string> = {
    "nav.subagents": "Подагенты",
    "nav.logs": "Логи и отладка",
    "nav.usage": "Использование",
@@ -67,6 +67,7 @@ index e0ae4bdf4..05861c559 100644
 +  "aiw.notifications.yesterday": "Вчера",
 +  "aiw.notifications.earlier": "Ранее",
 +  "aiw.notifications.empty": "Новых уведомлений нет.",
++  "aiw.notifications.newArrivals": "Новых: {count} — показать последние",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -203,7 +204,7 @@ index e0ae4bdf4..05861c559 100644
    "common.github": "GitHub",
    "common.save": "Сохранить",
    "common.saving": "Сохранение…",
-@@ -1035,6 +1229,9 @@ export const ru: Record<TKey, string> = {
+@@ -1035,6 +1230,9 @@ export const ru: Record<TKey, string> = {
    "nav.codexAuth": "Аутентификация Codex",
    "nav.api": "API",
    "nav.openMenu": "Открыть меню",

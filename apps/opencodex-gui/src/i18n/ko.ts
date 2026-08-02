@@ -71,6 +71,7 @@ export const ko: Record<TKey, string> = {
   "aiw.notifications.yesterday": "어제",
   "aiw.notifications.earlier": "이전",
   "aiw.notifications.empty": "새 알림이 없습니다.",
+  "aiw.notifications.newArrivals": "새 알림 {count}개 — 최신 보기",
   "nav.section.chat": "Chat",
   "nav.section.admin": "Administration",
   "nav.section.monitoring": "Monitoring",

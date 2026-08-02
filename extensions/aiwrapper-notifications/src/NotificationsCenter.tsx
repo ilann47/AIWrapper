@@ -9,6 +9,8 @@ import {
   compareAttentionOrder,
   occurrenceKeyForNotification,
   temporalGroupForTimestamp,
+  useNotificationCenterArrivals,
+  useNotificationCenterScrollAnchor,
   type NotificationAttentionTier,
   type NotificationTemporalGroup,
 } from "./traycer-notification-runtime";
@@ -119,6 +121,31 @@ export default function NotificationsCenter() {
     }
     return groups;
   }, [rows]);
+  const orderedFeedIds = useMemo(() => [
+    ...attention.map((item) => item.row.feedId),
+    ...GROUP_ORDER.flatMap((group) => (recentGroups.get(group) ?? []).map((row) => row.feedId)),
+  ], [attention, recentGroups]);
+  const occurrenceOrder = useMemo(() => rows.map((row) => ({
+    feedId: row.feedId,
+    occurrenceKey: occurrenceKeyForNotification({
+      feedId: row.feedId,
+      createdAt: row.createdAtMs,
+      sourceRef: row.sourceRef,
+    }),
+  })), [rows]);
+  const occurrenceKeyByFeedId = useMemo(
+    () => new Map(occurrenceOrder.map((entry) => [entry.feedId, entry.occurrenceKey])),
+    [occurrenceOrder],
+  );
+  const visibleOccurrenceKeys = useMemo(() => orderedFeedIds
+    .map((feedId) => occurrenceKeyByFeedId.get(feedId))
+    .filter((key): key is string => key !== undefined), [occurrenceKeyByFeedId, orderedFeedIds]);
+  const { scrollRef, isAtTop, scrollToTop } = useNotificationCenterScrollAnchor({ orderedFeedIds });
+  const { newCount, reveal } = useNotificationCenterArrivals({
+    isAtTop,
+    fullOrder: occurrenceOrder,
+    visibleOccurrenceKeys,
+  });
 
   useEffect(() => {
     const next = new Set(rows.map(row => occurrenceKeyForNotification({
@@ -160,7 +187,7 @@ export default function NotificationsCenter() {
   const unread = resource.data?.unreadCount ?? 0;
 
   const renderRow = (row: ProjectedNotification, tier?: NotificationAttentionTier) => (
-    <article className={`aiw-notification-row aiw-notification-row--${row.severity}`} key={row.feedId}>
+    <article data-notification-id={row.feedId} className={`aiw-notification-row aiw-notification-row--${row.severity}`} key={row.feedId}>
       <span className="aiw-notification-row__icon"><NotificationIcon severity={row.severity} /></span>
       <div className="aiw-notification-row__copy">
         <strong>{row.title}</strong>
@@ -194,7 +221,12 @@ export default function NotificationsCenter() {
               <button type="button" className="btn btn-sm btn-ghost" onClick={() => setOpen(false)} aria-label={t("common.close")}><X /></button>
             </div>
           </header>
-          <div className="aiw-notifications__feed">
+          <div ref={scrollRef} className="aiw-notifications__feed">
+            {newCount > 0 ? (
+              <button type="button" className="aiw-notifications__new" onClick={() => { reveal(); scrollToTop(); }}>
+                {t("aiw.notifications.newArrivals", { count: String(newCount) })}
+              </button>
+            ) : null}
             {resource.error ? <div className="notice notice-err" role="alert">{String(resource.error)}</div> : null}
             {attention.length > 0 ? <section><h3>{t("aiw.notifications.attention")}</h3>{attention.map(item => renderRow(item.row, item.tier))}</section> : null}
             {GROUP_ORDER.map(group => {

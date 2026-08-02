@@ -7,7 +7,8 @@
 .aiw-notifications__panel h2 { margin: 0; font-size: 1rem; }
 .aiw-notifications__panel header p { margin: 3px 0 0; color: var(--muted); font-size: .78rem; }
 .aiw-notifications__panel header > div:last-child { display: flex; align-items: center; gap: var(--space-1); }
-.aiw-notifications__feed { max-height: min(630px, calc(100vh - 160px)); overflow: auto; }
+.aiw-notifications__feed { max-height: min(630px, calc(100vh - 160px)); overflow: auto; overflow-anchor: none; }
+.aiw-notifications__new { position: sticky; z-index: 2; top: .25rem; display: block; margin: .25rem auto .65rem; border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--border)); border-radius: 999px; background: var(--accent); color: var(--accent-foreground); padding: .35rem .75rem; box-shadow: 0 6px 18px rgb(0 0 0 / 22%); cursor: pointer; font: inherit; font-size: .78rem; font-weight: 650; }
 .aiw-notifications__feed section > h3 { margin: 0; padding: var(--space-3) var(--space-4) var(--space-2); color: var(--muted); font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; }
 .aiw-notification-row { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: var(--space-2); align-items: start; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border); }
 .aiw-notification-row--needs_action, .aiw-notification-row--failure { box-shadow: inset 3px 0 var(--danger); }

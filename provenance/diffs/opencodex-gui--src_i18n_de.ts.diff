@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\de.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\de.ts"
-index 5e85333ed..3851eee29 100644
+index 5e85333ed..c55ab0ffc 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\de.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\de.ts"	
-@@ -10,6 +10,200 @@ export const de: Record<TKey, string> = {
+@@ -10,6 +10,201 @@ export const de: Record<TKey, string> = {
    "nav.subagents": "Sub-Agenten",
    "nav.logs": "Protokolle & Diagnose",
    "nav.usage": "Nutzung",
@@ -67,6 +67,7 @@ index 5e85333ed..3851eee29 100644
 +  "aiw.notifications.yesterday": "Gestern",
 +  "aiw.notifications.earlier": "Früher",
 +  "aiw.notifications.empty": "Alles erledigt.",
++  "aiw.notifications.newArrivals": "{count} neu — neueste anzeigen",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -203,7 +204,7 @@ index 5e85333ed..3851eee29 100644
    "common.github": "GitHub",
    "common.save": "Speichern",
    "common.saving": "Speichern…",
-@@ -622,6 +816,9 @@ export const de: Record<TKey, string> = {
+@@ -622,6 +817,9 @@ export const de: Record<TKey, string> = {
    "nav.codexAuth": "Codex-Auth",
    "nav.api": "API",
    "nav.openMenu": "Menü öffnen",

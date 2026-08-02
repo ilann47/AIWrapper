@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\en.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\en.ts"
-index 26aa5f653..a8886cf7b 100644
+index 26aa5f653..1084b4d70 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\en.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\en.ts"	
-@@ -10,6 +10,200 @@ export const en = {
+@@ -10,6 +10,201 @@ export const en = {
    "nav.subagents": "Subagents",
    "nav.logs": "Logs & Debug",
    "nav.usage": "Usage",
@@ -67,6 +67,7 @@ index 26aa5f653..a8886cf7b 100644
 +  "aiw.notifications.yesterday": "Yesterday",
 +  "aiw.notifications.earlier": "Earlier",
 +  "aiw.notifications.empty": "You're all caught up.",
++  "aiw.notifications.newArrivals": "{count} new — show latest",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -203,7 +204,7 @@ index 26aa5f653..a8886cf7b 100644
    "common.github": "GitHub",
    "common.save": "Save",
    "common.saving": "Saving…",
-@@ -1036,6 +1230,9 @@ export const en = {
+@@ -1036,6 +1231,9 @@ export const en = {
    "nav.codexAuth": "Codex Auth",
    "nav.api": "API",
    "nav.openMenu": "Open menu",

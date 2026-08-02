@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\traycer\\clients\\gui-app\\src\\components\\notifications\\notifications-popover.tsx" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-notifications\\src\\NotificationsCenter.tsx"
-index 0915a8501..af27bebec 100644
+index 0915a8501..fb5a345a1 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\traycer\\clients\\gui-app\\src\\components\\notifications\\notifications-popover.tsx"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-notifications\\src\\NotificationsCenter.tsx"	
-@@ -1,904 +1,211 @@
+@@ -1,904 +1,243 @@
 +import { useEffect, useMemo, useRef, useState } from "react";
 +import { Bell, Check, CheckCheck, CircleAlert, Info, X } from "lucide-react";
 +import { Toaster, toast } from "sonner";
@@ -51,6 +51,8 @@ index 0915a8501..af27bebec 100644
 +  compareAttentionOrder,
 +  occurrenceKeyForNotification,
    temporalGroupForTimestamp,
++  useNotificationCenterArrivals,
++  useNotificationCenterScrollAnchor,
 +  type NotificationAttentionTier,
    type NotificationTemporalGroup,
 -} from "@/lib/notifications/notification-temporal-group";
@@ -321,7 +323,47 @@ index 0915a8501..af27bebec 100644
 -  // detection, so a Recent filter can never blind the arrival set to a row it
 -  // currently hides (see "N-new" in the technical plan).
 -  const fullOccurrenceOrder = useMergedNotificationOccurrenceEntries();
--  const occurrenceKeyByFeedId = useMemo(
++    { enabled: Boolean(client), pollMs: 10_000 },
++  );
++
++  const rows = useMemo(() => (resource.data?.data ?? []).map(project), [resource.data?.data]);
++  const attention = useMemo(() => rows
++    .flatMap(row => {
++      const classification = lifecycle(row);
++      return classification.section === "attention" ? [{ row, tier: classification.tier }] : [];
++    })
++    .sort((left, right) => compareAttentionOrder({
++      tier: left.tier,
++      createdAt: left.row.createdAtMs,
++      feedId: left.row.feedId,
++    }, {
++      tier: right.tier,
++      createdAt: right.row.createdAtMs,
++      feedId: right.row.feedId,
++    })), [rows]);
++  const recentGroups = useMemo(() => {
++    const now = Date.now();
++    const groups = new Map<NotificationTemporalGroup, ProjectedNotification[]>();
++    for (const row of rows) {
++      if (lifecycle(row).section !== "recent") continue;
++      const group = temporalGroupForTimestamp(row.createdAtMs, now);
++      groups.set(group, [...(groups.get(group) ?? []), row]);
++    }
++    return groups;
++  }, [rows]);
++  const orderedFeedIds = useMemo(() => [
++    ...attention.map((item) => item.row.feedId),
++    ...GROUP_ORDER.flatMap((group) => (recentGroups.get(group) ?? []).map((row) => row.feedId)),
++  ], [attention, recentGroups]);
++  const occurrenceOrder = useMemo(() => rows.map((row) => ({
++    feedId: row.feedId,
++    occurrenceKey: occurrenceKeyForNotification({
++      feedId: row.feedId,
++      createdAt: row.createdAtMs,
++      sourceRef: row.sourceRef,
++    }),
++  })), [rows]);
+   const occurrenceKeyByFeedId = useMemo(
 -    () =>
 -      new Map(
 -        fullOccurrenceOrder.map((entry) => [entry.feedId, entry.occurrenceKey]),
@@ -355,34 +397,18 @@ index 0915a8501..af27bebec 100644
 -      activate({
 -        payload: row.payload,
 -        receivedAt: Date.now(),
-+    { enabled: Boolean(client), pollMs: 10_000 },
++    () => new Map(occurrenceOrder.map((entry) => [entry.feedId, entry.occurrenceKey])),
++    [occurrenceOrder],
 +  );
-+
-+  const rows = useMemo(() => (resource.data?.data ?? []).map(project), [resource.data?.data]);
-+  const attention = useMemo(() => rows
-+    .flatMap(row => {
-+      const classification = lifecycle(row);
-+      return classification.section === "attention" ? [{ row, tier: classification.tier }] : [];
-+    })
-+    .sort((left, right) => compareAttentionOrder({
-+      tier: left.tier,
-+      createdAt: left.row.createdAtMs,
-+      feedId: left.row.feedId,
-+    }, {
-+      tier: right.tier,
-+      createdAt: right.row.createdAtMs,
-+      feedId: right.row.feedId,
-+    })), [rows]);
-+  const recentGroups = useMemo(() => {
-+    const now = Date.now();
-+    const groups = new Map<NotificationTemporalGroup, ProjectedNotification[]>();
-+    for (const row of rows) {
-+      if (lifecycle(row).section !== "recent") continue;
-+      const group = temporalGroupForTimestamp(row.createdAtMs, now);
-+      groups.set(group, [...(groups.get(group) ?? []), row]);
-+    }
-+    return groups;
-+  }, [rows]);
++  const visibleOccurrenceKeys = useMemo(() => orderedFeedIds
++    .map((feedId) => occurrenceKeyByFeedId.get(feedId))
++    .filter((key): key is string => key !== undefined), [occurrenceKeyByFeedId, orderedFeedIds]);
++  const { scrollRef, isAtTop, scrollToTop } = useNotificationCenterScrollAnchor({ orderedFeedIds });
++  const { newCount, reveal } = useNotificationCenterArrivals({
++    isAtTop,
++    fullOrder: occurrenceOrder,
++    visibleOccurrenceKeys,
++  });
 +
 +  useEffect(() => {
 +    const next = new Set(rows.map(row => occurrenceKeyForNotification({
@@ -686,7 +712,7 @@ index 0915a8501..af27bebec 100644
 +  const unread = resource.data?.unreadCount ?? 0;
 +
 +  const renderRow = (row: ProjectedNotification, tier?: NotificationAttentionTier) => (
-+    <article className={`aiw-notification-row aiw-notification-row--${row.severity}`} key={row.feedId}>
++    <article data-notification-id={row.feedId} className={`aiw-notification-row aiw-notification-row--${row.severity}`} key={row.feedId}>
 +      <span className="aiw-notification-row__icon"><NotificationIcon severity={row.severity} /></span>
 +      <div className="aiw-notification-row__copy">
 +        <strong>{row.title}</strong>
@@ -858,7 +884,8 @@ index 0915a8501..af27bebec 100644
 -  );
 -  const hostLabel = useNotificationsPopoverStore(
 -    (state) => state.originUnavailableHostLabel,
--  );
++    </article>
+   );
 -  if (!originUnavailable) return null;
 -  return (
 -    <p
@@ -870,7 +897,7 @@ index 0915a8501..af27bebec 100644
 -    </p>
 -  );
 -}
--
+ 
 -interface RecentSectionBodyProps {
 -  readonly recentIds: ReadonlyArray<string>;
 -  readonly isFilteredEmpty: boolean;
@@ -936,8 +963,7 @@ index 0915a8501..af27bebec 100644
 -        />
 -      ))}
 -    </ul>
-+    </article>
-   );
+-  );
 -}
 -
 -interface RecentRowProps {
@@ -949,7 +975,7 @@ index 0915a8501..af27bebec 100644
 -  readonly onResolve: (row: MergedNotificationRow) => void;
 -  readonly onClear: (row: MergedNotificationRow) => void;
 -}
- 
+-
 -function RecentRow(props: RecentRowProps): ReactNode {
 -  const row = useMergedNotificationRow(props.feedId);
 -  const previousRow = useMergedNotificationRow(props.previousFeedId ?? "");
@@ -1032,7 +1058,12 @@ index 0915a8501..af27bebec 100644
 +              <button type="button" className="btn btn-sm btn-ghost" onClick={() => setOpen(false)} aria-label={t("common.close")}><X /></button>
 +            </div>
 +          </header>
-+          <div className="aiw-notifications__feed">
++          <div ref={scrollRef} className="aiw-notifications__feed">
++            {newCount > 0 ? (
++              <button type="button" className="aiw-notifications__new" onClick={() => { reveal(); scrollToTop(); }}>
++                {t("aiw.notifications.newArrivals", { count: String(newCount) })}
++              </button>
++            ) : null}
 +            {resource.error ? <div className="notice notice-err" role="alert">{String(resource.error)}</div> : null}
 +            {attention.length > 0 ? <section><h3>{t("aiw.notifications.attention")}</h3>{attention.map(item => renderRow(item.row, item.tier))}</section> : null}
 +            {GROUP_ORDER.map(group => {

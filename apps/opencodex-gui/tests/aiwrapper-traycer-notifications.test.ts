@@ -3,6 +3,9 @@ import { readFileSync } from "node:fs";
 import {
   classifyNotificationLifecycle,
   compareAttentionOrder,
+  computeLiveArrivalKeys,
+  computeScrollAnchorCorrectionPx,
+  findFirstVisibleAnchor,
   occurrenceKeyForNotification,
   temporalGroupForTimestamp,
 } from "../../../extensions/aiwrapper-notifications/src/traycer-notification-runtime";
@@ -49,6 +52,40 @@ test("Traycer occurrence and calendar grouping preserve arrival semantics", () =
   expect(temporalGroupForTimestamp(new Date(2026, 6, 30, 23).getTime(), now)).toBe("earlier");
 });
 
+test("Traycer live-arrival detection ignores pagination and counts recurrences", () => {
+  const baseline = [
+    { feedId: "audit:front", occurrenceKey: "front@100" },
+    { feedId: "audit:older", occurrenceKey: "older@50" },
+  ];
+  expect(computeLiveArrivalKeys(baseline, [
+    { feedId: "audit:new", occurrenceKey: "new@200" },
+    ...baseline,
+    { feedId: "audit:page", occurrenceKey: "page@10" },
+  ])).toEqual(["new@200"]);
+  expect(computeLiveArrivalKeys(baseline, [
+    { feedId: "audit:front", occurrenceKey: "front@200" },
+    baseline[1],
+  ])).toEqual(["front@200"]);
+});
+
+test("Traycer scroll anchor preserves the nearest surviving row", () => {
+  const metrics = new Map([
+    ["audit:a", { offsetTopPx: -20, heightPx: 40 }],
+    ["audit:c", { offsetTopPx: 50, heightPx: 40 }],
+  ]);
+  expect(findFirstVisibleAnchor(["audit:a", "audit:c"], metrics)).toEqual({
+    feedId: "audit:a",
+    offsetTopPx: -20,
+  });
+  expect(computeScrollAnchorCorrectionPx({
+    previousAnchor: { feedId: "audit:b", offsetTopPx: 40 },
+    previousOrderedFeedIds: ["audit:a", "audit:b", "audit:c"],
+    previousScrollTop: 40,
+    currentScrollTop: 40,
+    currentMetrics: metrics,
+  })).toBe(10);
+});
+
 test("notification center is mounted and wired to the authenticated feed", () => {
   const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
   const center = readFileSync(
@@ -60,4 +97,6 @@ test("notification center is mounted and wired to the authenticated feed", () =>
   expect(center).toContain('client.get<NotificationResponse>("/v1/me/notifications")');
   expect(center).toContain("<Toaster");
   expect(center).toContain("toast(row.title");
+  expect(center).toContain("useNotificationCenterScrollAnchor");
+  expect(center).toContain("useNotificationCenterArrivals");
 });

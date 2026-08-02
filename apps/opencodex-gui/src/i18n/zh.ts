@@ -71,6 +71,7 @@ export const zh: Record<TKey, string> = {
   "aiw.notifications.yesterday": "昨天",
   "aiw.notifications.earlier": "更早",
   "aiw.notifications.empty": "没有新通知。",
+  "aiw.notifications.newArrivals": "{count} 条新通知 — 查看最新",
   "nav.section.chat": "Chat",
   "nav.section.admin": "Administration",
   "nav.section.monitoring": "Monitoring",

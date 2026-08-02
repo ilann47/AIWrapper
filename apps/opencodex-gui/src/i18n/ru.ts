@@ -71,6 +71,7 @@ export const ru: Record<TKey, string> = {
   "aiw.notifications.yesterday": "Вчера",
   "aiw.notifications.earlier": "Ранее",
   "aiw.notifications.empty": "Новых уведомлений нет.",
+  "aiw.notifications.newArrivals": "Новых: {count} — показать последние",
   "nav.section.chat": "Chat",
   "nav.section.admin": "Administration",
   "nav.section.monitoring": "Monitoring",
