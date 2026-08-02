@@ -19,7 +19,7 @@
       "kind": "directory",
       "source": "upstream/opencodex/gui",
       "destination": "apps/opencodex-gui",
-      "exclude": ["dist", "tests/aiwrapper-token-saver.test.ts", "tests/aiwrapper-traycer-session-history.test.ts", "tests/aiwrapper-traycer-notifications.test.ts", "tests/aiwrapper-nine-router-connections.test.ts", "tests/aiwrapper-container-layout.test.ts"]
+      "exclude": ["dist", "tests/aiwrapper-token-saver.test.ts", "tests/aiwrapper-traycer-session-history.test.ts", "tests/aiwrapper-traycer-notifications.test.ts", "tests/aiwrapper-traycer-onboarding.test.ts", "tests/aiwrapper-nine-router-connections.test.ts", "tests/aiwrapper-container-layout.test.ts"]
     },
     {
       "id": "opencodex-data-plane-execution",
@@ -511,6 +511,32 @@
       "destination": "extensions/aiwrapper-notifications/src/notification-category.ts",
       "incompatibility": "Only the merged-store source type import is replaced by its exact local string union; constants and mapping behavior are preserved.",
       "parityAudit": { "retained": ["all category set", "host/cloud task mapping", "global collaboration mapping", "app-local system mapping", "projection-boundary helper"], "lost": [], "decision": "Copy the complete module and adapt only its unavailable host-store type import." }
+    },
+    {
+      "id": "traycer-onboarding-store",
+      "functionality": "Bounded first-use onboarding movement, completion, replay and completion-only browser persistence scoped to each AIWrapper user",
+      "project": "traycerai/traycer",
+      "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/traycer/clients/gui-app/src/stores/onboarding/onboarding-store.ts",
+      "destination": "extensions/aiwrapper-onboarding/src/onboarding-store.ts",
+      "incompatibility": "Traycer persists one completion timestamp per machine through its private persist catalog. AIWrapper can serve several individual identities in one browser, so completion must be keyed by authenticated user ID; the private persist helper is unavailable. Store shape, clamping, advance/retreat/complete/restart/reset actions, rehydration reset and completion-only partial persistence are retained.",
+      "parityAudit": { "retained": ["bounded step selector", "last-step completion", "retreat clamping", "complete", "restart", "reset", "local JSON persistence", "step reset on rehydration", "completion-only partial persistence"], "lost": ["Traycer private persist catalog/version helper", "single machine-wide completion timestamp"], "decision": "Adapt only the identity and persist-key boundary while retaining the original Zustand lifecycle." }
+    },
+    {
+      "id": "traycer-onboarding-product-tour",
+      "functionality": "First-login and replayable commercial product tour with acts, progress rail, keyboard navigation, skip/back/continue and responsive stage",
+      "project": "traycerai/traycer",
+      "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/traycer/clients/gui-app/src/components/onboarding/onboarding-page.tsx",
+      "destination": "extensions/aiwrapper-onboarding/src/OnboardingPage.tsx",
+      "incompatibility": "The original full-screen page requires TanStack Router, Motion, Traycer analytics, runner-host RPC, provider detection, agent-guide mutations, proprietary design assets and desktop-only dioramas. OpenCodex has a hash router and its own page/card/button/icon/theme primitives. The act, progress, focus, keyboard, skip/back/continue and responsive-stage architecture is portable; product-specific copy and previews must describe AIWrapper's real destinations.",
+      "parityAudit": { "retained": ["ordered acts", "progress rail", "first-step restart", "ArrowLeft retreat", "ArrowRight and Enter advance", "Escape skip", "skip action", "back and continue actions", "last-step finish", "responsive two-column stage", "replay navigation item"], "lost": ["Motion transitions", "Traycer provider auto-detection", "agent-selection guide editing", "Traycer theme picker", "desktop diorama", "external marketing footer and analytics"], "decision": "Mount the reusable interaction model in the OpenCodex shell and replace unavailable product/desktop integrations with AIWrapper's Chat, Conversations, Usage and Connect steps." }
     },
     {
       "id": "traycer-notifications-popover-store",

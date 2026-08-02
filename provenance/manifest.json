@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-02T08:08:28.592Z",
+  "generatedAt": "2026-08-02T08:20:43.167Z",
   "generatorUpstream": {
     "project": "ndycode/codex-multi-auth",
     "commit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
@@ -368,16 +368,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "ded6ebfd26dbcbb90c3fcccba21bd081a1f7a392e73426ef35043f18e0c2e1cc",
-          "sha256": "b5e08e18a86280adb63f8e48f70831c60ac21e01d8524b454ccd14f2253a01ca",
+          "sha256": "5c6a06867b8db48949e167fcac78615316935a96354c69d067a34342ea89d539",
           "diff": "provenance/diffs/opencodex-gui--src_app-routing.ts.diff",
-          "diffSha256": "a44c26a5fbcd8be78a6d23d77b09e79ad4d01ef93e2341129d66a0d680103d2d",
+          "diffSha256": "72fac23be982bf345dc196fbb38b2ed0780717cfb358126570372276b55e5a30",
           "lines": {
             "source": 93,
-            "destination": 116,
+            "destination": 118,
             "preserved": 92,
             "changed": 1,
             "removed": 0,
-            "added": 23,
+            "added": 25,
             "reusePercent": 98.92
           }
         },
@@ -387,16 +387,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "68d2ddf4ec49dae13487a4593c6ba25b906ff41f160fba96ff3e84d03ec63707",
-          "sha256": "2fa30e7ec0c455c56cd081be8c872e666275f5988996a65fd9b328349b9220f0",
+          "sha256": "12dcda63410d1564b54533c307b80429f4ec80677e8a092175d2e4abaeecba42",
           "diff": "provenance/diffs/opencodex-gui--src_App.tsx.diff",
-          "diffSha256": "49033bb74cecd0b37b2aecbf7e3d04205cc93dad756715b3165b0f258de7dcab",
+          "diffSha256": "e5a8692fc1883512bf446b67d2d391dca711e2adae14b503a68627ebcbfc4ade",
           "lines": {
             "source": 318,
-            "destination": 410,
+            "destination": 422,
             "preserved": 308,
             "changed": 10,
             "removed": 0,
-            "added": 92,
+            "added": 104,
             "reusePercent": 96.86
           }
         },
@@ -1698,16 +1698,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "3d0d5b807df91e18824f186caa190f69d146aed7cbb5a42ba12128e5ec74e480",
-          "sha256": "6cd022c661bf5de5945eab435e5af6a1ea760628fd151fd6ddada102c1883f4d",
+          "sha256": "0cf888d39daf6d3d20e788f25f71440859320d526d0e33afaca9d976f65da5f7",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_de.ts.diff",
-          "diffSha256": "9dfa247ae181e3a47e9c14211a9cf6f72138041c86b09ba19f254dc4cbb36607",
+          "diffSha256": "f3158ae963b07505c07f4381f8c5c2581d11939f6f844f73943cc8aa0d76014e",
           "lines": {
             "source": 1487,
-            "destination": 1718,
+            "destination": 1739,
             "preserved": 1487,
             "changed": 0,
             "removed": 0,
-            "added": 231,
+            "added": 252,
             "reusePercent": 100
           }
         },
@@ -1717,16 +1717,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "09084a0703ed3a9adc0ac00dea9aa372a1a2a4a0f7b800affead04fea5a1afa6",
-          "sha256": "17322e1b3d85f054c81b51d6aa275668699aec308448c106dfdd04958650f833",
+          "sha256": "9f0b251f9102fb92eaf16e8295624f16b9641ec1a6a425eb0a7c903f67c63ad3",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_en.ts.diff",
-          "diffSha256": "43b2f5e65f1345be719f88aaf1a3c20ed0a9086a312dd192a28bf719035de9d2",
+          "diffSha256": "eadecb232b090f926e0ab497f11f84dbf61ec70ad792e685a01898e9af2a2f1f",
           "lines": {
             "source": 1514,
-            "destination": 1745,
+            "destination": 1766,
             "preserved": 1514,
             "changed": 0,
             "removed": 0,
-            "added": 231,
+            "added": 252,
             "reusePercent": 100
           }
         },
@@ -1755,16 +1755,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "d7449a464d2dc077af41b39d0c81e4d55f0b5589f58af181cbef3b34be0a54f0",
-          "sha256": "33b98f5b5131ab40ae60bb95772d405f78e4c3d026a5b2c098bf21a9ba9f9b8f",
+          "sha256": "7d193718e9b132d1da68d6a265de4b7113eb37dd8bbad26e4ebf6b6e63d6ce71",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_ja.ts.diff",
-          "diffSha256": "97e99017b3111313fde2868e3d04bf756a411e150b2fcca7e835b335ea773461",
+          "diffSha256": "41e50dee9638501bbc21e0b726c59440d07b8d020124d7fe1881221c8aa444ef",
           "lines": {
             "source": 1508,
-            "destination": 1739,
+            "destination": 1760,
             "preserved": 1508,
             "changed": 0,
             "removed": 0,
-            "added": 231,
+            "added": 252,
             "reusePercent": 100
           }
         },
@@ -1774,16 +1774,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "5b2b64b2cd03ffbc16d15a6bad3c4163f7007927e3f602ee20e12fb96234e6e0",
-          "sha256": "e28f407d261d66ab970109f2b86a2d927fe77796aa039f82814a1b84bf446416",
+          "sha256": "7fcbf20960f1c2763007256f150ea45a3216bba0c78a1b422a9b151acab1ee9e",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_ko.ts.diff",
-          "diffSha256": "0039ce2716f52ff2ca82e40b5cf2a4cc145cbf4e6d2bfda1aa39a0ef2f7534c6",
+          "diffSha256": "84466b315703ad0fa55177eeb6a8b968bcd63ad081246eb6e54fa7ffacccc8b1",
           "lines": {
             "source": 1508,
-            "destination": 1739,
+            "destination": 1760,
             "preserved": 1508,
             "changed": 0,
             "removed": 0,
-            "added": 231,
+            "added": 252,
             "reusePercent": 100
           }
         },
@@ -1812,16 +1812,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "95c74a1b27980cfab1931395f5ffe800f3c0ddf9f101cb5badb360343de26e6a",
-          "sha256": "f9bac0af1aa7dbb5e091239578fecc49e400ee844b2e7f17452aa43fc4aaa050",
+          "sha256": "4de9ff34485deb929677fdd483e73491aefad6b31c02089c0f21820c5db8970e",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_ru.ts.diff",
-          "diffSha256": "93362699ec2f8063af59b93e9114619a0e00ed937af34b88b1621208f773908d",
+          "diffSha256": "14a2b3dda70ef349ad8040f2573608ab55bcd246d65ce956aa693d33e6eff519",
           "lines": {
             "source": 1510,
-            "destination": 1741,
+            "destination": 1762,
             "preserved": 1510,
             "changed": 0,
             "removed": 0,
-            "added": 231,
+            "added": 252,
             "reusePercent": 100
           }
         },
@@ -1850,16 +1850,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "b6b8fdb362c7a8a7d29ca6cc7c34772aec34b7ddfe66ba6521087990d644893f",
-          "sha256": "cf1794c4756b95f2c44676ee9527a9409401be2a4c73c740d3fd05037173cdab",
+          "sha256": "00186b1ff49465ff3478101d9b4a833bb4e1082370e3e13a602f7de6c09986ba",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_zh.ts.diff",
-          "diffSha256": "84315376a63a45ee32b898d473e2e89386a7a74db8e0a8682449c37041b35135",
+          "diffSha256": "442e26713ff492cc81b84c2bc9492a244c04876c6d53833005b46c23dbbd71ad",
           "lines": {
             "source": 1508,
-            "destination": 1739,
+            "destination": 1760,
             "preserved": 1508,
             "changed": 0,
             "removed": 0,
-            "added": 231,
+            "added": 252,
             "reusePercent": 100
           }
         },
@@ -25132,6 +25132,106 @@
             "removed": 0,
             "added": 0,
             "reusePercent": 96
+          }
+        }
+      ]
+    },
+    {
+      "id": "traycer-onboarding-store",
+      "functionality": "Bounded first-use onboarding movement, completion, replay and completion-only browser persistence scoped to each AIWrapper user",
+      "project": "traycerai/traycer",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "Traycer persists one completion timestamp per machine through its private persist catalog. AIWrapper can serve several individual identities in one browser, so completion must be keyed by authenticated user ID; the private persist helper is unavailable. Store shape, clamping, advance/retreat/complete/restart/reset actions, rehydration reset and completion-only partial persistence are retained.",
+      "parityAudit": {
+        "retained": [
+          "bounded step selector",
+          "last-step completion",
+          "retreat clamping",
+          "complete",
+          "restart",
+          "reset",
+          "local JSON persistence",
+          "step reset on rehydration",
+          "completion-only partial persistence"
+        ],
+        "lost": [
+          "Traycer private persist catalog/version helper",
+          "single machine-wide completion timestamp"
+        ],
+        "decision": "Adapt only the identity and persist-key boundary while retaining the original Zustand lifecycle."
+      },
+      "files": [
+        {
+          "source": "upstream/traycer/clients/gui-app/src/stores/onboarding/onboarding-store.ts",
+          "destination": "extensions/aiwrapper-onboarding/src/onboarding-store.ts",
+          "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
+          "license": "MIT / project adapter code",
+          "sourceSha256": "a504bf5380358d5f65736756a87e1bdffe12405453a1c1026e15e6d6c4ef8ada",
+          "sha256": "805f8fe423b028396a45e9ae338d37cf5c834c8ad833707af04ac4de7f650627",
+          "diff": "provenance/diffs/traycer-onboarding-store--file.diff",
+          "diffSha256": "9fdb572ca9fdf8c5a9f061a1728ba920b0f3cfa795e55d5d124f9ada87e6c53e",
+          "lines": {
+            "source": 82,
+            "destination": 80,
+            "preserved": 45,
+            "changed": 35,
+            "removed": 2,
+            "added": 0,
+            "reusePercent": 54.88
+          }
+        }
+      ]
+    },
+    {
+      "id": "traycer-onboarding-product-tour",
+      "functionality": "First-login and replayable commercial product tour with acts, progress rail, keyboard navigation, skip/back/continue and responsive stage",
+      "project": "traycerai/traycer",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "The original full-screen page requires TanStack Router, Motion, Traycer analytics, runner-host RPC, provider detection, agent-guide mutations, proprietary design assets and desktop-only dioramas. OpenCodex has a hash router and its own page/card/button/icon/theme primitives. The act, progress, focus, keyboard, skip/back/continue and responsive-stage architecture is portable; product-specific copy and previews must describe AIWrapper's real destinations.",
+      "parityAudit": {
+        "retained": [
+          "ordered acts",
+          "progress rail",
+          "first-step restart",
+          "ArrowLeft retreat",
+          "ArrowRight and Enter advance",
+          "Escape skip",
+          "skip action",
+          "back and continue actions",
+          "last-step finish",
+          "responsive two-column stage",
+          "replay navigation item"
+        ],
+        "lost": [
+          "Motion transitions",
+          "Traycer provider auto-detection",
+          "agent-selection guide editing",
+          "Traycer theme picker",
+          "desktop diorama",
+          "external marketing footer and analytics"
+        ],
+        "decision": "Mount the reusable interaction model in the OpenCodex shell and replace unavailable product/desktop integrations with AIWrapper's Chat, Conversations, Usage and Connect steps."
+      },
+      "files": [
+        {
+          "source": "upstream/traycer/clients/gui-app/src/components/onboarding/onboarding-page.tsx",
+          "destination": "extensions/aiwrapper-onboarding/src/OnboardingPage.tsx",
+          "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
+          "license": "MIT / project adapter code",
+          "sourceSha256": "92428f25d80f9a9d1617c38ea21ea7a3d77a154b4b57aab1bd650dbc76063aa4",
+          "sha256": "ad138214ebb01e171c77d7f35939245e93d3e30b54f3cdbab49f55e2d6885e6c",
+          "diff": "provenance/diffs/traycer-onboarding-product-tour--file.diff",
+          "diffSha256": "42c49ca616fa4c5a7ac54bdbe31ddf1d46dfaf07aa2d9d12b8d10208aac27df4",
+          "lines": {
+            "source": 825,
+            "destination": 98,
+            "preserved": 35,
+            "changed": 63,
+            "removed": 727,
+            "added": 0,
+            "reusePercent": 4.24
           }
         }
       ]

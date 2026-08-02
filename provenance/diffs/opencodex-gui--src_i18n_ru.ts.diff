@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ru.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ru.ts"
-index e0ae4bdf4..22c6e813b 100644
+index e0ae4bdf4..189ada281 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ru.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ru.ts"	
-@@ -10,6 +10,234 @@ export const ru: Record<TKey, string> = {
+@@ -10,6 +10,255 @@ export const ru: Record<TKey, string> = {
    "nav.subagents": "Подагенты",
    "nav.logs": "Логи и отладка",
    "nav.usage": "Использование",
@@ -13,6 +13,27 @@ index e0ae4bdf4..22c6e813b 100644
 +  "nav.aiwrapperSharing": "Sharing",
 +  "nav.aiwrapperBilling": "Billing",
 +  "nav.aiwrapperConnections": "Подключить приложения",
++  "nav.aiwrapperOnboarding": "Начало работы",
++  "aiw.onboarding.title": "Начало работы",
++  "aiw.onboarding.subtitle": "Краткий обзор основных функций — его можно повторить в любое время.",
++  "aiw.onboarding.progress": "Шаг {current} из {total}",
++  "aiw.onboarding.skip": "Пропустить введение",
++  "aiw.onboarding.back": "Назад",
++  "aiw.onboarding.continue": "Далее",
++  "aiw.onboarding.start": "Начать чат",
++  "aiw.onboarding.keyboardHint": "← и → для навигации, Esc для завершения",
++  "aiw.onboarding.chatEyebrow": "Шаг 01 · Чат",
++  "aiw.onboarding.chatTitle": "Спросите один раз. Сохраните весь разговор.",
++  "aiw.onboarding.chatBody": "Выберите модель и уровень рассуждения, получайте потоковый ответ, копируйте, редактируйте или создавайте заново без потери контекста.",
++  "aiw.onboarding.conversationsEyebrow": "Шаг 02 · Диалоги",
++  "aiw.onboarding.conversationsTitle": "Продолжайте точно с того места, где остановились.",
++  "aiw.onboarding.conversationsBody": "Ищите, добавляйте в избранное, переименовывайте, продолжайте, экспортируйте и делитесь сохранёнными диалогами.",
++  "aiw.onboarding.usageEyebrow": "Шаг 03 · Использование",
++  "aiw.onboarding.usageTitle": "Квота всегда перед глазами.",
++  "aiw.onboarding.usageBody": "Следите за окнами 5 часов и 7 дней, моделями, токенами, оценкой стоимости и состоянием сервиса.",
++  "aiw.onboarding.connectionsEyebrow": "Шаг 04 · Подключение",
++  "aiw.onboarding.connectionsTitle": "Используйте ту же квоту в любимых инструментах.",
++  "aiw.onboarding.connectionsBody": "Создайте файлы Codex CLI или переменные окружения OpenAI с индивидуальным ключом.",
 +  "aiw.overview.title": "Работа AIWrapper",
 +  "aiw.overview.subtitle": "Активность пользовательского шлюза за последние 24 часа.",
 +  "aiw.overview.notConnected": "Подключитесь с ключом администратора для просмотра.",
@@ -237,7 +258,7 @@ index e0ae4bdf4..22c6e813b 100644
    "common.github": "GitHub",
    "common.save": "Сохранить",
    "common.saving": "Сохранение…",
-@@ -1035,6 +1263,9 @@ export const ru: Record<TKey, string> = {
+@@ -1035,6 +1284,9 @@ export const ru: Record<TKey, string> = {
    "nav.codexAuth": "Аутентификация Codex",
    "nav.api": "API",
    "nav.openMenu": "Открыть меню",

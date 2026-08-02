@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ko.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ko.ts"
-index 2372bf500..7bbc0f8c4 100644
+index 2372bf500..27e489d1f 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ko.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ko.ts"	
-@@ -10,6 +10,234 @@ export const ko: Record<TKey, string> = {
+@@ -10,6 +10,255 @@ export const ko: Record<TKey, string> = {
    "nav.subagents": "서브에이전트",
    "nav.logs": "로그&디버그",
    "nav.usage": "사용량",
@@ -13,6 +13,27 @@ index 2372bf500..7bbc0f8c4 100644
 +  "nav.aiwrapperSharing": "Sharing",
 +  "nav.aiwrapperBilling": "Billing",
 +  "nav.aiwrapperConnections": "앱 연결",
++  "nav.aiwrapperOnboarding": "시작하기",
++  "aiw.onboarding.title": "시작하기",
++  "aiw.onboarding.subtitle": "핵심 기능을 빠르게 살펴보세요. 언제든 다시 볼 수 있습니다.",
++  "aiw.onboarding.progress": "{total}단계 중 {current}",
++  "aiw.onboarding.skip": "소개 건너뛰기",
++  "aiw.onboarding.back": "뒤로",
++  "aiw.onboarding.continue": "계속",
++  "aiw.onboarding.start": "채팅 시작",
++  "aiw.onboarding.keyboardHint": "←, →로 이동하고 Esc로 종료",
++  "aiw.onboarding.chatEyebrow": "1단계 · 채팅",
++  "aiw.onboarding.chatTitle": "한 번 질문하고 전체 대화를 보관하세요.",
++  "aiw.onboarding.chatBody": "모델과 추론 수준을 선택하고 답변을 스트리밍한 뒤 문맥을 잃지 않고 복사, 편집, 재생성하세요.",
++  "aiw.onboarding.conversationsEyebrow": "2단계 · 대화",
++  "aiw.onboarding.conversationsTitle": "중단한 곳에서 정확히 이어가세요.",
++  "aiw.onboarding.conversationsBody": "저장된 대화를 검색, 즐겨찾기, 이름 변경, 계속, 내보내기 또는 공유할 수 있습니다.",
++  "aiw.onboarding.usageEyebrow": "3단계 · 사용량",
++  "aiw.onboarding.usageTitle": "할당량을 언제나 확인하세요.",
++  "aiw.onboarding.usageBody": "5시간·7일 기간, 모델 사용량, 토큰, 예상 비용과 서비스 상태를 확인하세요.",
++  "aiw.onboarding.connectionsEyebrow": "4단계 · 연결",
++  "aiw.onboarding.connectionsTitle": "즐겨 쓰는 도구에서도 같은 할당량을 사용하세요.",
++  "aiw.onboarding.connectionsBody": "개별 키로 Codex CLI 파일이나 OpenAI 호환 환경 변수를 생성하세요.",
 +  "aiw.overview.title": "AIWrapper 운영",
 +  "aiw.overview.subtitle": "최근 24시간의 사용자별 게이트웨이 활동입니다.",
 +  "aiw.overview.notConnected": "운영 정보를 보려면 관리자 키로 연결하세요.",
@@ -237,7 +258,7 @@ index 2372bf500..7bbc0f8c4 100644
    "common.github": "GitHub",
    "common.save": "저장",
    "common.saving": "저장 중…",
-@@ -639,6 +867,9 @@ export const ko: Record<TKey, string> = {
+@@ -639,6 +888,9 @@ export const ko: Record<TKey, string> = {
    "nav.api": "API",
    "nav.codexAuth": "Codex 인증",
    "nav.openMenu": "메뉴 열기",

@@ -20,6 +20,7 @@ Audit date: 2026-08-01. Exact line counts, reuse percentages and unified diffs a
 | Traycer | Context-window formatting/warning tone | Partial | Yes | Yes | `context-usage.ts` → `traycer-chat-runtime.ts` | Feed per-user quota data | wired |
 | Traycer | Fuzzy conversation search and favorite-first history ordering | Partial | Yes | Yes | `use-history-query.ts`, `home-page.data.ts` → `traycer-session-history.ts` | Traycer's host/cloud task boundary is replaced by authenticated AIWrapper sessions; Fuse thresholds, relevance flow and sorting architecture are retained | wired |
 | Traycer | Notification lifecycle, filters, Attention/Recent feed, live-arrival toasts and stable scrolling | No | Yes | Yes | `notification-lifecycle.ts`, `notification-category.ts`, `notifications-popover-store.ts`, `notification-occurrence.ts`, `notification-temporal-group.ts`, `use-notification-center-arrivals.ts`, `use-notification-center-scroll-anchor.ts`, `notifications-popover.tsx` → `aiwrapper-notifications` | Portable modules copied with only type-boundary adaptation; host-bound UI adapted to the authenticated quota/audit feed | wired |
+| Traycer | First-launch onboarding, progress, keyboard flow and replay | No | Yes | Yes | `onboarding-store.ts`, `onboarding-acts.ts`, `onboarding-page.tsx` → `aiwrapper-onboarding` | Retains the Zustand lifecycle and act/progress/navigation architecture; scopes completion per AIWrapper user and replaces desktop/provider-only screens with real product destinations | wired |
 | Traycer | Agent/workspace collaboration | No | Yes | Snapshot only | `upstream/traycer/` | Needs Traycer desktop services/project graph | preserved |
 | Traycer | Chat/composer/session UX | Partial | Yes | Selected modules | Complete snapshot plus runtime exports | AIWrapper keeps authenticated HTTP/SSE boundary | wired |
 | 9router | RTK token compression | No | Yes | Yes | `open-sse/rtk/index.js` → `nine-router-bridge.mjs` | JSON subprocess boundary only | wired |
@@ -47,6 +48,7 @@ Audit date: 2026-08-01. Exact line counts, reuse percentages and unified diffs a
 
 - User navigation: Chat, Conversations, Sharing and personal Usage.
 - Connect apps: users generate Codex CLI `config.toml`/`auth.json` and OpenAI-compatible environment variables with endpoint guidance, live model discovery and memory-only individual-key handling.
+- First use: a Traycer-derived four-act tour introduces Chat, Conversations, Usage and Connect apps, remembers completion per user and remains replayable from the sidebar.
 - Global navigation search: filters every role-visible destination and focuses with `Ctrl+K`/`Cmd+K`, preserving the 9router registration/query lifecycle.
 - Conversation history uses Traycer's Fuse-based tolerant search, relevance ordering and favorite-first recent/oldest/title projections.
 - Notifications use Traycer's original lifecycle, category, popover-filter, occurrence, live-arrival, scroll-anchor and calendar-grouping modules with a persistent per-user quota/audit feed, unread badge, Attention/Recent center, N-new reveal control and live Sonner toasts.

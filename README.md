@@ -48,6 +48,8 @@ O frontend dev separado também pode ser iniciado com `pnpm dev:web`, usando `OP
 
 Use `Ctrl+K` (ou `Cmd+K`) para focar a busca global da barra lateral. Ela filtra somente as páginas permitidas para o papel autenticado e reutiliza o ciclo de registro e consulta do header search original do 9router.
 
+No primeiro acesso de cada usuário, o onboarding derivado do Traycer apresenta Chat, Conversas, Consumo e Conectar aplicativos em quatro passos. O progresso aceita teclado (`←`, `→`, `Enter` e `Esc`), a conclusão é armazenada por usuário e o tour pode ser reaberto em **Primeiros passos**.
+
 Em **Conectar aplicativos**, cada usuário pode informar temporariamente sua chave individual, escolher o modelo e gerar os arquivos `~/.codex/config.toml` e `~/.codex/auth.json` para usar o Codex CLI através do AIWrapper. A tela também gera `OPENAI_BASE_URL` e `OPENAI_API_KEY` para outros clientes compatíveis. A chave permanece somente na memória da página; a gravação automática do 9router no host foi deliberadamente excluída porque alteraria o OAuth compartilhado do servidor em vez do computador do usuário.
 
 ## Fluxo de uma conversa

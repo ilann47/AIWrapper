@@ -1,5 +1,5 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\App.tsx" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\App.tsx"
-index d60e839b8..22dc01f1b 100644
+index d60e839b8..938633627 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\App.tsx"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\App.tsx"	
 @@ -1,4 +1,4 @@
@@ -8,7 +8,7 @@ index d60e839b8..22dc01f1b 100644
  import { setClientResourceData, useKeyedClientResource } from "./client-resource";
  import Dashboard from "./pages/Dashboard";
  import Providers from "./pages/Providers";
-@@ -14,14 +14,31 @@ import Claude from "./pages/Claude";
+@@ -14,14 +14,33 @@ import Claude from "./pages/Claude";
  import Grok from "./pages/Grok";
  import Startup from "./pages/Startup";
  import ErrorBoundary from "./components/ErrorBoundary";
@@ -35,6 +35,8 @@ index d60e839b8..22dc01f1b 100644
 +import TokenSaverPanel from "../../../extensions/aiwrapper-admin/src/TokenSaverPanel";
 +import NotificationsCenter from "../../../extensions/aiwrapper-notifications/src/NotificationsCenter";
 +import ConnectionsPage from "../../../extensions/aiwrapper-connections/src/ConnectionsPage";
++import OnboardingPage from "../../../extensions/aiwrapper-onboarding/src/OnboardingPage";
++import { selectHasCompleted, useOnboardingStore } from "../../../extensions/aiwrapper-onboarding/src/onboarding-store";
 +import { useHeaderSearchStore } from "../../../extensions/aiwrapper-admin/src/header-search-store";
 +import "../../../extensions/aiwrapper-admin/src/styles.css";
 +import "../../../extensions/aiwrapper-chat/src/styles.css";
@@ -42,7 +44,7 @@ index d60e839b8..22dc01f1b 100644
  
  installApiAuthFetch();
  
-@@ -41,27 +58,55 @@ const PAGE_TKEY: Record<Page, TKey> = {
+@@ -41,27 +60,57 @@ const PAGE_TKEY: Record<Page, TKey> = {
    api: "nav.api",
    claude: "nav.claude",
    grok: "nav.grok",
@@ -53,6 +55,7 @@ index d60e839b8..22dc01f1b 100644
 +  "aiwrapper-sharing": "nav.aiwrapperSharing",
 +  "aiwrapper-billing": "nav.aiwrapperBilling",
 +  "aiwrapper-connections": "nav.aiwrapperConnections",
++  "aiwrapper-onboarding": "nav.aiwrapperOnboarding",
 +  "aiwrapper-shared": "aiw.shared.title",
  };
  
@@ -68,6 +71,7 @@ index d60e839b8..22dc01f1b 100644
 +  { id: "aiwrapper-sharing", tkey: "nav.aiwrapperSharing", Icon: IconLink },
 +  { id: "aiwrapper-billing", tkey: "nav.aiwrapperBilling", Icon: IconActivity },
 +  { id: "aiwrapper-connections", tkey: "nav.aiwrapperConnections", Icon: IconGlobe },
++  { id: "aiwrapper-onboarding", tkey: "nav.aiwrapperOnboarding", Icon: IconSparkle },
 + ]},
 + { label: "nav.section.admin", adminOnly: true, items: [
 +  { id: "aiwrapper-users", tkey: "nav.aiwrapperUsers", Icon: IconBot },
@@ -97,11 +101,11 @@ index d60e839b8..22dc01f1b 100644
  
  const THEME_ICON = { light: IconSun, dark: IconMoon, system: IconMonitor } as const;
  const THEME_TKEY: Record<Theme, TKey> = { light: "theme.light", dark: "theme.dark", system: "theme.system" };
-+const USER_PAGES = new Set<Page>(["aiwrapper-chat", "aiwrapper-sessions", "aiwrapper-sharing", "aiwrapper-billing", "aiwrapper-connections", "aiwrapper-shared"]);
++const USER_PAGES = new Set<Page>(["aiwrapper-chat", "aiwrapper-sessions", "aiwrapper-sharing", "aiwrapper-billing", "aiwrapper-connections", "aiwrapper-onboarding", "aiwrapper-shared"]);
  
  function readRuntimeVersion(data: unknown): string | null {
    if (!data || typeof data !== "object" || !("version" in data)) return null;
-@@ -74,11 +119,20 @@ function readStoredTheme(): Theme {
+@@ -74,11 +123,27 @@ function readStoredTheme(): Theme {
    return t === "light" || t === "dark" ? t : "system";
  }
  
@@ -112,6 +116,7 @@ index d60e839b8..22dc01f1b 100644
    const { locale, setLocale } = useI18n();
    const t = useT();
 +  const { principal } = useAIWrapper();
++  const hasCompletedOnboarding = useOnboardingStore(selectHasCompleted(principal?.userId));
 +  const navigationQuery = useHeaderSearchStore(state => state.query);
 +  // Keep the imported OpenCodex controls available while the AIWrapper identity
 +  // is unresolved/disconnected; once a user is authenticated, enforce its role.
@@ -120,10 +125,16 @@ index d60e839b8..22dc01f1b 100644
 +  useEffect(() => {
 +    if (!isAdministrator && !USER_PAGES.has(page)) navigateToPage("aiwrapper-chat");
 +  }, [isAdministrator, navigateToPage, page]);
++
++  useEffect(() => {
++    if (principal && !hasCompletedOnboarding && page !== "aiwrapper-onboarding" && page !== "aiwrapper-shared") {
++      navigateToPage("aiwrapper-onboarding");
++    }
++  }, [hasCompletedOnboarding, navigateToPage, page, principal]);
  
    // Narrow screens: the sidebar becomes an off-canvas drawer behind a hamburger toggle.
    const [navOpen, setNavOpen] = useState(false);
-@@ -118,6 +172,17 @@ export default function App() {
+@@ -118,6 +183,17 @@ export default function App() {
    const ThemeIcon = THEME_ICON[theme];
    const displayedVersion: string = healthPoll.data ?? __APP_VERSION__;
  
@@ -141,7 +152,7 @@ index d60e839b8..22dc01f1b 100644
    const [stopping, setStopping] = useState(false);
    // Claude navigation row also owns the connection toggle.
    const fetchClaudeEnabled = useCallback(async (signal: AbortSignal) => {
-@@ -198,6 +263,10 @@ export default function App() {
+@@ -198,6 +274,10 @@ export default function App() {
      }
    };
  
@@ -152,7 +163,7 @@ index d60e839b8..22dc01f1b 100644
    const brand = (
      <div className="brand">
        <span className="brand-logo" role="img" aria-label={t("app.logoAria")} />
-@@ -208,6 +277,7 @@ export default function App() {
+@@ -208,6 +288,7 @@ export default function App() {
  
    return (
      <div className="app">
@@ -160,7 +171,7 @@ index d60e839b8..22dc01f1b 100644
        {/* inert while the drawer is open: keeps focus and assistive tech inside the drawer */}
        <header className="mobile-topbar" inert={navOpen}>
          <button ref={menuBtnRef} type="button" className="menu-toggle" onClick={() => setNavOpen(o => !o)}
-@@ -230,6 +300,13 @@ export default function App() {
+@@ -230,6 +311,13 @@ export default function App() {
              <IconX />
            </button>
          </div>
@@ -174,7 +185,7 @@ index d60e839b8..22dc01f1b 100644
          <nav>
            {/*
              Codex Auth was once filtered out of this list whenever the workspace layout
-@@ -237,7 +314,9 @@ export default function App() {
+@@ -237,7 +325,9 @@ export default function App() {
              account pool. It is now promoted to the second slot instead: there is only
              one layout, so that filter would have hidden the page permanently.
            */}
@@ -185,7 +196,7 @@ index d60e839b8..22dc01f1b 100644
              <div key={id} className={`nav-entry${id === "claude" ? ` nav-entry-claude${page === id ? " active" : ""}` : ""}`}>
                <button type="button" className={`nav-item${page === id ? " active" : ""}`} data-page={id}
                  onClick={() => {
-@@ -257,7 +336,9 @@ export default function App() {
+@@ -257,7 +347,9 @@ export default function App() {
                  />
                )}
              </div>
@@ -196,7 +207,7 @@ index d60e839b8..22dc01f1b 100644
          </nav>
          <div className="sidebar-foot">
            <div className="lang-toggle">
-@@ -296,7 +377,7 @@ export default function App() {
+@@ -296,7 +388,7 @@ export default function App() {
              detailsLabel={t("errorBoundary.details")}
              reloadLabel={t("errorBoundary.reload")}
            >
@@ -205,7 +216,7 @@ index d60e839b8..22dc01f1b 100644
              {page === "startup" && <Startup apiBase={API_BASE} />}
              {page === "providers" && <Providers apiBase={API_BASE} />}
              {page === "models" && <Models apiBase={API_BASE} />}
-@@ -309,9 +390,20 @@ export default function App() {
+@@ -309,9 +401,21 @@ export default function App() {
              {page === "api" && <ApiKeys apiBase={API_BASE} />}
              {page === "claude" && <Claude apiBase={API_BASE} />}
              {page === "grok" && <Grok apiBase={API_BASE} />}
@@ -216,6 +227,7 @@ index d60e839b8..22dc01f1b 100644
 +            {page === "aiwrapper-sharing" && <SharingPage />}
 +            {page === "aiwrapper-billing" && <BillingPage />}
 +            {page === "aiwrapper-connections" && <ConnectionsPage />}
++            {page === "aiwrapper-onboarding" && principal && <OnboardingPage userId={principal.userId} navigateToPage={navigateToPage} />}
            </ErrorBoundary>
          </div>
        </main>

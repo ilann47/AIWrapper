@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\en.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\en.ts"
-index 26aa5f653..c8a4c7803 100644
+index 26aa5f653..39d31c553 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\en.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\en.ts"	
-@@ -10,6 +10,234 @@ export const en = {
+@@ -10,6 +10,255 @@ export const en = {
    "nav.subagents": "Subagents",
    "nav.logs": "Logs & Debug",
    "nav.usage": "Usage",
@@ -13,6 +13,27 @@ index 26aa5f653..c8a4c7803 100644
 +  "nav.aiwrapperSharing": "Sharing",
 +  "nav.aiwrapperBilling": "Billing",
 +  "nav.aiwrapperConnections": "Connect apps",
++  "nav.aiwrapperOnboarding": "Getting started",
++  "aiw.onboarding.title": "Getting started",
++  "aiw.onboarding.subtitle": "A quick tour of the essentials — you can replay it any time.",
++  "aiw.onboarding.progress": "Step {current} of {total}",
++  "aiw.onboarding.skip": "Skip intro",
++  "aiw.onboarding.back": "Back",
++  "aiw.onboarding.continue": "Continue",
++  "aiw.onboarding.start": "Start chatting",
++  "aiw.onboarding.keyboardHint": "Use ← and → to move, Esc to finish",
++  "aiw.onboarding.chatEyebrow": "Step 01 · Chat",
++  "aiw.onboarding.chatTitle": "Ask once. Keep the whole conversation.",
++  "aiw.onboarding.chatBody": "Choose a model and reasoning level, stream the answer, stop when needed, then copy, edit or regenerate without losing context.",
++  "aiw.onboarding.conversationsEyebrow": "Step 02 · Conversations",
++  "aiw.onboarding.conversationsTitle": "Come back exactly where you left off.",
++  "aiw.onboarding.conversationsBody": "Search, favorite, rename, continue, export or share your saved conversations from one organized history.",
++  "aiw.onboarding.usageEyebrow": "Step 03 · Usage",
++  "aiw.onboarding.usageTitle": "Your quota is always visible.",
++  "aiw.onboarding.usageBody": "See the five-hour and seven-day windows, model usage, token mix, cost estimate and service health before limits surprise you.",
++  "aiw.onboarding.connectionsEyebrow": "Step 04 · Connect",
++  "aiw.onboarding.connectionsTitle": "Use the same quota from your favorite tools.",
++  "aiw.onboarding.connectionsBody": "Generate ready-to-copy Codex CLI files or OpenAI-compatible environment variables using your individual key.",
 +  "aiw.overview.title": "AIWrapper operations",
 +  "aiw.overview.subtitle": "Per-user gateway activity during the last 24 hours.",
 +  "aiw.overview.notConnected": "Connect with an administrator key to view operations.",
@@ -237,7 +258,7 @@ index 26aa5f653..c8a4c7803 100644
    "common.github": "GitHub",
    "common.save": "Save",
    "common.saving": "Saving…",
-@@ -1036,6 +1264,9 @@ export const en = {
+@@ -1036,6 +1285,9 @@ export const en = {
    "nav.codexAuth": "Codex Auth",
    "nav.api": "API",
    "nav.openMenu": "Open menu",

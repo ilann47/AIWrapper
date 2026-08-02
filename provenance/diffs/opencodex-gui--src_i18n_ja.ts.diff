@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ja.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ja.ts"
-index 47b1de3f0..375a3129f 100644
+index 47b1de3f0..9b0777161 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ja.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ja.ts"	
-@@ -10,6 +10,234 @@ export const ja: Record<TKey, string> = {
+@@ -10,6 +10,255 @@ export const ja: Record<TKey, string> = {
    "nav.subagents": "サブエージェント",
    "nav.logs": "ログ & デバッグ",
    "nav.usage": "使用量",
@@ -13,6 +13,27 @@ index 47b1de3f0..375a3129f 100644
 +  "nav.aiwrapperSharing": "Sharing",
 +  "nav.aiwrapperBilling": "Billing",
 +  "nav.aiwrapperConnections": "アプリを接続",
++  "nav.aiwrapperOnboarding": "はじめに",
++  "aiw.onboarding.title": "はじめに",
++  "aiw.onboarding.subtitle": "基本機能を短時間で確認できます。いつでも再表示できます。",
++  "aiw.onboarding.progress": "{total} ステップ中 {current}",
++  "aiw.onboarding.skip": "イントロをスキップ",
++  "aiw.onboarding.back": "戻る",
++  "aiw.onboarding.continue": "続ける",
++  "aiw.onboarding.start": "チャットを開始",
++  "aiw.onboarding.keyboardHint": "← と → で移動、Esc で終了",
++  "aiw.onboarding.chatEyebrow": "ステップ 01 · チャット",
++  "aiw.onboarding.chatTitle": "質問して、会話全体を残す。",
++  "aiw.onboarding.chatBody": "モデルと推論レベルを選び、回答をストリーミングし、文脈を失わずにコピー、編集、再生成できます。",
++  "aiw.onboarding.conversationsEyebrow": "ステップ 02 · 会話",
++  "aiw.onboarding.conversationsTitle": "中断した場所から正確に再開。",
++  "aiw.onboarding.conversationsBody": "保存した会話を検索、お気に入り、名前変更、継続、エクスポート、共有できます。",
++  "aiw.onboarding.usageEyebrow": "ステップ 03 · 使用量",
++  "aiw.onboarding.usageTitle": "クォータをいつでも確認。",
++  "aiw.onboarding.usageBody": "5時間と7日間の枠、モデル、トークン、推定費用、サービス状態を確認できます。",
++  "aiw.onboarding.connectionsEyebrow": "ステップ 04 · 接続",
++  "aiw.onboarding.connectionsTitle": "お気に入りのツールでも同じクォータを利用。",
++  "aiw.onboarding.connectionsBody": "個別キーで Codex CLI ファイルや OpenAI 互換の環境変数を生成できます。",
 +  "aiw.overview.title": "AIWrapper 運用",
 +  "aiw.overview.subtitle": "過去24時間のユーザー別ゲートウェイの稼働状況。",
 +  "aiw.overview.notConnected": "運用状況を表示するには管理者キーで接続してください。",
@@ -237,7 +258,7 @@ index 47b1de3f0..375a3129f 100644
    "common.github": "GitHub",
    "common.save": "保存",
    "common.saving": "保存中…",
-@@ -993,6 +1221,9 @@ export const ja: Record<TKey, string> = {
+@@ -993,6 +1242,9 @@ export const ja: Record<TKey, string> = {
    "nav.codexAuth": "Codex 認証",
    "nav.api": "API",
    "nav.openMenu": "メニューを開く",

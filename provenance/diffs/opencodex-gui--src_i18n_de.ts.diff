@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\de.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\de.ts"
-index 5e85333ed..2347e44be 100644
+index 5e85333ed..56e9a7790 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\de.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\de.ts"	
-@@ -10,6 +10,234 @@ export const de: Record<TKey, string> = {
+@@ -10,6 +10,255 @@ export const de: Record<TKey, string> = {
    "nav.subagents": "Sub-Agenten",
    "nav.logs": "Protokolle & Diagnose",
    "nav.usage": "Nutzung",
@@ -13,6 +13,27 @@ index 5e85333ed..2347e44be 100644
 +  "nav.aiwrapperSharing": "Freigaben",
 +  "nav.aiwrapperBilling": "Abrechnung",
 +  "nav.aiwrapperConnections": "Apps verbinden",
++  "nav.aiwrapperOnboarding": "Erste Schritte",
++  "aiw.onboarding.title": "Erste Schritte",
++  "aiw.onboarding.subtitle": "Eine kurze Tour durch die Grundlagen — jederzeit wiederholbar.",
++  "aiw.onboarding.progress": "Schritt {current} von {total}",
++  "aiw.onboarding.skip": "Einführung überspringen",
++  "aiw.onboarding.back": "Zurück",
++  "aiw.onboarding.continue": "Weiter",
++  "aiw.onboarding.start": "Chat starten",
++  "aiw.onboarding.keyboardHint": "Mit ← und → navigieren, Esc zum Beenden",
++  "aiw.onboarding.chatEyebrow": "Schritt 01 · Chat",
++  "aiw.onboarding.chatTitle": "Einmal fragen. Das ganze Gespräch behalten.",
++  "aiw.onboarding.chatBody": "Wählen Sie Modell und Denkstufe, streamen Sie die Antwort und kopieren, bearbeiten oder erzeugen Sie sie erneut, ohne Kontext zu verlieren.",
++  "aiw.onboarding.conversationsEyebrow": "Schritt 02 · Gespräche",
++  "aiw.onboarding.conversationsTitle": "Genau dort weitermachen, wo Sie aufgehört haben.",
++  "aiw.onboarding.conversationsBody": "Gespeicherte Gespräche zentral suchen, favorisieren, umbenennen, fortsetzen, exportieren oder teilen.",
++  "aiw.onboarding.usageEyebrow": "Schritt 03 · Nutzung",
++  "aiw.onboarding.usageTitle": "Ihre Quote bleibt immer sichtbar.",
++  "aiw.onboarding.usageBody": "Prüfen Sie 5-Stunden- und 7-Tage-Fenster, Modelle, Tokens, Kostenschätzung und Dienstzustand.",
++  "aiw.onboarding.connectionsEyebrow": "Schritt 04 · Verbinden",
++  "aiw.onboarding.connectionsTitle": "Dieselbe Quote in Ihren bevorzugten Tools.",
++  "aiw.onboarding.connectionsBody": "Erzeugen Sie Codex-CLI-Dateien oder OpenAI-kompatible Umgebungsvariablen mit Ihrem individuellen Schlüssel.",
 +  "aiw.overview.title": "AIWrapper-Betrieb",
 +  "aiw.overview.subtitle": "Aktivität des Benutzer-Gateways in den letzten 24 Stunden.",
 +  "aiw.overview.notConnected": "Mit einem Administratorschlüssel verbinden, um den Betrieb anzuzeigen.",
@@ -237,7 +258,7 @@ index 5e85333ed..2347e44be 100644
    "common.github": "GitHub",
    "common.save": "Speichern",
    "common.saving": "Speichern…",
-@@ -622,6 +850,9 @@ export const de: Record<TKey, string> = {
+@@ -622,6 +871,9 @@ export const de: Record<TKey, string> = {
    "nav.codexAuth": "Codex-Auth",
    "nav.api": "API",
    "nav.openMenu": "Menü öffnen",
