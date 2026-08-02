@@ -2,12 +2,14 @@ import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import {
   classifyNotificationLifecycle,
+  categoryForNotificationSource,
   compareAttentionOrder,
   computeLiveArrivalKeys,
   computeScrollAnchorCorrectionPx,
   findFirstVisibleAnchor,
   occurrenceKeyForNotification,
   temporalGroupForTimestamp,
+  useNotificationsPopoverStore,
 } from "../../../extensions/aiwrapper-notifications/src/traycer-notification-runtime";
 
 test("Traycer lifecycle keeps unresolved actions and unread failures in Attention", () => {
@@ -39,6 +41,23 @@ test("Traycer attention ordering is blocking-first and deterministic", () => {
   ].sort(compareAttentionOrder);
 
   expect(rows.map((row) => row.feedId)).toEqual(["a", "c", "b"]);
+});
+
+test("Traycer notification categories and popover filter lifecycle are preserved", () => {
+  expect(categoryForNotificationSource("host")).toBe("task");
+  expect(categoryForNotificationSource("cloud")).toBe("task");
+  expect(categoryForNotificationSource("global")).toBe("collaboration");
+  expect(categoryForNotificationSource("app-local")).toBe("system");
+
+  const store = useNotificationsPopoverStore.getState();
+  store.setUnreadOnly(true);
+  store.toggleCategory("collaboration");
+  expect(useNotificationsPopoverStore.getState().unreadOnly).toBe(true);
+  expect(useNotificationsPopoverStore.getState().categories.has("collaboration")).toBe(false);
+  store.setOpen(true);
+  expect(useNotificationsPopoverStore.getState().unreadOnly).toBe(false);
+  expect(useNotificationsPopoverStore.getState().categories.size).toBe(3);
+  store.setOpen(false);
 });
 
 test("Traycer occurrence and calendar grouping preserve arrival semantics", () => {
@@ -99,4 +118,6 @@ test("notification center is mounted and wired to the authenticated feed", () =>
   expect(center).toContain("toast(row.title");
   expect(center).toContain("useNotificationCenterScrollAnchor");
   expect(center).toContain("useNotificationCenterArrivals");
+  expect(center).toContain("categoryForNotificationSource");
+  expect(center).toContain("useNotificationsPopoverStore");
 });

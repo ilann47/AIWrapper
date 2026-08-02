@@ -1,0 +1,10 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\traycer\\clients\\gui-app\\src\\lib\\notifications\\notification-category.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-notifications\\src\\notification-category.ts"
+index 17725894f..bb6cd6e3b 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\traycer\\clients\\gui-app\\src\\lib\\notifications\\notification-category.ts"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-notifications\\src\\notification-category.ts"	
+@@ -1,4 +1,4 @@
+-import type { MergedNotificationSource } from "@/stores/notifications/merged-notifications";
++export type MergedNotificationSource = "host" | "cloud" | "app-local" | "global";
+ 
+ export type NotificationCategory = "task" | "collaboration" | "system";
+ 

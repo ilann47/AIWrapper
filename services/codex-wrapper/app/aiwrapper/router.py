@@ -105,9 +105,16 @@ def _audit_notification(event: dict[str, Any]) -> dict[str, Any]:
     action = str(event["action"])
     severity = "failure" if any(marker in action for marker in ("failed", "blocked", "denied")) else "done"
     target = str(event.get("target_type") or "AIWrapper")
+    source = (
+        "global"
+        if action.startswith("share.")
+        else "host"
+        if target == "session" or action.startswith("conversation.")
+        else "app-local"
+    )
     return {
         "feedId": f"audit:{event['id']}",
-        "source": "app-local",
+        "source": source,
         "sourceRef": str(event.get("target_id") or event["id"]),
         "severity": severity,
         "eventType": action,

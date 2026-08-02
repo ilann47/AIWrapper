@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-02T07:48:24.833Z",
+  "generatedAt": "2026-08-02T07:56:14.240Z",
   "generatorUpstream": {
     "project": "ndycode/codex-multi-auth",
     "commit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
@@ -1698,16 +1698,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "3d0d5b807df91e18824f186caa190f69d146aed7cbb5a42ba12128e5ec74e480",
-          "sha256": "75d53d922518c9eb4f42aca909b1980e09a3082d3dbf7c0ac1f1cbcd334c6d49",
+          "sha256": "5547862941afb4e190db2ec673cda7221b551ccfe1c107dddd2c411ab4026031",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_de.ts.diff",
-          "diffSha256": "2cc3e4eda8ec9e03f2220d31f9662dd37ffcbfea3bf8847b3a59c93cf5e02bc0",
+          "diffSha256": "262802c535d359c4a35089dcf5d7756aa04970b40993c96abc10c9faa8c8764e",
           "lines": {
             "source": 1487,
-            "destination": 1685,
+            "destination": 1693,
             "preserved": 1487,
             "changed": 0,
             "removed": 0,
-            "added": 198,
+            "added": 206,
             "reusePercent": 100
           }
         },
@@ -1717,16 +1717,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "09084a0703ed3a9adc0ac00dea9aa372a1a2a4a0f7b800affead04fea5a1afa6",
-          "sha256": "abd1b6a4eb38bb7590a7b85316de2e163379a9d57a83e413545326cccebeccc2",
+          "sha256": "893b03a1b712dfae0907b65fd87d7e88f0d1f7bd178adbe5e340b2a832736939",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_en.ts.diff",
-          "diffSha256": "de953eec048f590e592c76a7782934b418ebcdac83014bad685fe585fff50f49",
+          "diffSha256": "8121cc6deb79392c6cd32b1c19841e2f516d402eded0c468d9c25b51d8eb71e5",
           "lines": {
             "source": 1514,
-            "destination": 1712,
+            "destination": 1720,
             "preserved": 1514,
             "changed": 0,
             "removed": 0,
-            "added": 198,
+            "added": 206,
             "reusePercent": 100
           }
         },
@@ -1755,16 +1755,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "d7449a464d2dc077af41b39d0c81e4d55f0b5589f58af181cbef3b34be0a54f0",
-          "sha256": "22d65e85a0e78b4dbe95cd337ca30694d20fc5954c64d73252be28ea4831742a",
+          "sha256": "ff7d4faa7714b9907faee664fb3e90ed07c0155f4966527f9b2ed5d9eb38308f",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_ja.ts.diff",
-          "diffSha256": "28945c60d974782491d70b8094960da1ffae6cf2937186d05e5c0162b3d163ef",
+          "diffSha256": "56c16975ae464d69207aedb873a9544b5ad487f94c63a23fe54db76f9144e804",
           "lines": {
             "source": 1508,
-            "destination": 1706,
+            "destination": 1714,
             "preserved": 1508,
             "changed": 0,
             "removed": 0,
-            "added": 198,
+            "added": 206,
             "reusePercent": 100
           }
         },
@@ -1774,16 +1774,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "5b2b64b2cd03ffbc16d15a6bad3c4163f7007927e3f602ee20e12fb96234e6e0",
-          "sha256": "8a8db1d966efeb42827db8ae67a465ba9668d67d8020cf13738bd3433b8ea032",
+          "sha256": "d830bb42c12490abb4e3a658052a0618e1e9e1c8ebe1659d2164053dacac7d2f",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_ko.ts.diff",
-          "diffSha256": "ac777073430481b4e74303eacbddbff5b5c7eb89cc6f78fac47a62f7f86af087",
+          "diffSha256": "fe9cbc203a7970be11aae91e91ef679d722f748d5bfe7bdb043e8b2eae43780f",
           "lines": {
             "source": 1508,
-            "destination": 1706,
+            "destination": 1714,
             "preserved": 1508,
             "changed": 0,
             "removed": 0,
-            "added": 198,
+            "added": 206,
             "reusePercent": 100
           }
         },
@@ -1812,16 +1812,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "95c74a1b27980cfab1931395f5ffe800f3c0ddf9f101cb5badb360343de26e6a",
-          "sha256": "dc9bd938b3404347ef4a867bdfa1a34f9fb96953ad3c42238c385434215bf5e4",
+          "sha256": "d72028dbead13ecd447084df1d3d7f2098f5a7aab354306a06427bc33ba399a0",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_ru.ts.diff",
-          "diffSha256": "3c639d09da232dc352bba77134bfffb45996f940688e0bcd9679e7625dd54032",
+          "diffSha256": "126572ff6f260598f7b7f00322190cb4cc6ab8b3d00c870af48a3479a6fd34b7",
           "lines": {
             "source": 1510,
-            "destination": 1708,
+            "destination": 1716,
             "preserved": 1510,
             "changed": 0,
             "removed": 0,
-            "added": 198,
+            "added": 206,
             "reusePercent": 100
           }
         },
@@ -1850,16 +1850,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "b6b8fdb362c7a8a7d29ca6cc7c34772aec34b7ddfe66ba6521087990d644893f",
-          "sha256": "0ef0f6a0472b39b5700745596165ef9a921fdbb58421e03463391c3d9e2bd56d",
+          "sha256": "cb2fd8dfa25c8e008112cf0c93a3ac04d9ab43e63be2ced08fbd267b3565bf32",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_zh.ts.diff",
-          "diffSha256": "023f34b7b9bede165169758010f60dbf1d8ad84ff1f950e104bd92d11decde49",
+          "diffSha256": "dc229cf2a95304f8acd3693ae86bce82da80ba1c40981f94efceae8c9a883198",
           "lines": {
             "source": 1508,
-            "destination": 1706,
+            "destination": 1714,
             "preserved": 1508,
             "changed": 0,
             "removed": 0,
-            "added": 198,
+            "added": 206,
             "reusePercent": 100
           }
         },
@@ -24862,9 +24862,9 @@
           "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
           "license": "MIT",
           "sourceSha256": "7f0dc57d2984b6f80f3a5062cafb5dd8a8f222c4dbc64fdc28a5a4656a0104d6",
-          "sha256": "f04600a4de20e1b92da6c60117ae8fd6a323433c0db8890928d5bc05f97b3f94",
+          "sha256": "9c1d4a365f500698d37bc691ee77174de5b6feb8c37dec5c99cc40604cda99d4",
           "diff": "provenance/diffs/traycer-notification-lifecycle--file.diff",
-          "diffSha256": "939f23d33fc3bb9da9507bcd5acce307284a0722a36ca3283ccf900e9863a533",
+          "diffSha256": "b6bddabcc3adb0c84588b3de82ba5d32cf16c7dfb4e8d9ca6ae4ff1fc21a0256",
           "lines": {
             "source": 76,
             "destination": 76,
@@ -24968,6 +24968,8 @@
           "Attention and Recent sections",
           "blocking-first lifecycle",
           "Today/Yesterday/Earlier separators",
+          "Recent-only unread/category filters",
+          "filter-empty reset",
           "mark all read",
           "per-row read, resolve and clear",
           "live-arrival Sonner toast",
@@ -24977,13 +24979,12 @@
         ],
         "lost": [
           "project/worktree navigation",
-          "cloud collaboration rows",
           "Traycer analytics events",
           "native operating-system notification and chime",
           "host-window focus suppression",
           "Radix popover positioning"
         ],
-        "decision": "Reuse the complete portable lifecycle, occurrence, arrival and scroll-anchor modules and adapt the mature interaction architecture to the authenticated AIWrapper REST feed; importing the original UI would require a second proprietary application host."
+        "decision": "Reuse the complete portable lifecycle, category, popover-state, occurrence, arrival and scroll-anchor modules and adapt the mature interaction architecture to the authenticated AIWrapper REST feed; importing the original UI would require a second proprietary application host."
       },
       "files": [
         {
@@ -24992,17 +24993,98 @@
           "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
           "license": "MIT / project adapter code",
           "sourceSha256": "264db93c09af58b8961e67d37f8d8eeb60e39084c5133c0675b4bdf0b779f781",
-          "sha256": "42f1b1cdb5d6a69159b194a431ff2cc5ab5b5af6ba89da8d871bf593293fc8f2",
+          "sha256": "7005c8bdd89c4981eb7bb4acdf7246dba9f27af4c190bb72a421d5eca2594b35",
           "diff": "provenance/diffs/traycer-notification-center-ui--file.diff",
-          "diffSha256": "dc50f820fa2604a259a6fa84ec59970863287c9201391db4057c90d293b82cfa",
+          "diffSha256": "13e6c5b8cadaa6bb25166c07932c760b60d45ba793ef5f3e568fc99aeb6a4171",
           "lines": {
             "source": 905,
-            "destination": 244,
-            "preserved": 40,
-            "changed": 204,
-            "removed": 661,
+            "destination": 281,
+            "preserved": 43,
+            "changed": 238,
+            "removed": 624,
             "added": 0,
-            "reusePercent": 4.42
+            "reusePercent": 4.75
+          }
+        }
+      ]
+    },
+    {
+      "id": "traycer-notification-categories",
+      "functionality": "Map notification source seams to Task activity, Collaboration and System issues product categories",
+      "project": "traycerai/traycer",
+      "classification": "copied",
+      "referenceOnly": false,
+      "incompatibility": "Only the merged-store source type import is replaced by its exact local string union; constants and mapping behavior are preserved.",
+      "parityAudit": {
+        "retained": [
+          "all category set",
+          "host/cloud task mapping",
+          "global collaboration mapping",
+          "app-local system mapping",
+          "projection-boundary helper"
+        ],
+        "lost": [],
+        "decision": "Copy the complete module and adapt only its unavailable host-store type import."
+      },
+      "files": [
+        {
+          "source": "upstream/traycer/clients/gui-app/src/lib/notifications/notification-category.ts",
+          "destination": "extensions/aiwrapper-notifications/src/notification-category.ts",
+          "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
+          "license": "MIT",
+          "sourceSha256": "a35246523312ea191d16ed311e89e7328c58d663bea4682f6434a9000aa96c98",
+          "sha256": "d712e54e8002d4755f516e1cd326c426aa525c31ca80b8cc80db882de74e5277",
+          "diff": "provenance/diffs/traycer-notification-categories--file.diff",
+          "diffSha256": "9e084d4067cd5ba45823f87338c3bb61ea58fc54a0a7e16ecda52ed1e558f8e8",
+          "lines": {
+            "source": 25,
+            "destination": 25,
+            "preserved": 24,
+            "changed": 1,
+            "removed": 0,
+            "added": 0,
+            "reusePercent": 96
+          }
+        }
+      ]
+    },
+    {
+      "id": "traycer-notifications-popover-store",
+      "functionality": "Open-session notification filters with unread-only, category toggles and deterministic reset behavior",
+      "project": "traycerai/traycer",
+      "classification": "copied",
+      "referenceOnly": false,
+      "incompatibility": "The store is portable after changing its category import to the copied local module. Host-origin fallback state remains preserved for future host integration even though the current browser feed does not set it.",
+      "parityAudit": {
+        "retained": [
+          "open state",
+          "reset filters on open",
+          "unread-only filter",
+          "immutable category toggle",
+          "explicit reset",
+          "origin-unavailable state"
+        ],
+        "lost": [],
+        "decision": "Copy the complete Zustand state architecture and adapt only the relative import boundary."
+      },
+      "files": [
+        {
+          "source": "upstream/traycer/clients/gui-app/src/stores/notifications/notifications-popover-store.ts",
+          "destination": "extensions/aiwrapper-notifications/src/notifications-popover-store.ts",
+          "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
+          "license": "MIT",
+          "sourceSha256": "9f05fc8967fcf3cd644aec0782f058b736596ed2c3009b75d15c856a2138b10c",
+          "sha256": "231d47e52a0f81f5dab38c37d36df7692ed83d10f1bdc6e24414aebf65266a0b",
+          "diff": "provenance/diffs/traycer-notifications-popover-store--file.diff",
+          "diffSha256": "43f5e4455547521e2524fe7a91319b5b4e406b5fe304dcaaec6705c69fcf0dd0",
+          "lines": {
+            "source": 87,
+            "destination": 74,
+            "preserved": 71,
+            "changed": 3,
+            "removed": 13,
+            "added": 0,
+            "reusePercent": 81.61
           }
         }
       ]
@@ -25120,16 +25202,16 @@
           "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
           "license": "MIT / project code",
           "sourceSha256": "e611d9f8f4e169e93306e2938bb9d2297432771364a9a00976e8d2541e94596a",
-          "sha256": "0cf995d2deb7f41ef0b948d043a922a9b51673b5382fc4e897651fdeca704ecf",
+          "sha256": "f2057e5a3f3f2fe4433adf22644e356efe892eddcd4a3273cec60cde957112ae",
           "diff": "provenance/diffs/aiwrapper-notification-feed--file.diff",
-          "diffSha256": "2ae8470701b8b9440ab7c04b298ecd2e2072d521d8bdf4a7c3dbc1122b269530",
+          "diffSha256": "5d7fc4b9b6d5cf567ce88b8e555cb50bb614ae094d497949d2309b9f85aaf332",
           "lines": {
             "source": 10,
-            "destination": 445,
+            "destination": 452,
             "preserved": 2,
             "changed": 8,
             "removed": 0,
-            "added": 435,
+            "added": 442,
             "reusePercent": 20
           }
         }
@@ -25366,16 +25448,16 @@
           "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
           "license": "MIT / project adapter code",
           "sourceSha256": "636902a12d97c7f45c1fc598b1faac04dc2733d39a426d0ed5ab93517cdece6a",
-          "sha256": "0cf995d2deb7f41ef0b948d043a922a9b51673b5382fc4e897651fdeca704ecf",
+          "sha256": "f2057e5a3f3f2fe4433adf22644e356efe892eddcd4a3273cec60cde957112ae",
           "diff": "provenance/diffs/nine-router-token-saver-fastapi-adapter--file.diff",
-          "diffSha256": "664fcbebed1c995ef60744cf519e6377e14036369909213daad150ae131cae17",
+          "diffSha256": "54fac893cc3d73cd029e2a8df0f8a81d531c1aafe1e236d503fb741b297719b8",
           "lines": {
             "source": 119,
-            "destination": 445,
+            "destination": 452,
             "preserved": 21,
             "changed": 98,
             "removed": 0,
-            "added": 326,
+            "added": 333,
             "reusePercent": 17.65
           }
         }
@@ -26264,16 +26346,16 @@
           "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
           "license": "MIT / project code",
           "sourceSha256": "e40cdd42970dffd2148095756800d793475ee3daae61bc70fec39e7e9a3145af",
-          "sha256": "0cf995d2deb7f41ef0b948d043a922a9b51673b5382fc4e897651fdeca704ecf",
+          "sha256": "f2057e5a3f3f2fe4433adf22644e356efe892eddcd4a3273cec60cde957112ae",
           "diff": "provenance/diffs/aiwrapper-fastapi-domain-extension--router.py.diff",
-          "diffSha256": "7d0e5dd254f6e4dd78e8bae9dd72ecaba9b1cd6c74c755320df0a4d6f4b78975",
+          "diffSha256": "6fee60562b94e87aea359f764a1cefa76167115185e302e453ba15aba3e409e8",
           "lines": {
             "source": 269,
-            "destination": 445,
+            "destination": 452,
             "preserved": 38,
             "changed": 231,
             "removed": 0,
-            "added": 176,
+            "added": 183,
             "reusePercent": 14.13
           }
         },

@@ -25,3 +25,9 @@ export {
   findFirstVisibleAnchor,
   useNotificationCenterScrollAnchor,
 } from "./notification-center-scroll-anchor";
+export {
+  ALL_NOTIFICATION_CATEGORIES,
+  categoryForNotificationSource,
+  type NotificationCategory,
+} from "./notification-category";
+export { useNotificationsPopoverStore } from "./notifications-popover-store";

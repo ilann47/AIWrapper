@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\traycer\\protocol\\src\\host\\notifications\\contracts.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"
-index f33833896..b7d17c342 100644
+index f33833896..576d84da3 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\traycer\\protocol\\src\\host\\notifications\\contracts.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"	
-@@ -1,9 +1,444 @@
+@@ -1,9 +1,451 @@
 -import {
 -  notificationsSubscribeV10,
 -  notificationsSubscribeV11,
@@ -119,9 +119,16 @@ index f33833896..b7d17c342 100644
 +    action = str(event["action"])
 +    severity = "failure" if any(marker in action for marker in ("failed", "blocked", "denied")) else "done"
 +    target = str(event.get("target_type") or "AIWrapper")
++    source = (
++        "global"
++        if action.startswith("share.")
++        else "host"
++        if target == "session" or action.startswith("conversation.")
++        else "app-local"
++    )
 +    return {
 +        "feedId": f"audit:{event['id']}",
-+        "source": "app-local",
++        "source": source,
 +        "sourceRef": str(event.get("target_id") or event["id"]),
 +        "severity": severity,
 +        "eventType": action,

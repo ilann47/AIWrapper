@@ -1,16 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Bell, Check, CheckCheck, CircleAlert, Info, X } from "lucide-react";
+import { useEffect, useMemo, useRef } from "react";
+import { Bell, Check, CheckCheck, CircleAlert, Info, ListFilter, X } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import { useKeyedClientResource } from "../../../apps/opencodex-gui/src/client-resource";
 import { useT } from "../../../apps/opencodex-gui/src/i18n/shared";
 import { useAIWrapper } from "../../aiwrapper-admin/src/auth";
 import {
   classifyNotificationLifecycle,
+  ALL_NOTIFICATION_CATEGORIES,
+  categoryForNotificationSource,
   compareAttentionOrder,
   occurrenceKeyForNotification,
   temporalGroupForTimestamp,
   useNotificationCenterArrivals,
   useNotificationCenterScrollAnchor,
+  useNotificationsPopoverStore,
+  type NotificationCategory,
   type NotificationAttentionTier,
   type NotificationTemporalGroup,
 } from "./traycer-notification-runtime";
@@ -20,7 +24,7 @@ type Severity = "info" | "needs_action" | "failure" | "done";
 
 interface NotificationRecord {
   feedId: string;
-  source: "app-local";
+  source: "host" | "cloud" | "app-local" | "global";
   sourceRef: string | null;
   severity: Severity;
   eventType: string;
@@ -43,6 +47,13 @@ interface ProjectedNotification extends NotificationRecord {
 }
 
 const GROUP_ORDER: NotificationTemporalGroup[] = ["today", "yesterday", "earlier"];
+const CATEGORY_LABEL: Record<NotificationCategory,
+  "aiw.notifications.category.task" | "aiw.notifications.category.collaboration" | "aiw.notifications.category.system"
+> = {
+  task: "aiw.notifications.category.task",
+  collaboration: "aiw.notifications.category.collaboration",
+  system: "aiw.notifications.category.system",
+};
 const GROUP_LABEL: Record<NotificationTemporalGroup,
   "aiw.notifications.today" | "aiw.notifications.yesterday" | "aiw.notifications.earlier"
 > = {
@@ -84,7 +95,13 @@ function NotificationIcon({ severity }: { severity: Severity }) {
 export default function NotificationsCenter() {
   const { client, principal } = useAIWrapper();
   const t = useT();
-  const [open, setOpen] = useState(false);
+  const open = useNotificationsPopoverStore((state) => state.open);
+  const setOpen = useNotificationsPopoverStore((state) => state.setOpen);
+  const unreadOnly = useNotificationsPopoverStore((state) => state.unreadOnly);
+  const categories = useNotificationsPopoverStore((state) => state.categories);
+  const setUnreadOnly = useNotificationsPopoverStore((state) => state.setUnreadOnly);
+  const toggleCategory = useNotificationsPopoverStore((state) => state.toggleCategory);
+  const resetFilters = useNotificationsPopoverStore((state) => state.resetFilters);
   const seenOccurrences = useRef<Set<string> | null>(null);
   const resource = useKeyedClientResource<NotificationResponse>(
     `aiwrapper-notifications:${principal?.userId ?? "anonymous"}`,
@@ -116,11 +133,13 @@ export default function NotificationsCenter() {
     const groups = new Map<NotificationTemporalGroup, ProjectedNotification[]>();
     for (const row of rows) {
       if (lifecycle(row).section !== "recent") continue;
+      if (unreadOnly && row.readAtMs !== null) continue;
+      if (!categories.has(categoryForNotificationSource(row.source))) continue;
       const group = temporalGroupForTimestamp(row.createdAtMs, now);
       groups.set(group, [...(groups.get(group) ?? []), row]);
     }
     return groups;
-  }, [rows]);
+  }, [categories, rows, unreadOnly]);
   const orderedFeedIds = useMemo(() => [
     ...attention.map((item) => item.row.feedId),
     ...GROUP_ORDER.flatMap((group) => (recentGroups.get(group) ?? []).map((row) => row.feedId)),
@@ -185,6 +204,7 @@ export default function NotificationsCenter() {
     resource.refresh();
   };
   const unread = resource.data?.unreadCount ?? 0;
+  const isFiltered = unreadOnly || categories.size < ALL_NOTIFICATION_CATEGORIES.size;
 
   const renderRow = (row: ProjectedNotification, tier?: NotificationAttentionTier) => (
     <article data-notification-id={row.feedId} className={`aiw-notification-row aiw-notification-row--${row.severity}`} key={row.feedId}>
@@ -209,7 +229,7 @@ export default function NotificationsCenter() {
     <>
       <Toaster position="top-right" richColors closeButton />
       <div className="aiw-notifications">
-        <button type="button" className="aiw-notifications__bell" onClick={() => setOpen(value => !value)} aria-expanded={open} aria-controls="aiw-notification-center" aria-label={t("aiw.notifications.open")}>
+        <button type="button" className="aiw-notifications__bell" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="aiw-notification-center" aria-label={t("aiw.notifications.open")}>
           <Bell aria-hidden />
           {unread > 0 ? <span>{unread > 99 ? "99+" : unread}</span> : null}
         </button>
@@ -217,6 +237,20 @@ export default function NotificationsCenter() {
           <header>
             <div><h2 id="aiw-notifications-title">{t("aiw.notifications.title")}</h2><p>{t("aiw.notifications.subtitle")}</p></div>
             <div>
+              <details className="aiw-notifications__filters">
+                <summary aria-label={t("aiw.notifications.filter")} title={t("aiw.notifications.filter")}>
+                  <ListFilter aria-hidden />
+                  {isFiltered ? <span aria-hidden /> : null}
+                </summary>
+                <div role="group" aria-label={t("aiw.notifications.filter")}>
+                  <label><input type="checkbox" checked={unreadOnly} onChange={(event) => setUnreadOnly(event.target.checked)} /> {t("aiw.notifications.unreadOnly")}</label>
+                  <strong>{t("aiw.notifications.categories")}</strong>
+                  {[...ALL_NOTIFICATION_CATEGORIES].map((category) => (
+                    <label key={category}><input type="checkbox" checked={categories.has(category)} onChange={() => toggleCategory(category)} /> {t(CATEGORY_LABEL[category])}</label>
+                  ))}
+                  {isFiltered ? <button type="button" className="btn btn-sm btn-ghost" onClick={resetFilters}>{t("aiw.notifications.resetFilters")}</button> : null}
+                </div>
+              </details>
               <button type="button" className="btn btn-sm btn-ghost" disabled={unread === 0} onClick={() => void update(rows.filter(row => row.readAtMs === null).map(row => row.feedId), "read")}><CheckCheck /> {t("aiw.notifications.markAllRead")}</button>
               <button type="button" className="btn btn-sm btn-ghost" onClick={() => setOpen(false)} aria-label={t("common.close")}><X /></button>
             </div>
@@ -234,6 +268,9 @@ export default function NotificationsCenter() {
               if (groupRows.length === 0) return null;
               return <section key={group}><h3>{t(GROUP_LABEL[group])}</h3>{groupRows.map(row => renderRow(row))}</section>;
             })}
+            {isFiltered && attention.length === 0 && [...recentGroups.values()].every((groupRows) => groupRows.length === 0) ? (
+              <div className="aiw-notifications__empty"><p>{t("aiw.notifications.filterEmpty")}</p><button type="button" className="btn btn-sm" onClick={resetFilters}>{t("aiw.notifications.resetFilters")}</button></div>
+            ) : null}
             {!resource.loading && rows.length === 0 ? <p className="aiw-notifications__empty">{t("aiw.notifications.empty")}</p> : null}
           </div>
         </section> : null}

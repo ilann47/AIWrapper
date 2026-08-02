@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\zh.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\zh.ts"
-index 3a50a7658..2a5a92aa4 100644
+index 3a50a7658..08ebaceea 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\zh.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\zh.ts"	
-@@ -10,6 +10,201 @@ export const zh: Record<TKey, string> = {
+@@ -10,6 +10,209 @@ export const zh: Record<TKey, string> = {
    "nav.subagents": "子代理",
    "nav.logs": "日志与调试",
    "nav.usage": "用量",
@@ -68,6 +68,14 @@ index 3a50a7658..2a5a92aa4 100644
 +  "aiw.notifications.earlier": "更早",
 +  "aiw.notifications.empty": "没有新通知。",
 +  "aiw.notifications.newArrivals": "{count} 条新通知 — 查看最新",
++  "aiw.notifications.filter": "筛选通知",
++  "aiw.notifications.unreadOnly": "仅未读",
++  "aiw.notifications.categories": "类别",
++  "aiw.notifications.category.task": "任务活动",
++  "aiw.notifications.category.collaboration": "协作",
++  "aiw.notifications.category.system": "系统问题",
++  "aiw.notifications.filterEmpty": "没有符合此筛选条件的活动。",
++  "aiw.notifications.resetFilters": "重置筛选",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -204,7 +212,7 @@ index 3a50a7658..2a5a92aa4 100644
    "common.github": "GitHub",
    "common.save": "保存",
    "common.saving": "保存中…",
-@@ -639,6 +834,9 @@ export const zh: Record<TKey, string> = {
+@@ -639,6 +842,9 @@ export const zh: Record<TKey, string> = {
    "nav.api": "API",
    "nav.codexAuth": "Codex 认证",
    "nav.openMenu": "打开菜单",

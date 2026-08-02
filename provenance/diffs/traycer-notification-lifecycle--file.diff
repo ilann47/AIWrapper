@@ -1,12 +1,12 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\traycer\\clients\\gui-app\\src\\lib\\notifications\\notification-lifecycle.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-notifications\\src\\notification-lifecycle.ts"
-index f2e5c6a6e..b20cf8974 100644
+index f2e5c6a6e..4c0768c0e 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\traycer\\clients\\gui-app\\src\\lib\\notifications\\notification-lifecycle.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-notifications\\src\\notification-lifecycle.ts"	
 @@ -1,5 +1,5 @@
 -import type { HostNotificationSeverity } from "@traycer/protocol/host/notifications/contracts";
 -import type { MergedNotificationSource } from "@/stores/notifications/merged-notifications";
 +export type HostNotificationSeverity = "info" | "needs_action" | "failure" | "done";
-+export type MergedNotificationSource = "host" | "app-local" | "global";
++export type MergedNotificationSource = "host" | "cloud" | "app-local" | "global";
  
  export type NotificationAttentionTier = "blocking" | "failure";
  

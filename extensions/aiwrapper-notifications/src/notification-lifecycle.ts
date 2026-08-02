@@ -1,5 +1,5 @@
 export type HostNotificationSeverity = "info" | "needs_action" | "failure" | "done";
-export type MergedNotificationSource = "host" | "app-local" | "global";
+export type MergedNotificationSource = "host" | "cloud" | "app-local" | "global";
 
 export type NotificationAttentionTier = "blocking" | "failure";
 

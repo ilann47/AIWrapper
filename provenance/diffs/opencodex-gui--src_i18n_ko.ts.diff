@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ko.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ko.ts"
-index 2372bf500..2980b5d70 100644
+index 2372bf500..123b8965b 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ko.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ko.ts"	
-@@ -10,6 +10,201 @@ export const ko: Record<TKey, string> = {
+@@ -10,6 +10,209 @@ export const ko: Record<TKey, string> = {
    "nav.subagents": "서브에이전트",
    "nav.logs": "로그&디버그",
    "nav.usage": "사용량",
@@ -68,6 +68,14 @@ index 2372bf500..2980b5d70 100644
 +  "aiw.notifications.earlier": "이전",
 +  "aiw.notifications.empty": "새 알림이 없습니다.",
 +  "aiw.notifications.newArrivals": "새 알림 {count}개 — 최신 보기",
++  "aiw.notifications.filter": "알림 필터",
++  "aiw.notifications.unreadOnly": "읽지 않음만",
++  "aiw.notifications.categories": "카테고리",
++  "aiw.notifications.category.task": "작업 활동",
++  "aiw.notifications.category.collaboration": "협업",
++  "aiw.notifications.category.system": "시스템 문제",
++  "aiw.notifications.filterEmpty": "이 필터와 일치하는 활동이 없습니다.",
++  "aiw.notifications.resetFilters": "필터 재설정",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -204,7 +212,7 @@ index 2372bf500..2980b5d70 100644
    "common.github": "GitHub",
    "common.save": "저장",
    "common.saving": "저장 중…",
-@@ -639,6 +834,9 @@ export const ko: Record<TKey, string> = {
+@@ -639,6 +842,9 @@ export const ko: Record<TKey, string> = {
    "nav.api": "API",
    "nav.codexAuth": "Codex 인증",
    "nav.openMenu": "메뉴 열기",

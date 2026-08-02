@@ -471,7 +471,33 @@
       "source": "upstream/traycer/clients/gui-app/src/components/notifications/notifications-popover.tsx",
       "destination": "extensions/aiwrapper-notifications/src/NotificationsCenter.tsx",
       "incompatibility": "Traycer's component depends on its TanStack router, host notification RPCs, project/worktree graph, analytics, Radix primitives and cloud stores. Those services do not exist in the FastAPI/OpenCodex browser topology, so the full component cannot mount. The adapter retains its feed architecture and actions while replacing only data and shell boundaries.",
-      "parityAudit": { "retained": ["notification bell and unread badge", "Attention and Recent sections", "blocking-first lifecycle", "Today/Yesterday/Earlier separators", "mark all read", "per-row read, resolve and clear", "live-arrival Sonner toast", "N-new reveal affordance", "scroll-anchor preservation", "Escape close"], "lost": ["project/worktree navigation", "cloud collaboration rows", "Traycer analytics events", "native operating-system notification and chime", "host-window focus suppression", "Radix popover positioning"], "decision": "Reuse the complete portable lifecycle, occurrence, arrival and scroll-anchor modules and adapt the mature interaction architecture to the authenticated AIWrapper REST feed; importing the original UI would require a second proprietary application host." }
+      "parityAudit": { "retained": ["notification bell and unread badge", "Attention and Recent sections", "blocking-first lifecycle", "Today/Yesterday/Earlier separators", "Recent-only unread/category filters", "filter-empty reset", "mark all read", "per-row read, resolve and clear", "live-arrival Sonner toast", "N-new reveal affordance", "scroll-anchor preservation", "Escape close"], "lost": ["project/worktree navigation", "Traycer analytics events", "native operating-system notification and chime", "host-window focus suppression", "Radix popover positioning"], "decision": "Reuse the complete portable lifecycle, category, popover-state, occurrence, arrival and scroll-anchor modules and adapt the mature interaction architecture to the authenticated AIWrapper REST feed; importing the original UI would require a second proprietary application host." }
+    },
+    {
+      "id": "traycer-notification-categories",
+      "functionality": "Map notification source seams to Task activity, Collaboration and System issues product categories",
+      "project": "traycerai/traycer",
+      "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
+      "license": "MIT",
+      "classification": "copied",
+      "kind": "file",
+      "source": "upstream/traycer/clients/gui-app/src/lib/notifications/notification-category.ts",
+      "destination": "extensions/aiwrapper-notifications/src/notification-category.ts",
+      "incompatibility": "Only the merged-store source type import is replaced by its exact local string union; constants and mapping behavior are preserved.",
+      "parityAudit": { "retained": ["all category set", "host/cloud task mapping", "global collaboration mapping", "app-local system mapping", "projection-boundary helper"], "lost": [], "decision": "Copy the complete module and adapt only its unavailable host-store type import." }
+    },
+    {
+      "id": "traycer-notifications-popover-store",
+      "functionality": "Open-session notification filters with unread-only, category toggles and deterministic reset behavior",
+      "project": "traycerai/traycer",
+      "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
+      "license": "MIT",
+      "classification": "copied",
+      "kind": "file",
+      "source": "upstream/traycer/clients/gui-app/src/stores/notifications/notifications-popover-store.ts",
+      "destination": "extensions/aiwrapper-notifications/src/notifications-popover-store.ts",
+      "incompatibility": "The store is portable after changing its category import to the copied local module. Host-origin fallback state remains preserved for future host integration even though the current browser feed does not set it.",
+      "parityAudit": { "retained": ["open state", "reset filters on open", "unread-only filter", "immutable category toggle", "explicit reset", "origin-unavailable state"], "lost": [], "decision": "Copy the complete Zustand state architecture and adapt only the relative import boundary." }
     },
     {
       "id": "traycer-notification-live-arrivals",

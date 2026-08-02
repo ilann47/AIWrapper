@@ -112,6 +112,8 @@ def test_user_notification_feed_and_receipts(tmp_path, monkeypatch):
     router_module = importlib.import_module("app.aiwrapper.router")
     local_store = AIWrapperStore(str(tmp_path / "notifications.db"))
     created = local_store.create_user("Notification User", "user", "notification-user", str(tmp_path / ".codex-notifications"), 100, 100)
+    local_store.audit_event(created["id"], "conversation.archived", "session", "conversation-1")
+    local_store.audit_event(created["id"], "share.created", "session", "conversation-1")
     monkeypatch.setattr(store_module, "store", local_store)
     monkeypatch.setattr(auth_module, "store", local_store)
     monkeypatch.setattr(router_module, "store", local_store)
@@ -133,6 +135,9 @@ def test_user_notification_feed_and_receipts(tmp_path, monkeypatch):
     quota_row = next(row for row in response.json()["data"] if row["eventType"] == "quota.warning")
     assert quota_row["severity"] == "info"
     assert quota_row["readAt"] is None
+    by_event = {row["eventType"]: row for row in response.json()["data"]}
+    assert by_event["conversation.archived"]["source"] == "host"
+    assert by_event["share.created"]["source"] == "global"
 
     marked = client.patch("/v1/me/notifications", headers=headers, json={"ids": [quota_row["feedId"]], "action": "read"})
     assert marked.status_code == 200
