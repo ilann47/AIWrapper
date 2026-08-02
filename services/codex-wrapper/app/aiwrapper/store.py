@@ -105,6 +105,19 @@ class AIWrapperStore:
             ).fetchone()
         return self._dict(row)
 
+    def health(self) -> bool:
+        with self._lock:
+            row = self._connection.execute("SELECT 1 AS ok").fetchone()
+        return bool(row and row["ok"] == 1)
+
+    def overview_counts(self) -> dict[str, int]:
+        with self._lock:
+            users = self._connection.execute("SELECT COUNT(*) AS total FROM users WHERE status = 'active'").fetchone()["total"]
+            conversations = self._connection.execute("SELECT COUNT(*) AS total FROM sessions WHERE status = 'active'").fetchone()["total"]
+            messages = self._connection.execute("SELECT COUNT(*) AS total FROM messages").fetchone()["total"]
+            shares = self._connection.execute("SELECT COUNT(*) AS total FROM shares WHERE revoked_at IS NULL").fetchone()["total"]
+        return {"users": users, "conversations": conversations, "messages": messages, "shares": shares}
+
     def list_users(self) -> list[dict[str, Any]]:
         with self._lock:
             rows = self._connection.execute("SELECT * FROM users ORDER BY created_at").fetchall()

@@ -35,13 +35,14 @@ async def rate_limiter(request: Request) -> None:
     if settings.rate_limit_per_minute <= 0:
         return
 
-    ip = request.client.host if request.client else "anonymous"
+    principal = getattr(request.state, "aiwrapper_principal", None)
+    identity = f"user:{principal['id']}" if principal else f"ip:{request.client.host if request.client else 'anonymous'}"
     now = time.time()
     window = 60
     async with _rate_lock:
-        count, reset = _rate_data.get(ip, (0, now + window))
+        count, reset = _rate_data.get(identity, (0, now + window))
         if reset < now:
             count, reset = 0, now + window
         if count >= settings.rate_limit_per_minute:
             raise HTTPException(status_code=429, detail="Rate limit exceeded")
-        _rate_data[ip] = (count + 1, reset)
+        _rate_data[identity] = (count + 1, reset)

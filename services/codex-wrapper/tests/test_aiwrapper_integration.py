@@ -53,18 +53,29 @@ def test_governance_bridge_executes_upstream_ledger_and_budget(tmp_path):
     settings.aiwrapper_multi_auth_dir = str(tmp_path / "multi-auth")
 
     async def scenario():
-        await governance("append", {"userId": "user-1", "outcome": "success", "model": "codex-cli", "inputTokens": 7, "outputTokens": 3})
+        await governance("append", {
+            "userId": "user-1",
+            "outcome": "success",
+            "model": "codex-cli",
+            "inputTokens": 7,
+            "outputTokens": 3,
+            "reasoningTokens": 2,
+            "durationMs": 125,
+        })
         summary = await governance("summary", {"userId": "user-1"})
+        overview = await governance("overview", {})
         decision = await governance("evaluate", {"userId": "user-1", "maxTokens": 10, "window": "hour"})
-        return summary, decision
+        return summary, overview, decision
 
     try:
-        summary, decision = asyncio.run(scenario())
+        summary, overview, decision = asyncio.run(scenario())
     finally:
         settings.aiwrapper_governance_bridge = original_bridge
         settings.aiwrapper_multi_auth_dir = original_dir
 
-    assert summary["totals"]["totalTokens"] == 10
+    assert summary["totals"]["totalTokens"] == 12
+    assert summary["totals"]["reasoningTokens"] == 2
+    assert overview["latency"] == {"averageMs": 125, "p95Ms": 125, "measuredRequests": 1}
     assert decision["allowed"] is False
 
 

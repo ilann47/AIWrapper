@@ -1,0 +1,524 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\main.py" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\opencodex.py"
+index 6647bca55..4114f1f08 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\main.py"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\opencodex.py"	
+@@ -1,268 +1,262 @@
++"""OpenCodex data-plane adapter.
++
++The provider, OAuth, account-pool, fallback and wire-protocol implementations stay
++inside the unmodified OpenCodex server.  This module only translates the existing
++Codex-Wrapper execution seam to OpenCodex's OpenAI-compatible HTTP boundary.
++"""
++
++from __future__ import annotations
++
+ import json
+-import os
+-import time
+-import uuid
+-from typing import AsyncIterator, List
+-
+-from fastapi import Depends, FastAPI, HTTPException
+-from fastapi.middleware.cors import CORSMiddleware
+-from fastapi.responses import StreamingResponse
+-
+-from .codex import CodexError, run_codex, run_codex_last_message
+-from .config import settings
+-from .deps import rate_limiter, verify_api_key
+-from .model_registry import (
+-    choose_model,
+-    get_available_models,
+-    initialize_model_registry,
+-)
+-from .security import assert_local_only_or_raise
+-from .prompt import build_prompt_and_images, normalize_responses_input
+-from .images import save_image_to_temp
+-from .schemas import (
+-    ChatChoice,
+-    ChatCompletionRequest,
+-    ChatCompletionResponse,
+-    ChatMessageResponse,
+-    ResponsesRequest,
+-    ResponsesObject,
+-    ResponsesMessage,
+-    ResponsesOutputText,
+-)
+-
+-app = FastAPI()
+-
+-app.add_middleware(
+-    CORSMiddleware,
+-    allow_origins=["*"],
+-    allow_methods=["*"],
+-    allow_headers=["*"],
+-)
+-
+-
+-@app.on_event("startup")
+-async def startup_event() -> None:
+-    await initialize_model_registry()
+-
+-
+-@app.get("/v1/models", dependencies=[Depends(rate_limiter), Depends(verify_api_key)])
+-async def list_models():
+-    """Return available model list."""
+-    return {"data": [{"id": model} for model in get_available_models(include_reasoning_aliases=True)]}
+-
+-
+-@app.post("/v1/chat/completions", dependencies=[Depends(rate_limiter), Depends(verify_api_key)])
+-async def chat_completions(req: ChatCompletionRequest):
+-    try:
+-        model_name, alias_effort = choose_model(req.model)
+-    except ValueError as e:
+-        raise HTTPException(
+-            status_code=404,
+-            detail={
+-                "message": str(e),
+-                "type": "invalid_request_error",
+-                "code": "model_not_found",
+-            },
+-        )
+-
+-    prompt, image_urls = build_prompt_and_images([m.dict() for m in req.messages])
+-    x_overrides = req.x_codex.dict(exclude_none=True) if req.x_codex else {}
+-    if alias_effort and "reasoning_effort" not in x_overrides:
+-        x_overrides["reasoning_effort"] = alias_effort
+-    overrides = x_overrides or None
+-
+-    # Safety gate: only allow danger-full-access when explicitly enabled
+-    if overrides and overrides.get("sandbox") == "danger-full-access":
+-        if not settings.allow_danger_full_access:
+-            raise HTTPException(status_code=400, detail="danger-full-access is disabled by server policy")
+-
+-    # Enforce local-only model provider when enabled
+-    if settings.local_only:
+-        try:
+-            assert_local_only_or_raise()
+-        except ValueError as e:
+-            raise HTTPException(status_code=400, detail=str(e))
++from dataclasses import dataclass
++from typing import Any, AsyncIterator, Callable, Optional
++from urllib.parse import urlparse
++
++import httpx
++
++from ..codex import CodexError, codex_parallel_slot
++from ..config import settings
++
++
++@dataclass
++class ExecutionUsage:
++    input_tokens: int = 0
++    output_tokens: int = 0
++    cached_input_tokens: int = 0
++    reasoning_tokens: int = 0
++
++    @property
++    def total_tokens(self) -> int:
++        return self.input_tokens + self.output_tokens
++
++
++@dataclass
++class OpenCodexCompletion:
++    text: str
++    usage: ExecutionUsage
++    model: str
++
++
++class OpenCodexTextStream:
++    def __init__(self, iterator: AsyncIterator[str]) -> None:
++        self._iterator = iterator
++        self.usage = ExecutionUsage()
++        self.model: Optional[str] = None
++
++    def __aiter__(self) -> AsyncIterator[str]:
++        return self._iterator
++
++
++ClientFactory = Callable[[], httpx.AsyncClient]
++
++
++def is_opencodex_backend() -> bool:
++    return settings.aiwrapper_execution_backend.strip().lower() == "opencodex"
++
++
++def _base_url() -> str:
++    value = settings.aiwrapper_opencodex_base_url.strip().rstrip("/")
++    parsed = urlparse(value)
++    if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password:
++        raise CodexError("AIWRAPPER_OPENCODEX_BASE_URL must be an http(s) URL without embedded credentials", status_code=500)
++    return value
++
+ 
+-    image_paths: List[str] = []
++def _headers() -> dict[str, str]:
++    token = settings.aiwrapper_opencodex_api_key
++    return {
++        "Accept": "application/json",
++        **({"X-OpenCodex-API-Key": token} if token else {}),
++    }
++
++
++def _client() -> httpx.AsyncClient:
++    timeout = httpx.Timeout(float(settings.timeout_seconds), connect=min(10.0, float(settings.timeout_seconds)))
++    return httpx.AsyncClient(
++        base_url=_base_url(),
++        headers=_headers(),
++        timeout=timeout,
++        follow_redirects=False,
++        trust_env=False,
++    )
++
++
++def _error_message(response: httpx.Response) -> str:
+     try:
+-        for u in image_urls:
+-            image_paths.append(save_image_to_temp(u))
+-    except ValueError as e:
+-        for p in image_paths:
+-            try:
+-                os.remove(p)
+-            except Exception:
+-                pass
+-        raise HTTPException(status_code=400, detail=str(e))
++        payload = response.json()
++    except (json.JSONDecodeError, ValueError):
++        return response.text.strip() or f"OpenCodex returned HTTP {response.status_code}"
++    if isinstance(payload, dict):
++        error = payload.get("error")
++        if isinstance(error, dict) and isinstance(error.get("message"), str):
++            return error["message"]
++        if isinstance(error, str):
++            return error
++        detail = payload.get("detail")
++        if isinstance(detail, str):
++            return detail
++    return f"OpenCodex returned HTTP {response.status_code}"
++
++
++def _usage(value: Any) -> ExecutionUsage:
++    row = value if isinstance(value, dict) else {}
++    prompt_details = row.get("prompt_tokens_details") if isinstance(row.get("prompt_tokens_details"), dict) else {}
++    completion_details = row.get("completion_tokens_details") if isinstance(row.get("completion_tokens_details"), dict) else {}
++    return ExecutionUsage(
++        input_tokens=max(0, int(row.get("prompt_tokens", row.get("input_tokens", 0)) or 0)),
++        output_tokens=max(0, int(row.get("completion_tokens", row.get("output_tokens", 0)) or 0)),
++        cached_input_tokens=max(0, int(prompt_details.get("cached_tokens", 0) or 0)),
++        reasoning_tokens=max(0, int(completion_details.get("reasoning_tokens", 0) or 0)),
++    )
++
++
++def _content_text(value: Any) -> str:
++    if isinstance(value, str):
++        return value
++    if isinstance(value, list):
++        parts: list[str] = []
++        for part in value:
++            if isinstance(part, dict) and isinstance(part.get("text"), str):
++                parts.append(part["text"])
++        return "".join(parts)
++    return ""
++
++
++def _chat_payload(
++    messages: list[dict[str, Any]],
++    model: str,
++    effort: Optional[str],
++    *,
++    stream: bool,
++    temperature: Optional[float] = None,
++    max_tokens: Optional[int] = None,
++) -> dict[str, Any]:
++    payload: dict[str, Any] = {"model": model, "messages": messages, "stream": stream}
++    if effort:
++        payload["reasoning_effort"] = effort
++    if temperature is not None:
++        payload["temperature"] = temperature
++    if max_tokens is not None:
++        payload["max_tokens"] = max_tokens
++    if stream:
++        payload["stream_options"] = {"include_usage": True}
++    return payload
++
+ 
++async def list_opencodex_models(client_factory: ClientFactory = _client) -> list[dict[str, Any]]:
+     try:
+-        if req.stream:
+-            async def event_gen() -> AsyncIterator[bytes]:
+-                async for text in run_codex(prompt, overrides, image_paths, model=model_name):
+-                    if text:
+-                        chunk = {
+-                            "choices": [
+-                                {"delta": {"content": text}, "index": 0, "finish_reason": None}
+-                            ]
+-                        }
+-                        yield f"data: {json.dumps(chunk)}\n\n".encode()
+-                yield b"data: [DONE]\n\n"
+-
+-            return StreamingResponse(event_gen(), media_type="text/event-stream")
+-        else:
+-            final = await run_codex_last_message(prompt, overrides, image_paths, model=model_name)
+-            resp = ChatCompletionResponse(
+-                choices=[ChatChoice(message=ChatMessageResponse(content=final))]
+-            )
+-            return resp
+-    except CodexError as e:
+-        status = getattr(e, "status_code", None) or 500
+-        raise HTTPException(
+-            status_code=status,
+-            detail={
+-                "message": str(e),
+-                "type": "server_error" if status >= 500 else "upstream_error",
+-                "code": None,
+-            },
+-        )
+-    finally:
+-        for p in image_paths:
+-            try:
+-                os.remove(p)
+-            except Exception:
+-                pass
+-
+-
+-@app.post("/v1/responses", dependencies=[Depends(rate_limiter), Depends(verify_api_key)])
+-async def responses_endpoint(req: ResponsesRequest):
++        async with client_factory() as client:
++            response = await client.get("/v1/models")
++    except httpx.HTTPError as error:
++        raise CodexError(f"OpenCodex model discovery failed: {error}", status_code=503) from error
++    if response.status_code >= 400:
++        raise CodexError(_error_message(response), status_code=response.status_code)
++    payload = response.json()
++    rows = payload.get("data") if isinstance(payload, dict) else None
++    if not isinstance(rows, list):
++        raise CodexError("OpenCodex model discovery returned an invalid payload", status_code=502)
++    return [row for row in rows if isinstance(row, dict) and isinstance(row.get("id"), str)]
++
++
++async def opencodex_health(client_factory: ClientFactory = _client) -> dict[str, Any]:
+     try:
+-        model, alias_effort = choose_model(req.model)
+-    except ValueError as e:
+-        raise HTTPException(
+-            status_code=404,
+-            detail={
+-                "message": str(e),
+-                "type": "invalid_request_error",
+-                "code": "model_not_found",
+-            },
+-        )
+-
+-    # Normalize input → messages
++        async with client_factory() as client:
++            response = await client.get("/healthz")
++    except httpx.HTTPError as error:
++        raise CodexError(f"OpenCodex health check failed: {error}", status_code=503) from error
++    if response.status_code >= 400:
++        raise CodexError(_error_message(response), status_code=503)
++    payload = response.json()
++    if not isinstance(payload, dict) or payload.get("status") != "ok" or payload.get("service") != "opencodex":
++        raise CodexError("OpenCodex health check returned an invalid identity", status_code=503)
++    return payload
++
++
++async def complete_with_opencodex(
++    messages: list[dict[str, Any]],
++    model: str,
++    effort: Optional[str],
++    *,
++    temperature: Optional[float] = None,
++    max_tokens: Optional[int] = None,
++    client_factory: ClientFactory = _client,
++) -> OpenCodexCompletion:
++    payload = _chat_payload(messages, model, effort, stream=False, temperature=temperature, max_tokens=max_tokens)
+     try:
+-        messages = normalize_responses_input(req.input)
+-    except ValueError as e:
+-        raise HTTPException(status_code=400, detail=str(e))
+-
+-    overrides = {}
+-    if alias_effort:
+-        overrides["reasoning_effort"] = alias_effort
+-    if req.reasoning and req.reasoning.effort:
+-        overrides["reasoning_effort"] = req.reasoning.effort
+-
+-    # Enforce local-only model provider when enabled
+-    if settings.local_only:
+-        try:
+-            assert_local_only_or_raise()
+-        except ValueError as e:
+-            raise HTTPException(status_code=400, detail=str(e))
++        async with codex_parallel_slot():
++            async with client_factory() as client:
++                response = await client.post("/v1/chat/completions", json=payload)
++    except httpx.HTTPError as error:
++        raise CodexError(f"OpenCodex request failed: {error}", status_code=503) from error
++    if response.status_code >= 400:
++        raise CodexError(_error_message(response), status_code=response.status_code)
++    body = response.json()
++    choices = body.get("choices") if isinstance(body, dict) else None
++    message = choices[0].get("message") if isinstance(choices, list) and choices and isinstance(choices[0], dict) else None
++    text = _content_text(message.get("content")) if isinstance(message, dict) else ""
++    if not text:
++        raise CodexError("OpenCodex returned no assistant content", status_code=502)
++    return OpenCodexCompletion(
++        text=text,
++        usage=_usage(body.get("usage")),
++        model=str(body.get("model") or model),
++    )
+ 
+-    prompt, image_urls = build_prompt_and_images(messages)
+ 
+-    resp_id = f"resp_{uuid.uuid4().hex}"
+-    msg_id = f"msg_{uuid.uuid4().hex}"
+-    created = int(time.time())
+-    response_model = req.model or model
+-    codex_overrides = overrides or None
++def stream_with_opencodex(
++    messages: list[dict[str, Any]],
++    model: str,
++    effort: Optional[str],
++    *,
++    temperature: Optional[float] = None,
++    max_tokens: Optional[int] = None,
++    client_factory: ClientFactory = _client,
++) -> OpenCodexTextStream:
++    stream: OpenCodexTextStream
+ 
+-    image_paths: List[str] = []
+-    try:
+-        for u in image_urls:
+-            image_paths.append(save_image_to_temp(u))
+-    except ValueError as e:
+-        for p in image_paths:
+-            try:
+-                os.remove(p)
+-            except Exception:
+-                pass
+-        raise HTTPException(status_code=400, detail=str(e))
++    async def iterate() -> AsyncIterator[str]:
++        payload = _chat_payload(messages, model, effort, stream=True, temperature=temperature, max_tokens=max_tokens)
++        client = client_factory()
++        response: Optional[httpx.Response] = None
++        try:
++            async with codex_parallel_slot():
++                request = client.build_request("POST", "/v1/chat/completions", json=payload)
++                response = await client.send(request, stream=True)
++                if response.status_code >= 400:
++                    await response.aread()
++                    raise CodexError(_error_message(response), status_code=response.status_code)
++                async for line in response.aiter_lines():
++                    if not line.startswith("data:"):
++                        continue
++                    raw = line[5:].strip()
++                    if not raw or raw == "[DONE]":
++                        continue
++                    try:
++                        event = json.loads(raw)
++                    except json.JSONDecodeError as error:
++                        raise CodexError("OpenCodex returned malformed SSE JSON", status_code=502) from error
++                    if not isinstance(event, dict):
++                        continue
++                    if event.get("error"):
++                        error = event["error"]
++                        message = error.get("message") if isinstance(error, dict) else str(error)
++                        raise CodexError(message or "OpenCodex stream failed", status_code=502)
++                    if event.get("usage"):
++                        stream.usage = _usage(event["usage"])
++                    if isinstance(event.get("model"), str):
++                        stream.model = event["model"]
++                    choices = event.get("choices")
++                    choice = choices[0] if isinstance(choices, list) and choices and isinstance(choices[0], dict) else None
++                    delta = choice.get("delta") if isinstance(choice, dict) else None
++                    text = _content_text(delta.get("content")) if isinstance(delta, dict) else ""
++                    if text:
++                        yield text
++        except httpx.HTTPError as error:
++            raise CodexError(f"OpenCodex stream failed: {error}", status_code=503) from error
++        finally:
++            if response is not None:
++                await response.aclose()
++            await client.aclose()
+ 
+-    try:
+-        if req.stream:
+-            async def event_gen() -> AsyncIterator[bytes]:
+-                try:
+-                    created_evt = {
+-                        "id": resp_id,
+-                        "object": "response",
+-                        "created": created,
+-                        "model": response_model,
+-                        "status": "in_progress",
+-                    }
+-                    yield f"event: response.created\ndata: {json.dumps(created_evt)}\n\n".encode()
+-
+-                    buf: list[str] = []
+-                    async for text in run_codex(prompt, codex_overrides, image_paths, model=model):
+-                        if text:
+-                            buf.append(text)
+-                            delta_evt = {"id": resp_id, "delta": text}
+-                            yield f"event: response.output_text.delta\ndata: {json.dumps(delta_evt)}\n\n".encode()
+-
+-                    final_text = "".join(buf)
+-                    done_evt = {"id": resp_id, "text": final_text}
+-                    yield f"event: response.output_text.done\ndata: {json.dumps(done_evt)}\n\n".encode()
+-
+-                    final_obj = ResponsesObject(
+-                        id=resp_id,
+-                        created=created,
+-                        model=response_model,
+-                        status="completed",
+-                        output=[
+-                            ResponsesMessage(
+-                                id=msg_id,
+-                                content=[ResponsesOutputText(text=final_text)],
+-                            )
+-                        ],
+-                    ).model_dump()
+-                    yield f"event: response.completed\ndata: {json.dumps(final_obj)}\n\n".encode()
+-                except CodexError as e:
+-                    err_evt = {"id": resp_id, "error": {"message": str(e)}}
+-                    yield f"event: response.error\ndata: {json.dumps(err_evt)}\n\n".encode()
+-                finally:
+-                    yield b"data: [DONE]\n\n"
+-
+-            headers = {
+-                "Cache-Control": "no-cache",
+-                "X-Accel-Buffering": "no",
+-                "Connection": "keep-alive",
+-            }
+-            return StreamingResponse(event_gen(), media_type="text/event-stream", headers=headers)
+-        else:
+-            final = await run_codex_last_message(prompt, codex_overrides, image_paths, model=model)
+-            resp = ResponsesObject(
+-                id=resp_id,
+-                created=created,
+-                model=response_model,
+-                status="completed",
+-                output=[
+-                    ResponsesMessage(
+-                        id=msg_id,
+-                        content=[ResponsesOutputText(text=final)],
+-                    )
+-                ],
+-            )
+-            return resp
+-    except CodexError as e:
+-        status = getattr(e, "status_code", None) or 500
+-        raise HTTPException(
+-            status_code=status,
+-            detail={
+-                "message": str(e),
+-                "type": "server_error" if status >= 500 else "upstream_error",
+-                "code": None,
+-            },
+-        )
+-    finally:
+-        for p in image_paths:
+-            try:
+-                os.remove(p)
+-            except Exception:
+-                pass
++    stream = OpenCodexTextStream(iterate())
++    return stream

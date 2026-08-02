@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ja.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ja.ts"
-index 47b1de3f0..9cf351d72 100644
+index 47b1de3f0..a7d3e0df4 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ja.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ja.ts"	
-@@ -10,6 +10,122 @@ export const ja: Record<TKey, string> = {
+@@ -10,6 +10,137 @@ export const ja: Record<TKey, string> = {
    "nav.subagents": "サブエージェント",
    "nav.logs": "ログ & デバッグ",
    "nav.usage": "使用量",
@@ -12,6 +12,21 @@ index 47b1de3f0..9cf351d72 100644
 +  "nav.aiwrapperSessions": "Sessions",
 +  "nav.aiwrapperSharing": "Sharing",
 +  "nav.aiwrapperBilling": "Billing",
++  "aiw.overview.title": "AIWrapper 運用",
++  "aiw.overview.subtitle": "過去24時間のユーザー別ゲートウェイの稼働状況。",
++  "aiw.overview.notConnected": "運用状況を表示するには管理者キーで接続してください。",
++  "aiw.overview.refresh": "更新",
++  "aiw.overview.refreshing": "更新中…",
++  "aiw.overview.users": "有効ユーザー",
++  "aiw.overview.conversations": "会話",
++  "aiw.overview.active": "実行中のリクエスト",
++  "aiw.overview.queue": "キュー",
++  "aiw.overview.requests": "リクエスト（24時間）",
++  "aiw.overview.throughput": "リクエスト/分",
++  "aiw.overview.averageLatency": "平均待ち時間",
++  "aiw.overview.p95Latency": "P95待ち時間",
++  "aiw.overview.errors": "エラー",
++  "aiw.overview.blocked": "ブロック",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",

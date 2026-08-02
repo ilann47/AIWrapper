@@ -28,6 +28,25 @@ async function userSummary({ userId, since, until, by = "model" }) {
   return summarizeUsageRows(rows, { since, until, by });
 }
 
+async function globalOverview({ since, until }) {
+  const rows = await readUsageLedgerRows({ since, until, includeArchives: true });
+  const durations = rows
+    .map(row => row.durationMs)
+    .filter(value => typeof value === "number" && Number.isFinite(value))
+    .sort((a, b) => a - b);
+  const averageMs = durations.length
+    ? Math.round(durations.reduce((total, value) => total + value, 0) / durations.length)
+    : 0;
+  const p95Ms = durations.length ? durations[Math.min(durations.length - 1, Math.ceil(durations.length * 0.95) - 1)] : 0;
+  return {
+    totals: summarizeUsageRows(rows, { since, until, by: "model" }).totals,
+    models: summarizeUsageRows(rows, { since, until, by: "model" }).buckets,
+    days: summarizeUsageRows(rows, { since, until, by: "day" }).buckets,
+    outcomes: summarizeUsageRows(rows, { since, until, by: "outcome" }).buckets,
+    latency: { averageMs, p95Ms, measuredRequests: durations.length },
+  };
+}
+
 let result;
 if (operation === "append") {
   result = await appendUsageLedgerRow({
@@ -49,6 +68,8 @@ if (operation === "append") {
   });
 } else if (operation === "summary") {
   result = await userSummary(input);
+} else if (operation === "overview") {
+  result = await globalOverview(input);
 } else if (operation === "evaluate") {
   const summary = await userSummary(input);
   result = evaluateBudgetGuard({

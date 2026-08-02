@@ -29,6 +29,7 @@ import UsersPage from "../../../extensions/aiwrapper-users/src/UsersPage";
 import OrganizationsPage from "../../../extensions/aiwrapper-users/src/OrganizationsPage";
 import SharingPage from "../../../extensions/aiwrapper-sharing/src/SharingPage";
 import BillingPage from "../../../extensions/aiwrapper-billing/src/BillingPage";
+import AdminOverviewPanel from "../../../extensions/aiwrapper-admin/src/AdminOverviewPanel";
 import "../../../extensions/aiwrapper-admin/src/styles.css";
 import "../../../extensions/aiwrapper-chat/src/styles.css";
 
@@ -341,7 +342,7 @@ function AppContent() {
             detailsLabel={t("errorBoundary.details")}
             reloadLabel={t("errorBoundary.reload")}
           >
-            {page === "dashboard" && <Dashboard apiBase={API_BASE} />}
+            {page === "dashboard" && <Dashboard apiBase={API_BASE} beforeOverview={<AdminOverviewPanel />} />}
             {page === "startup" && <Startup apiBase={API_BASE} />}
             {page === "providers" && <Providers apiBase={API_BASE} />}
             {page === "models" && <Models apiBase={API_BASE} />}

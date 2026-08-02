@@ -1,1 +1,22 @@
-# Files are identical.
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\pages\\Dashboard.tsx" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\pages\\Dashboard.tsx"
+index e32a671ec..2052bf990 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\pages\\Dashboard.tsx"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\pages\\Dashboard.tsx"	
+@@ -18,7 +18,7 @@ function selectDashboardTab(next: DashboardSection) {
+   navigateHash(dashboardHashForSection(next));
+ }
+ 
+-export default function Dashboard({ apiBase }: { apiBase: string }) {
++export default function Dashboard({ apiBase, beforeOverview }: { apiBase: string; beforeOverview?: ReactNode }) {
+   const d = useDashboardData(apiBase);
+   const {
+     t, error, selectedSection,
+@@ -35,7 +35,7 @@ export default function Dashboard({ apiBase }: { apiBase: string }) {
+     );
+   }
+ 
+-  const overviewSection = <DashboardOverviewSection {...d} />;
++  const overviewSection = <>{beforeOverview}<DashboardOverviewSection {...d} /></>;
+   const providersSection = <DashboardProvidersSection t={t} providers={providers} />;
+   const modelsSection = (
+     <DashboardModelsSection

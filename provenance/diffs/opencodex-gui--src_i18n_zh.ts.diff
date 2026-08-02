@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\zh.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\zh.ts"
-index 3a50a7658..ae8f16ba6 100644
+index 3a50a7658..bd633a16f 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\zh.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\zh.ts"	
-@@ -10,6 +10,122 @@ export const zh: Record<TKey, string> = {
+@@ -10,6 +10,137 @@ export const zh: Record<TKey, string> = {
    "nav.subagents": "子代理",
    "nav.logs": "日志与调试",
    "nav.usage": "用量",
@@ -12,6 +12,21 @@ index 3a50a7658..ae8f16ba6 100644
 +  "nav.aiwrapperSessions": "Sessions",
 +  "nav.aiwrapperSharing": "Sharing",
 +  "nav.aiwrapperBilling": "Billing",
++  "aiw.overview.title": "AIWrapper 运行状况",
++  "aiw.overview.subtitle": "过去 24 小时的用户网关活动。",
++  "aiw.overview.notConnected": "请使用管理员密钥连接以查看运行状况。",
++  "aiw.overview.refresh": "刷新",
++  "aiw.overview.refreshing": "刷新中…",
++  "aiw.overview.users": "活跃用户",
++  "aiw.overview.conversations": "对话",
++  "aiw.overview.active": "活动请求",
++  "aiw.overview.queue": "队列",
++  "aiw.overview.requests": "请求（24 小时）",
++  "aiw.overview.throughput": "请求/分钟",
++  "aiw.overview.averageLatency": "平均延迟",
++  "aiw.overview.p95Latency": "P95 延迟",
++  "aiw.overview.errors": "错误",
++  "aiw.overview.blocked": "已阻止",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",

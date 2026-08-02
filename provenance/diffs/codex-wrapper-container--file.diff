@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\Dockerfile" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\Dockerfile.codex-wrapper"
-index 31ed23325..e8a2c9c80 100644
+index 31ed23325..1b3a0a7bd 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\Dockerfile"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\Dockerfile.codex-wrapper"	
-@@ -1,45 +1,35 @@
+@@ -1,45 +1,36 @@
  # syntax=docker/dockerfile:1
 +# The runtime stages preserve circlemouth/Codex-Wrapper's Docker architecture.
 +FROM node:20-bookworm-slim AS governance
@@ -58,6 +58,7 @@ index 31ed23325..e8a2c9c80 100644
 +COPY packages/codex-profiles /opt/aiwrapper/packages/codex-profiles
 +COPY --from=governance /src/packages/codex-multi-auth /opt/aiwrapper/packages/codex-multi-auth
 +COPY extensions/aiwrapper-admin /opt/aiwrapper/extensions/aiwrapper-admin
++COPY extensions/aiwrapper-runtime /opt/aiwrapper/extensions/aiwrapper-runtime
 +RUN mkdir -p /workspace /data /home/codex/.codex \
 +    && chown -R codex:codex /workspace /data /home/codex
 +ENV CODEX_PATH=codex CODEX_WORKDIR=/workspace CODEX_CONFIG_DIR=/home/codex/.codex

@@ -22,6 +22,74 @@
       "exclude": ["dist"]
     },
     {
+      "id": "opencodex-data-plane-execution",
+      "functionality": "Execute AIWrapper chat and Responses traffic through the original OpenCodex provider, OAuth, account-pool, model-routing, fallback and usage pipeline",
+      "project": "lidge-jun/OpenCodex",
+      "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+      "license": "MIT",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/opencodex/src/server/chat-completions.ts",
+      "destination": "services/codex-wrapper/app/aiwrapper/opencodex.py",
+      "incompatibility": "OpenCodex is a Bun/TypeScript server while Codex-Wrapper is a FastAPI/Python service. Importing the server in-process is impossible; the adapter speaks OpenCodex's unchanged OpenAI-compatible data-plane protocol and does not reimplement provider or OAuth behavior.",
+      "parityAudit": {
+        "retained": ["Original OpenCodex /v1/chat/completions server", "Original provider adapters", "Original OAuth and Codex account pools", "Original fallback and model routing", "Original reported usage"],
+        "lost": ["Tool-call objects are still constrained by Codex-Wrapper's existing text-oriented public response schema"],
+        "decision": "Run the complete upstream OpenCodex server as a composed service and adapt only the Python HTTP/SSE boundary. The canonical Docker topology enables this backend."
+      }
+    },
+    {
+      "id": "opencodex-aiwrapper-operations-overview",
+      "functionality": "Administrator operations strip with users, sessions, concurrency, queue, throughput, failures, blocks and latency alongside the original OpenCodex dashboard",
+      "project": "lidge-jun/OpenCodex and ndycode/codex-multi-auth",
+      "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/opencodex/gui/src/pages/dashboard-overview-head.tsx",
+      "destination": "extensions/aiwrapper-admin/src/AdminOverviewPanel.tsx",
+      "incompatibility": "OpenCodex's overview reports its provider process but has no AIWrapper users, conversations or codex-multi-auth ledger identity. The existing stat-row composition and polling architecture are retained while the data boundary targets the administrator-only AIWrapper endpoint.",
+      "parityAudit": {
+        "retained": ["OpenCodex stat-row and stat card architecture", "OpenCodex cache and polling hook", "OpenCodex loading, error and refresh conventions"],
+        "lost": [],
+        "decision": "Embed an additive AIWrapper operations strip before the unchanged OpenCodex overview so provider and gateway observability remain available together."
+      }
+    },
+    {
+      "id": "opencodex-readiness-contract",
+      "functionality": "OpenCodex identity-aware readiness and model discovery used by the Codex-Wrapper gateway",
+      "project": "lidge-jun/OpenCodex",
+      "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+      "license": "MIT",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/opencodex/src/server/index.ts",
+      "destination": "services/codex-wrapper/app/aiwrapper/opencodex.py",
+      "incompatibility": "The FastAPI process cannot call OpenCodex server functions directly across the Bun process boundary.",
+      "parityAudit": {
+        "retained": ["Original /healthz identity payload", "Original /v1/models catalog and visibility rules"],
+        "lost": [],
+        "decision": "Consume the original endpoints and fail readiness when the selected execution backend is unavailable."
+      }
+    },
+    {
+      "id": "codex-wrapper-production-admission",
+      "functionality": "Allowlisted browser origins, authenticated per-user rate-limit identity and dependency-aware readiness",
+      "project": "circlemouth/Codex-Wrapper and lidge-jun/OpenCodex security boundaries",
+      "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/Codex-Wrapper/app/main.py",
+      "destination": "services/codex-wrapper/app/main.py",
+      "incompatibility": "Codex-Wrapper's global wildcard CORS and IP-only limiter do not distinguish AIWrapper principals or validate the composed OpenCodex dependency; the domain-specific gateway must adapt those admission checks.",
+      "parityAudit": {
+        "retained": ["Original FastAPI routes", "Original dependency injection", "Original CORS middleware", "Original Codex CLI fallback"],
+        "lost": ["Wildcard browser origin admission"],
+        "decision": "Preserve the upstream service and narrow only its admission and readiness boundaries for a multi-user deployment."
+      }
+    },
+    {
       "id": "codex-wrapper-service",
       "functionality": "FastAPI OpenAI proxy, Codex OAuth execution, model listing, request middleware and SSE streaming",
       "project": "circlemouth/Codex-Wrapper",
@@ -31,7 +99,7 @@
       "kind": "directory",
       "source": "upstream/Codex-Wrapper",
       "destination": "services/codex-wrapper",
-      "exclude": ["app/aiwrapper", "tests/test_aiwrapper_integration.py", ".aiwrapper"]
+      "exclude": ["app/aiwrapper", "tests/test_aiwrapper_integration.py", "tests/test_opencodex_adapter.py", ".aiwrapper"]
     },
     {
       "id": "codex-multi-auth-package",

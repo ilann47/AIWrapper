@@ -1,8 +1,62 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\codex.py" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\codex.py"
-index 8ec82d414..f22587afd 100644
+index 8ec82d414..cf60497cc 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\codex.py"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\codex.py"	
-@@ -356,8 +356,10 @@ def _resolve_codex_home_dir() -> Path:
+@@ -61,23 +61,52 @@ class _CodexConcurrencyLimiter:
+         value = max(1, int(max_parallel or 1))
+         self._max_parallel = value
+         self._semaphore = asyncio.Semaphore(value)
++        self._active = 0
++        self._waiting = 0
+ 
+     @property
+     def max_parallel(self) -> int:
+         return self._max_parallel
+ 
++    @property
++    def active(self) -> int:
++        return self._active
++
++    @property
++    def waiting(self) -> int:
++        return self._waiting
++
+     @asynccontextmanager
+     async def slot(self) -> AsyncIterator[None]:
+-        await self._semaphore.acquire()
++        self._waiting += 1
++        try:
++            await self._semaphore.acquire()
++        finally:
++            self._waiting -= 1
++        self._active += 1
+         try:
+             yield
+         finally:
++            self._active -= 1
+             self._semaphore.release()
+ 
+ 
+ _parallel_limiter = _CodexConcurrencyLimiter(settings.max_parallel_requests)
+ 
+ 
++def codex_parallel_slot():
++    """Share the upstream Codex concurrency gate with composed execution backends."""
++    return _parallel_limiter.slot()
++
++
++def codex_parallel_status() -> Dict[str, int]:
++    return {
++        "active": _parallel_limiter.active,
++        "queued": _parallel_limiter.waiting,
++        "limit": _parallel_limiter.max_parallel,
++    }
++
++
+ @dataclass(frozen=True)
+ class ModelPresetEntry:
+     """Representation of a Codex CLI model preset."""
+@@ -356,8 +385,10 @@ def _resolve_codex_home_dir() -> Path:
          if env_path not in candidates:
              candidates.append(env_path)
  
@@ -14,7 +68,7 @@ index 8ec82d414..f22587afd 100644
          candidates.append(default_home)
  
      workspace_home = Path(settings.codex_workdir).expanduser() / ".codex"
-@@ -421,7 +423,7 @@ def _configure_codex_home_environment(resolved: Path, had_errors: bool) -> None:
+@@ -421,7 +452,7 @@ def _configure_codex_home_environment(resolved: Path, had_errors: bool) -> None:
      default_home = Path.home() / ".codex"
  
      if previous_env != resolved_str:
@@ -23,7 +77,7 @@ index 8ec82d414..f22587afd 100644
              logger.warning(
                  "Overriding unusable CODEX_HOME '%s' with '%s'.",
                  previous_env,
-@@ -815,7 +817,9 @@ def _parse_model_listing(raw: str) -> List[str]:
+@@ -815,7 +846,9 @@ def _parse_model_listing(raw: str) -> List[str]:
          parts = stripped.split()
          base = parts[0]
          is_codex = any(p.lower() == "codex" for p in parts[1:])

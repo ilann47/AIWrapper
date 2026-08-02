@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\api.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\governance-bridge.mjs"
-index ec1546551..d6867c2a9 100644
+index ec1546551..4b39e8852 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\api.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\governance-bridge.mjs"	
-@@ -1,213 +1,66 @@
+@@ -1,213 +1,87 @@
 -let installed = false;
 -/** Shared 401 refresh gate — concurrent waiters join one prompt / token resolution. */
 -let resolutionInFlight: Promise<string | null> | null = null;
@@ -162,8 +162,25 @@ index ec1546551..d6867c2a9 100644
 -  }
 -  if (input instanceof Request) return [new Request(input, { headers }), init ? { ...init, headers } : undefined];
 -  return [input, { ...init, headers }];
--}
--
++async function globalOverview({ since, until }) {
++  const rows = await readUsageLedgerRows({ since, until, includeArchives: true });
++  const durations = rows
++    .map(row => row.durationMs)
++    .filter(value => typeof value === "number" && Number.isFinite(value))
++    .sort((a, b) => a - b);
++  const averageMs = durations.length
++    ? Math.round(durations.reduce((total, value) => total + value, 0) / durations.length)
++    : 0;
++  const p95Ms = durations.length ? durations[Math.min(durations.length - 1, Math.ceil(durations.length * 0.95) - 1)] : 0;
++  return {
++    totals: summarizeUsageRows(rows, { since, until, by: "model" }).totals,
++    models: summarizeUsageRows(rows, { since, until, by: "model" }).buckets,
++    days: summarizeUsageRows(rows, { since, until, by: "day" }).buckets,
++    outcomes: summarizeUsageRows(rows, { since, until, by: "outcome" }).buckets,
++    latency: { averageMs, p95Ms, measuredRequests: durations.length },
++  };
+ }
+ 
 -/**
 - * Resolve a token after a 401. Concurrent callers share one in-flight resolution so a dashboard
 - * fan-out does not open one window.prompt per /api request (#647). Re-reads memoryToken before
@@ -250,6 +267,8 @@ index ec1546551..d6867c2a9 100644
 -  };
 +} else if (operation === "summary") {
 +  result = await userSummary(input);
++} else if (operation === "overview") {
++  result = await globalOverview(input);
 +} else if (operation === "evaluate") {
 +  const summary = await userSummary(input);
 +  result = evaluateBudgetGuard({

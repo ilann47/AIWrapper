@@ -18,7 +18,7 @@ function selectDashboardTab(next: DashboardSection) {
   navigateHash(dashboardHashForSection(next));
 }
 
-export default function Dashboard({ apiBase }: { apiBase: string }) {
+export default function Dashboard({ apiBase, beforeOverview }: { apiBase: string; beforeOverview?: ReactNode }) {
   const d = useDashboardData(apiBase);
   const {
     t, error, selectedSection,
@@ -35,7 +35,7 @@ export default function Dashboard({ apiBase }: { apiBase: string }) {
     );
   }
 
-  const overviewSection = <DashboardOverviewSection {...d} />;
+  const overviewSection = <>{beforeOverview}<DashboardOverviewSection {...d} /></>;
   const providersSection = <DashboardProvidersSection t={t} providers={providers} />;
   const modelsSection = (
     <DashboardModelsSection

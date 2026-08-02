@@ -13,6 +13,10 @@
 .aiw-secret { display: block; margin-top: var(--space-3); padding: var(--space-3); border: 1px dashed var(--border); border-radius: var(--radius-sm); overflow-wrap: anywhere; }
 .aiw-stack { display: grid; gap: var(--space-4); }
 .aiw-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3); }
+.aiw-admin-overview { display: grid; gap: var(--space-4); margin-bottom: var(--space-6); padding-bottom: var(--space-6); border-bottom: 1px solid var(--border); }
+.aiw-admin-overview__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+.aiw-admin-overview__head h3, .aiw-admin-overview__head p { margin: 0; }
+.aiw-admin-overview__head p { margin-top: 4px; color: var(--muted); }
 .aiw-quota-input { width: 112px; }
 @media (max-width: 700px) {
   .aiw-form-grid { grid-template-columns: 1fr; }

@@ -1,4 +1,5 @@
 import re
+import time
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
@@ -7,6 +8,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from .governance import governance
 from .profiles import ensure_profile
 from .store import store
+from ..codex import codex_parallel_status
 
 
 router = APIRouter()
@@ -70,6 +72,23 @@ async def users(request: Request):
             "weighted_units": summary["totals"]["totalTokens"],
         })
     return {"data": data}
+
+
+@router.get("/admin/overview")
+async def admin_overview(request: Request):
+    administrator(request)
+    now_ms = int(time.time() * 1000)
+    since_ms = now_ms - 24 * 60 * 60 * 1000
+    usage = await governance("overview", {"since": since_ms, "until": now_ms})
+    totals = usage.get("totals", {})
+    elapsed_minutes = 24 * 60
+    return {
+        "counts": store.overview_counts(),
+        "runtime": codex_parallel_status(),
+        "usage": usage,
+        "throughputPerMinute": round(float(totals.get("requests", 0)) / elapsed_minutes, 3),
+        "window": {"since": since_ms, "until": now_ms},
+    }
 
 
 @router.post("/admin/users", status_code=201)

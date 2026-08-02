@@ -10,3 +10,5 @@
 | decolua/9router | `6fcd27337a7893642c7fe630840d0a641743f28f` | `upstream/9router/`, RTK runtime and chat/usage adapters |
 
 All six incorporated projects are MIT-licensed. Their source snapshots and license files are preserved under `upstream/`, and copied package trees retain their upstream license files. OAuth client credentials embedded by 9router were security-redacted and replaced with environment-variable lookups; this is the only snapshot-level source alteration. Odysseus (AGPL-3.0) and Dionysus (no license) were audited but not incorporated; see `FEATURE_GAP_ANALYSIS.md`. See `provenance/manifest.json` for exact per-file hashes and `docs/generated/PROVENANCE_EVIDENCE.md` for metrics and diffs.
+
+Runtime dependency `httpx` 0.28.1 (BSD-3-Clause) is used only by the Python process-boundary adapter to call the unchanged OpenCodex HTTP/SSE data plane. It replaces no upstream provider implementation and rejects redirects at this internal trust boundary.

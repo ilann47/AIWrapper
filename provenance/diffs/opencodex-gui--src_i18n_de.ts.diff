@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\de.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\de.ts"
-index 5e85333ed..587cdaa15 100644
+index 5e85333ed..23bc679f9 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\de.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\de.ts"	
-@@ -10,6 +10,122 @@ export const de: Record<TKey, string> = {
+@@ -10,6 +10,137 @@ export const de: Record<TKey, string> = {
    "nav.subagents": "Sub-Agenten",
    "nav.logs": "Protokolle & Diagnose",
    "nav.usage": "Nutzung",
@@ -12,6 +12,21 @@ index 5e85333ed..587cdaa15 100644
 +  "nav.aiwrapperSessions": "Sitzungen",
 +  "nav.aiwrapperSharing": "Freigaben",
 +  "nav.aiwrapperBilling": "Abrechnung",
++  "aiw.overview.title": "AIWrapper-Betrieb",
++  "aiw.overview.subtitle": "Aktivität des Benutzer-Gateways in den letzten 24 Stunden.",
++  "aiw.overview.notConnected": "Mit einem Administratorschlüssel verbinden, um den Betrieb anzuzeigen.",
++  "aiw.overview.refresh": "Aktualisieren",
++  "aiw.overview.refreshing": "Wird aktualisiert…",
++  "aiw.overview.users": "Aktive Benutzer",
++  "aiw.overview.conversations": "Unterhaltungen",
++  "aiw.overview.active": "Aktive Anfragen",
++  "aiw.overview.queue": "Warteschlange",
++  "aiw.overview.requests": "Anfragen (24 Std.)",
++  "aiw.overview.throughput": "Anfragen/Min.",
++  "aiw.overview.averageLatency": "Mittlere Latenz",
++  "aiw.overview.p95Latency": "P95-Latenz",
++  "aiw.overview.errors": "Fehler",
++  "aiw.overview.blocked": "Blockiert",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",

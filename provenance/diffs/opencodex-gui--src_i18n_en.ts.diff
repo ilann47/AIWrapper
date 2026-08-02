@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\en.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\en.ts"
-index 26aa5f653..ed0fe1668 100644
+index 26aa5f653..487873819 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\en.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\en.ts"	
-@@ -10,6 +10,122 @@ export const en = {
+@@ -10,6 +10,137 @@ export const en = {
    "nav.subagents": "Subagents",
    "nav.logs": "Logs & Debug",
    "nav.usage": "Usage",
@@ -12,6 +12,21 @@ index 26aa5f653..ed0fe1668 100644
 +  "nav.aiwrapperSessions": "Sessions",
 +  "nav.aiwrapperSharing": "Sharing",
 +  "nav.aiwrapperBilling": "Billing",
++  "aiw.overview.title": "AIWrapper operations",
++  "aiw.overview.subtitle": "Per-user gateway activity during the last 24 hours.",
++  "aiw.overview.notConnected": "Connect with an administrator key to view operations.",
++  "aiw.overview.refresh": "Refresh",
++  "aiw.overview.refreshing": "Refreshing…",
++  "aiw.overview.users": "Active users",
++  "aiw.overview.conversations": "Conversations",
++  "aiw.overview.active": "Active requests",
++  "aiw.overview.queue": "Queue",
++  "aiw.overview.requests": "Requests (24h)",
++  "aiw.overview.throughput": "Requests/min",
++  "aiw.overview.averageLatency": "Average latency",
++  "aiw.overview.p95Latency": "P95 latency",
++  "aiw.overview.errors": "Errors",
++  "aiw.overview.blocked": "Blocked",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",

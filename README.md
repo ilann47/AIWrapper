@@ -50,12 +50,12 @@ O frontend dev separado também pode ser iniciado com `pnpm dev:web`, usando `OP
 
 1. A chave individual identifica usuário, organização, papel e perfil.
 2. O budget guard original do codex-multi-auth avalia as janelas de 5 horas e 7 dias.
-3. O Codex-Wrapper executa o Codex CLI com o OAuth presente no `CODEX_CONFIG_DIR`/perfil.
+3. No `docker compose`, o Codex-Wrapper envia a requisição ao data plane original do OpenCodex, que executa o provider/OAuth/account pool/fallback selecionado. `AIWRAPPER_EXECUTION_BACKEND=codex-cli` preserva o CLI direto como fallback explícito.
 4. O SSE original transmite a resposta; Chat mostra modelo, effort e tempo decorrido.
-5. Em sucesso, erro, bloqueio ou desconexão, o gateway grava uma entrada no ledger original do codex-multi-auth.
+5. Em sucesso, erro, bloqueio ou desconexão, o gateway grava uma entrada no ledger original do codex-multi-auth; no backend OpenCodex usa os tokens reportados pelo provider, incluindo cache e reasoning.
 6. Sessão e mensagens ficam persistidas para listar, continuar ou iniciar outra conversa.
 
-As cotas usam **unidades internas estimadas**, pois a assinatura ChatGPT não expõe um orçamento fixo de tokens por usuário. A implementação atual estima tokens por caracteres e registra `input + 4 × output`; os limites podem ser editados na página Users. Isso é governança local, não o contador oficial da OpenAI.
+As cotas usam **tokens contabilizados pelo ledger interno**, pois a assinatura ChatGPT não expõe um orçamento fixo por usuário. No backend OpenCodex, o ledger preserva os tokens de entrada, saída, cache e raciocínio reportados pelo provider; no fallback `codex-cli`, estima entrada/saída por caracteres. Os limites podem ser editados na página Users. Isso é governança local, não o contador oficial da OpenAI.
 
 ## API principal
 
@@ -63,6 +63,7 @@ As cotas usam **unidades internas estimadas**, pois a assinatura ChatGPT não ex
 - `POST /v1/chat/completions`
 - `POST /v1/responses`
 - `GET /v1/me` e `/v1/me/usage`
+- `GET /admin/overview`
 - `GET/POST/PATCH /admin/users`
 - `GET/POST /admin/organizations`
 - `GET/DELETE /v1/sessions`
@@ -83,7 +84,7 @@ Copy-Item .env.example .env
 docker compose up --build
 ```
 
-Os serviços são publicados somente em loopback: OpenCodex em `8765` e Codex-Wrapper em `8766`. Proteja o volume OAuth e troque toda chave de exemplo antes de usar fora da máquina de laboratório.
+Os serviços são publicados somente em loopback: OpenCodex em `8765` e Codex-Wrapper em `8766`. `OPENCODEX_API_AUTH_TOKEN` é obrigatório no Compose e também autentica o canal interno configurado por `AIWRAPPER_OPENCODEX_API_KEY`. Proteja o volume OAuth, use segredos aleatórios e mantenha `AIWRAPPER_CORS_ORIGINS` restrito às origens reais.
 
 ## Validação e proveniência
 

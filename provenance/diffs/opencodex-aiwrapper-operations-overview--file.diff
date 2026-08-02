@@ -1,0 +1,189 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\pages\\dashboard-overview-head.tsx" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\AdminOverviewPanel.tsx"
+index 87293ae51..016981630 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\pages\\dashboard-overview-head.tsx"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\AdminOverviewPanel.tsx"	
+@@ -1,126 +1,67 @@
+-import { IconAlert, IconInfo } from "../icons";
+-import { type TKey, useT } from "../i18n/shared";
+-import { formatTokens } from "../format-tokens";
+-import { formatUptime } from "../formatUptime";
+-import type { useDashboardData } from "./use-dashboard-data";
++import { useKeyedClientResource } from "../../../apps/opencodex-gui/src/client-resource";
++import { useT } from "../../../apps/opencodex-gui/src/i18n/shared";
++import { useAIWrapper } from "./auth";
+ 
+-type Dash = ReturnType<typeof useDashboardData>;
++type Totals = {
++  requests?: number;
++  totalTokens?: number;
++  failures?: number;
++  blocked?: number;
++};
+ 
+-export function DashboardOverviewHead({
+-  locale,
+-  health,
+-  providers,
+-  usage30d,
+-  startupHealth,
+-  projectConfigWarnings,
+-  maMode,
+-  maBusy,
+-  maHelpTriggerRef,
+-  maHelpOpen,
+-  setMaHelpOpen,
+-  switchMaMode,
+-}: Pick<Dash, "locale" | "health" | "providers" | "usage30d" | "startupHealth" | "projectConfigWarnings" | "maMode" | "maBusy" | "maHelpTriggerRef" | "maHelpOpen" | "setMaHelpOpen" | "switchMaMode">) {
++type AdminOverview = {
++  counts: { users: number; conversations: number; messages: number; shares: number };
++  runtime: { active: number; queued: number; limit: number };
++  usage: { totals?: Totals; latency?: { averageMs: number; p95Ms: number; measuredRequests: number } };
++  throughputPerMinute: number;
++};
++
++function formatDuration(value?: number) {
++  if (value === undefined) return "—";
++  if (value < 1_000) return `${Math.round(value)} ms`;
++  return `${(value / 1_000).toFixed(1)} s`;
++}
++
++export default function AdminOverviewPanel() {
+   const t = useT();
+-  const online = health?.status === "ok";
++  const { client, principal } = useAIWrapper();
++  const isAdministrator = principal?.role === "admin" || principal?.role === "owner";
++  const resource = useKeyedClientResource<AdminOverview>(
++    `aiwrapper-admin-overview:${principal?.userId ?? "anonymous"}`,
++    [client, principal?.userId],
++    async () => {
++      if (!client) throw new Error(t("aiw.overview.notConnected"));
++      return client.get<AdminOverview>("/admin/overview");
++    },
++    { enabled: Boolean(client && isAdministrator), pollMs: 10_000 },
++  );
+ 
++  if (!client || !isAdministrator) return null;
++  const totals = resource.data?.usage.totals;
+   return (
+-    <>
+-      <div className="dash-overview-head">
+-        <div className="stat-row">
+-          <div className="stat">
+-            <div className="label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+-              {t("dash.multiAgent")}
+-              <button
+-                ref={maHelpTriggerRef}
+-                type="button"
+-                className="btn btn-ghost btn-sm"
+-                style={{ width: 24, height: 24, minWidth: 24, flex: "0 0 24px", padding: 0, borderRadius: "var(--radius-pill)", color: "var(--muted)" }}
+-                onClick={() => setMaHelpOpen(true)}
+-                aria-label={t("dash.multiAgent")}
+-                aria-haspopup="dialog"
+-                aria-controls="multi-agent-help-dialog"
+-                aria-expanded={maHelpOpen}
+-              >
+-                <IconInfo width={14} height={14} aria-hidden="true" />
+-              </button>
+-            </div>
+-            <div className="value" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+-              <div role="radiogroup" aria-label={t("dash.multiAgent")} style={{ display: "inline-flex", borderRadius: "var(--radius-pill)", background: "var(--surface-soft, var(--raised))", padding: 3, gap: 2 }}>
+-                {(["v1", "default", "v2"] as const).map(mode => (
+-                  <button
+-                    key={mode}
+-                    type="button"
+-                    role="radio"
+-                    aria-checked={maMode === mode}
+-                    className={`btn btn-sm text-caption${maMode === mode ? " btn-primary" : " btn-ghost"}`}
+-                    style={{ borderRadius: "var(--radius-pill)", minWidth: 36, padding: "5px 10px", border: "none", background: maMode === mode ? undefined : "transparent", color: maMode === mode ? undefined : "var(--muted)" }}
+-                    disabled={maBusy}
+-                    onClick={() => void switchMaMode(mode)}
+-                  >{t(`models.v2Mode_${mode}` as TKey)}</button>
+-                ))}
+-              </div>
+-            </div>
+-          </div>
+-          <div className="stat">
+-            <div className="label">{t("dash.status")}</div>
+-            <div className="value" style={{ display: "flex", alignItems: "center", gap: 9, color: online ? "var(--green)" : "var(--red)" }}>
+-              <span className={`dot ${online ? "dot-green" : "dot-red"}`} />{online ? t("dash.online") : t("dash.offline")}
+-            </div>
+-          </div>
+-          <div className="stat"><div className="label">{t("dash.version")}</div><div className="value mono">{health?.version ?? "—"}</div></div>
+-          <div className="stat"><div className="label">{t("dash.uptime")}</div><div className="value mono">{health ? formatUptime(health.uptime, locale) : "—"}</div></div>
+-          <div className="stat"><div className="label">{t("dash.providers")}</div><div className="value">{providers.length}</div></div>
+-          <div className="stat">
+-            <div className="label">{t("dash.tokens30d")}</div>
+-            <div className="value mono">{usage30d && usage30d.summary.requests > 0 ? formatTokens(usage30d.summary.totalTokens, locale) : "—"}</div>
+-            <div className="muted text-label dash-stat-coverage">
+-              {usage30d && usage30d.summary.requests > 0
+-                ? t("dash.coverage").replace("{pct}", `${Math.round(usage30d.summary.coverageRatio * 100)}%`)
+-                : "\u00a0"}
+-            </div>
+-          </div>
+-        </div>
+-
+-        <div className="startup-health-slot" aria-live="polite">
+-          {startupHealth ? (
+-            <a className="startup-health-bar" href="#startup">
+-              <span className={`dot ${startupHealth === "error" ? "dot-red" : startupHealth === "at-risk" ? "dot-amber" : "dot-green"}`} aria-hidden="true" />
+-              <span className="startup-health-bar__summary">
+-                {t(startupHealth === "error"
+-                  ? "startup.error"
+-                  : startupHealth === "at-risk"
+-                    ? "startup.summary.atRisk"
+-                    : startupHealth === "protected"
+-                      ? "startup.summary.protected"
+-                      : "startup.summary.native")}
+-              </span>
+-            </a>
+-          ) : (
+-            <div className="startup-health-bar startup-health-bar--pending" aria-hidden="true">
+-              <span className="dot dot-amber" />
+-              <span className="startup-health-bar__summary">&nbsp;</span>
+-            </div>
+-          )}
++    <section className="aiw-admin-overview" aria-labelledby="aiw-admin-overview-title">
++      <div className="aiw-admin-overview__head">
++        <div>
++          <h3 id="aiw-admin-overview-title">{t("aiw.overview.title")}</h3>
++          <p>{t("aiw.overview.subtitle")}</p>
+         </div>
++        <button className="btn btn-sm" type="button" onClick={() => resource.refresh()} disabled={resource.loading}>
++          {resource.loading ? t("aiw.overview.refreshing") : t("aiw.overview.refresh")}
++        </button>
+       </div>
+-
+-      {projectConfigWarnings.length > 0 && (
+-        <div className="notice notice-err maintenance-notice" role="alert">
+-          <IconAlert />
+-          <div>
+-            <div className="font-semibold">{t("dash.projectConfigTitle")}</div>
+-            <div className="muted text-control" style={{ marginTop: 4 }}>{t("dash.projectConfigHint")}</div>
+-            <ul className="text-control" style={{ margin: "10px 0 0", paddingLeft: 18 }}>
+-              {projectConfigWarnings.map(g => (
+-                <li key={g.path} style={{ marginBottom: 8 }}>
+-                  <code>{g.path}</code> — {g.issues.join(", ")}
+-                  <div className="muted" style={{ marginTop: 2 }}>{g.bypass}</div>
+-                </li>
+-              ))}
+-            </ul>
+-          </div>
+-        </div>
+-      )}
+-    </>
++      {resource.error ? <div className="notice notice-err" role="alert">{String(resource.error)}</div> : null}
++      <div className="stat-row">
++        <div className="stat"><div className="label">{t("aiw.overview.users")}</div><div className="value">{resource.data?.counts.users ?? "—"}</div></div>
++        <div className="stat"><div className="label">{t("aiw.overview.conversations")}</div><div className="value">{resource.data?.counts.conversations ?? "—"}</div></div>
++        <div className="stat"><div className="label">{t("aiw.overview.active")}</div><div className="value">{resource.data?.runtime.active ?? "—"}</div></div>
++        <div className="stat"><div className="label">{t("aiw.overview.queue")}</div><div className="value">{resource.data?.runtime.queued ?? "—"}</div></div>
++        <div className="stat"><div className="label">{t("aiw.overview.requests")}</div><div className="value">{totals?.requests ?? "—"}</div></div>
++        <div className="stat"><div className="label">{t("aiw.overview.throughput")}</div><div className="value mono">{resource.data?.throughputPerMinute ?? "—"}</div></div>
++        <div className="stat"><div className="label">{t("aiw.overview.averageLatency")}</div><div className="value mono">{formatDuration(resource.data?.usage.latency?.averageMs)}</div></div>
++        <div className="stat"><div className="label">{t("aiw.overview.p95Latency")}</div><div className="value mono">{formatDuration(resource.data?.usage.latency?.p95Ms)}</div></div>
++        <div className="stat"><div className="label">{t("aiw.overview.errors")}</div><div className="value">{totals?.failures ?? 0}</div></div>
++        <div className="stat"><div className="label">{t("aiw.overview.blocked")}</div><div className="value">{totals?.blocked ?? 0}</div></div>
++      </div>
++    </section>
+   );
+ }

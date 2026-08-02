@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ru.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ru.ts"
-index e0ae4bdf4..8c997a674 100644
+index e0ae4bdf4..f484bf52d 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ru.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ru.ts"	
-@@ -10,6 +10,122 @@ export const ru: Record<TKey, string> = {
+@@ -10,6 +10,137 @@ export const ru: Record<TKey, string> = {
    "nav.subagents": "Подагенты",
    "nav.logs": "Логи и отладка",
    "nav.usage": "Использование",
@@ -12,6 +12,21 @@ index e0ae4bdf4..8c997a674 100644
 +  "nav.aiwrapperSessions": "Sessions",
 +  "nav.aiwrapperSharing": "Sharing",
 +  "nav.aiwrapperBilling": "Billing",
++  "aiw.overview.title": "Работа AIWrapper",
++  "aiw.overview.subtitle": "Активность пользовательского шлюза за последние 24 часа.",
++  "aiw.overview.notConnected": "Подключитесь с ключом администратора для просмотра.",
++  "aiw.overview.refresh": "Обновить",
++  "aiw.overview.refreshing": "Обновление…",
++  "aiw.overview.users": "Активные пользователи",
++  "aiw.overview.conversations": "Диалоги",
++  "aiw.overview.active": "Активные запросы",
++  "aiw.overview.queue": "Очередь",
++  "aiw.overview.requests": "Запросы (24 ч)",
++  "aiw.overview.throughput": "Запросов/мин",
++  "aiw.overview.averageLatency": "Средняя задержка",
++  "aiw.overview.p95Latency": "P95 задержка",
++  "aiw.overview.errors": "Ошибки",
++  "aiw.overview.blocked": "Заблокировано",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",

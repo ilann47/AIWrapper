@@ -61,21 +61,50 @@ class _CodexConcurrencyLimiter:
         value = max(1, int(max_parallel or 1))
         self._max_parallel = value
         self._semaphore = asyncio.Semaphore(value)
+        self._active = 0
+        self._waiting = 0
 
     @property
     def max_parallel(self) -> int:
         return self._max_parallel
 
+    @property
+    def active(self) -> int:
+        return self._active
+
+    @property
+    def waiting(self) -> int:
+        return self._waiting
+
     @asynccontextmanager
     async def slot(self) -> AsyncIterator[None]:
-        await self._semaphore.acquire()
+        self._waiting += 1
+        try:
+            await self._semaphore.acquire()
+        finally:
+            self._waiting -= 1
+        self._active += 1
         try:
             yield
         finally:
+            self._active -= 1
             self._semaphore.release()
 
 
 _parallel_limiter = _CodexConcurrencyLimiter(settings.max_parallel_requests)
+
+
+def codex_parallel_slot():
+    """Share the upstream Codex concurrency gate with composed execution backends."""
+    return _parallel_limiter.slot()
+
+
+def codex_parallel_status() -> Dict[str, int]:
+    return {
+        "active": _parallel_limiter.active,
+        "queued": _parallel_limiter.waiting,
+        "limit": _parallel_limiter.max_parallel,
+    }
 
 
 @dataclass(frozen=True)

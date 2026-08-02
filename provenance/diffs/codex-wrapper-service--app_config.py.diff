@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\config.py" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\config.py"
-index 44e97b833..37a9cfb8c 100644
+index 44e97b833..7704ac7bd 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\config.py"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\config.py"	
-@@ -37,6 +37,19 @@ class Settings(BaseSettings):
+@@ -37,6 +37,31 @@ class Settings(BaseSettings):
      allow_danger_full_access: bool = Field(default=False, alias="CODEX_ALLOW_DANGER_FULL_ACCESS")
      # Deprecated: ignored, but kept to avoid startup failures when legacy env remains.
      codex_model: Optional[str] = Field(default=None, alias="CODEX_MODEL")
@@ -13,12 +13,24 @@ index 44e97b833..37a9cfb8c 100644
 +    aiwrapper_governance_bridge: str = Field(default="../../extensions/aiwrapper-admin/src/governance-bridge.mjs", alias="AIWRAPPER_GOVERNANCE_BRIDGE")
 +    aiwrapper_nine_router_bridge: str = Field(default="../../extensions/aiwrapper-runtime/src/nine-router-bridge.mjs", alias="AIWRAPPER_NINE_ROUTER_BRIDGE")
 +    aiwrapper_rtk_enabled: bool = Field(default=True, alias="AIWRAPPER_RTK_ENABLED")
++    aiwrapper_execution_backend: str = Field(default="codex-cli", alias="AIWRAPPER_EXECUTION_BACKEND")
++    aiwrapper_opencodex_base_url: str = Field(default="http://127.0.0.1:8765", alias="AIWRAPPER_OPENCODEX_BASE_URL")
++    aiwrapper_opencodex_api_key: Optional[str] = Field(default=None, alias="AIWRAPPER_OPENCODEX_API_KEY")
++    aiwrapper_opencodex_default_model: str = Field(default="gpt-5", alias="AIWRAPPER_OPENCODEX_DEFAULT_MODEL")
++    aiwrapper_cors_origins: str = Field(
++        default="http://127.0.0.1:8765,http://localhost:8765,http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:5174,http://localhost:5174",
++        alias="AIWRAPPER_CORS_ORIGINS",
++    )
 +    aiwrapper_node_path: str = Field(default="node", alias="AIWRAPPER_NODE_PATH")
 +    aiwrapper_profile_script: str = Field(default="../../packages/codex-profiles/bin/codex-profile", alias="AIWRAPPER_PROFILE_SCRIPT")
 +    aiwrapper_profile_bash: str = Field(default=r"C:\Program Files\Git\bin\bash.exe", alias="AIWRAPPER_PROFILE_BASH")
 +    aiwrapper_owner_name: str = Field(default="owner", alias="AIWRAPPER_OWNER_NAME")
 +    aiwrapper_owner_key: Optional[str] = Field(default=None, alias="AIWRAPPER_OWNER_KEY")
 +    aiwrapper_public_base_url: str = Field(default="http://127.0.0.1:8766", alias="AIWRAPPER_PUBLIC_BASE_URL")
++
++    @property
++    def aiwrapper_cors_origin_list(self) -> list[str]:
++        return [origin.strip().rstrip("/") for origin in self.aiwrapper_cors_origins.split(",") if origin.strip()]
  
      # Default to loading from ".env". You can override the path by
      # passing `_env_file` when instantiating `Settings` (see bottom).

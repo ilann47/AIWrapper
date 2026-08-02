@@ -27,6 +27,7 @@ COPY services/codex-wrapper .
 COPY packages/codex-profiles /opt/aiwrapper/packages/codex-profiles
 COPY --from=governance /src/packages/codex-multi-auth /opt/aiwrapper/packages/codex-multi-auth
 COPY extensions/aiwrapper-admin /opt/aiwrapper/extensions/aiwrapper-admin
+COPY extensions/aiwrapper-runtime /opt/aiwrapper/extensions/aiwrapper-runtime
 RUN mkdir -p /workspace /data /home/codex/.codex \
     && chown -R codex:codex /workspace /data /home/codex
 ENV CODEX_PATH=codex CODEX_WORKDIR=/workspace CODEX_CONFIG_DIR=/home/codex/.codex
