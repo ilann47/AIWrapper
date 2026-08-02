@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\zh.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\zh.ts"
-index 3a50a7658..bb393b056 100644
+index 3a50a7658..3d327fdf6 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\zh.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\zh.ts"	
-@@ -10,6 +10,183 @@ export const zh: Record<TKey, string> = {
+@@ -10,6 +10,188 @@ export const zh: Record<TKey, string> = {
    "nav.subagents": "子代理",
    "nav.logs": "日志与调试",
    "nav.usage": "用量",
@@ -85,6 +85,11 @@ index 3a50a7658..bb393b056 100644
 +  "aiw.chat.send": "Send",
 +  "aiw.chat.searchSessions": "Search conversations…",
 +  "aiw.chat.favorites": "Favorites",
++  "aiw.chat.sort": "对话排序",
++  "aiw.chat.sortRecent": "最近更新",
++  "aiw.chat.sortOldest": "最早更新",
++  "aiw.chat.sortTitleAsc": "标题 A–Z",
++  "aiw.chat.sortTitleDesc": "标题 Z–A",
 +  "aiw.chat.favorite": "Toggle favorite",
 +  "aiw.chat.quotaLeft": "{percent}% quota left",
 +  "aiw.chat.rename": "Rename",
@@ -186,7 +191,7 @@ index 3a50a7658..bb393b056 100644
    "common.github": "GitHub",
    "common.save": "保存",
    "common.saving": "保存中…",
-@@ -639,6 +816,9 @@ export const zh: Record<TKey, string> = {
+@@ -639,6 +821,9 @@ export const zh: Record<TKey, string> = {
    "nav.api": "API",
    "nav.codexAuth": "Codex 认证",
    "nav.openMenu": "打开菜单",

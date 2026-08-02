@@ -5,6 +5,8 @@
 .aiw-session-search { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-3) 0 var(--space-2); padding: 0 var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); }
 .aiw-session-search svg { width: 15px; color: var(--muted); }
 .aiw-session-search input { width: 100%; min-width: 0; padding: 9px 0; border: 0; outline: 0; color: var(--text); background: transparent; }
+.aiw-session-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: var(--space-2); }
+.aiw-session-controls .btn { width: 100%; }
 .aiw-session-list { display: grid; gap: var(--space-1); max-height: calc(100vh - 310px); overflow: auto; }
 .aiw-session-row { display: grid; grid-template-columns: minmax(0,1fr) 32px; align-items: center; border-radius: var(--radius-sm); }
 .aiw-session-row:hover, .aiw-session-row.active { background: var(--raised); }

@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ja.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ja.ts"
-index 47b1de3f0..fe84086c2 100644
+index 47b1de3f0..09d800c1b 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ja.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ja.ts"	
-@@ -10,6 +10,183 @@ export const ja: Record<TKey, string> = {
+@@ -10,6 +10,188 @@ export const ja: Record<TKey, string> = {
    "nav.subagents": "サブエージェント",
    "nav.logs": "ログ & デバッグ",
    "nav.usage": "使用量",
@@ -85,6 +85,11 @@ index 47b1de3f0..fe84086c2 100644
 +  "aiw.chat.send": "Send",
 +  "aiw.chat.searchSessions": "Search conversations…",
 +  "aiw.chat.favorites": "Favorites",
++  "aiw.chat.sort": "会話の並び順",
++  "aiw.chat.sortRecent": "新しい順",
++  "aiw.chat.sortOldest": "古い順",
++  "aiw.chat.sortTitleAsc": "タイトル A–Z",
++  "aiw.chat.sortTitleDesc": "タイトル Z–A",
 +  "aiw.chat.favorite": "Toggle favorite",
 +  "aiw.chat.quotaLeft": "{percent}% quota left",
 +  "aiw.chat.rename": "Rename",
@@ -186,7 +191,7 @@ index 47b1de3f0..fe84086c2 100644
    "common.github": "GitHub",
    "common.save": "保存",
    "common.saving": "保存中…",
-@@ -993,6 +1170,9 @@ export const ja: Record<TKey, string> = {
+@@ -993,6 +1175,9 @@ export const ja: Record<TKey, string> = {
    "nav.codexAuth": "Codex 認証",
    "nav.api": "API",
    "nav.openMenu": "メニューを開く",

@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\package.json" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\Dockerfile.opencodex"
-index e38d51b0a..c20792ead 100644
+index e38d51b0a..d7e175c44 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\package.json"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\Dockerfile.opencodex"	
-@@ -1,98 +1,12 @@
+@@ -1,98 +1,29 @@
 -{
 -  "name": "@bitkyc08/opencodex",
 -  "version": "2.7.43",
@@ -102,14 +102,31 @@ index e38d51b0a..c20792ead 100644
 -  "license": "MIT"
 -}
 +# syntax=docker/dockerfile:1
++FROM oven/bun:1.3.14 AS gui-build
++
++# Keep the repository-relative apps/ and extensions/ layout used by the
++# imported OpenCodex GUI integration. A package-local build would resolve
++# ../../../extensions outside the Docker context and omit every AIWrapper page.
++WORKDIR /workspace/apps/opencodex-gui
++COPY package.json /workspace/package.json
++COPY apps/opencodex-gui/package.json apps/opencodex-gui/bun.lock ./
++RUN bun install --frozen-lockfile
++COPY apps/opencodex-gui ./
++COPY extensions /workspace/extensions
++
++# Extension modules live beside apps/, so expose the GUI dependency tree at
++# their common workspace ancestor. This also guarantees one React instance.
++RUN ln -s /workspace/apps/opencodex-gui/node_modules /workspace/node_modules \
++    && bun run build
++
 +FROM oven/bun:1.3.14
 +WORKDIR /app
 +COPY upstream/opencodex/package.json upstream/opencodex/bun.lock ./
 +RUN bun install --frozen-lockfile
 +COPY upstream/opencodex .
-+# Replace only the GUI subtree with the tracked OpenCodex fork plus AIWrapper pages.
-+COPY apps/opencodex-gui ./gui
-+RUN cd gui && bun install --frozen-lockfile && bun run build
++# Preserve the unchanged OpenCodex runtime and replace only its static output
++# with the separately built, traceable GUI fork plus AIWrapper extensions.
++COPY --from=gui-build /workspace/apps/opencodex-gui/dist ./gui/dist
 +COPY infra/opencodex/config.docker.json /home/bun/.opencodex/config.json
 +EXPOSE 8765
 +CMD ["bun", "run", "src/cli/index.ts", "start", "--port", "8765"]

@@ -1,8 +1,8 @@
-diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\pages\\Logs.tsx" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-chat\\src\\styles.css"
-index 389058b82..cd5d9e970 100644
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\pages\\Logs.tsx" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-chat\\src\\traycer-session-history.ts"
+index 389058b82..0e4263b47 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\pages\\Logs.tsx"	
-+++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-chat\\src\\styles.css"	
-@@ -1,863 +1,63 @@
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-chat\\src\\traycer-session-history.ts"	
+@@ -1,863 +1,118 @@
 -import { useCallback, useEffect, useRef, useState } from "react";
 -import { useVirtualizer } from "@tanstack/react-virtual";
 -import { useI18n, LOCALES, type TFn } from "../i18n/shared";
@@ -146,7 +146,65 @@ index 389058b82..cd5d9e970 100644
 -  if (log.usageStatus === "estimated") parts.push(t("logs.tokens.estimatedNote"));
 -  if (log.usageStatus === "estimated" && split.read === undefined && split.write === undefined) {
 -    parts.push(t(isCursorUsageProvider(log.provider) ? "logs.tokens.noCacheCursorNote" : "logs.tokens.noCacheNote"));
--  }
++import Fuse, { type IFuseOptions } from "fuse.js";
++import type { SessionRecord } from "../../aiwrapper-admin/src/client";
++
++/**
++ * Session-history projection adapted from Traycer's use-history-query.ts and
++ * home-page.data.ts. AIWrapper sessions do not carry repository/worktree
++ * facets, so the integration boundary maps the searchable fields to title and
++ * model while retaining Fuse's thresholds, relevance ordering, and the stable
++ * pinned-first partition (AIWrapper favorites are Traycer pins).
++ */
++export type SessionHistorySort =
++  | "recent"
++  | "oldest"
++  | "title-asc"
++  | "title-desc"
++  | "relevance";
++
++const LOCAL_FUSE_OPTIONS: IFuseOptions<SessionRecord> = {
++  includeScore: false,
++  ignoreLocation: true,
++  threshold: 0.4,
++  minMatchCharLength: 1,
++  keys: [
++    { name: "title", weight: 0.8 },
++    { name: "model", weight: 0.2 },
++  ],
++};
++
++export interface ProjectSessionHistoryOptions {
++  readonly query: string;
++  readonly favoritesOnly: boolean;
++  readonly sort: SessionHistorySort;
++}
++
++export function projectSessionHistory(
++  items: ReadonlyArray<SessionRecord>,
++  options: ProjectSessionHistoryOptions,
++): ReadonlyArray<SessionRecord> {
++  const filtered = options.favoritesOnly
++    ? items.filter((item) => item.favorite)
++    : items;
++  const query = options.query.trim();
++  const searched =
++    query.length === 0
++      ? filtered
++      : new Fuse(filtered, LOCAL_FUSE_OPTIONS)
++          .search(query)
++          .map((result) => result.item);
++  return sortProjectedHistoryItems(searched, options.sort, query);
++}
++
++function sortProjectedHistoryItems(
++  items: ReadonlyArray<SessionRecord>,
++  sort: SessionHistorySort,
++  query: string,
++): ReadonlyArray<SessionRecord> {
++  if (sort === "relevance" && query.length > 0) {
++    return prioritizePinnedHistoryItems(items);
+   }
 -  return parts.join(" \xC2\xB7 ");
 -}
 -
@@ -301,7 +359,47 @@ index 389058b82..cd5d9e970 100644
 -      continue;
 -    }
 -    unpricedRequests += 1;
--  }
++  return sortHistoryItems(items, sort === "relevance" ? "recent" : sort);
++}
++
++function sortHistoryItems(
++  items: ReadonlyArray<SessionRecord>,
++  sort: Exclude<SessionHistorySort, "relevance">,
++): ReadonlyArray<SessionRecord> {
++  switch (sort) {
++    case "recent":
++      return items
++        .slice()
++        .sort(
++          (left, right) =>
++            comparePinnedHistoryItems(left, right) ||
++            Date.parse(right.updatedAt) - Date.parse(left.updatedAt),
++        );
++    case "oldest":
++      return items
++        .slice()
++        .sort(
++          (left, right) =>
++            comparePinnedHistoryItems(left, right) ||
++            Date.parse(left.updatedAt) - Date.parse(right.updatedAt),
++        );
++    case "title-asc":
++      return items
++        .slice()
++        .sort(
++          (left, right) =>
++            comparePinnedHistoryItems(left, right) ||
++            left.title.localeCompare(right.title),
++        );
++    case "title-desc":
++      return items
++        .slice()
++        .sort(
++          (left, right) =>
++            comparePinnedHistoryItems(left, right) ||
++            right.title.localeCompare(left.title),
++        );
+   }
 -  return { requests: entries.length, totalTokens, estimatedCostUsd, unpricedRequests, unmeteredRequests };
 -}
 -
@@ -640,8 +738,8 @@ index 389058b82..cd5d9e970 100644
 -      )}
 -    </>
 -  );
--}
--
+ }
+ 
 -function useModalDialog(open: boolean) {
 -  const ref = useRef<HTMLDialogElement>(null);
 -  useEffect(() => {
@@ -651,8 +749,15 @@ index 389058b82..cd5d9e970 100644
 -    else if (!open && el.open) el.close();
 -  }, [open]);
 -  return ref;
--}
--
++/** Stable pinned-first partition for relevance-ranked search results. */
++function prioritizePinnedHistoryItems(
++  items: ReadonlyArray<SessionRecord>,
++): ReadonlyArray<SessionRecord> {
++  return items
++    .slice()
++    .sort((left, right) => comparePinnedHistoryItems(left, right));
+ }
+ 
 -function LogDetailDialog({
 -  detail, detailInfo, localeCode, localeTag, t, onClose, onFilterConversation,
 -}: {
@@ -865,66 +970,10 @@ index 389058b82..cd5d9e970 100644
 -      </div>
 -    </dialog>
 -  );
-+.aiw-chat-layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: var(--space-4); min-height: calc(100vh - 190px); }
-+.aiw-chat-workspace { --primary: var(--accent); --primary-foreground: #fff; }
-+.aiw-conversation-rail { padding: var(--space-3); overflow: hidden; }
-+.aiw-conversation-rail > .btn { width: 100%; }
-+.aiw-session-search { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-3) 0 var(--space-2); padding: 0 var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); }
-+.aiw-session-search svg { width: 15px; color: var(--muted); }
-+.aiw-session-search input { width: 100%; min-width: 0; padding: 9px 0; border: 0; outline: 0; color: var(--text); background: transparent; }
-+.aiw-session-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: var(--space-2); }
-+.aiw-session-controls .btn { width: 100%; }
-+.aiw-session-list { display: grid; gap: var(--space-1); max-height: calc(100vh - 310px); overflow: auto; }
-+.aiw-session-row { display: grid; grid-template-columns: minmax(0,1fr) 32px; align-items: center; border-radius: var(--radius-sm); }
-+.aiw-session-row:hover, .aiw-session-row.active { background: var(--raised); }
-+.aiw-session { appearance: none; border: 0; background: transparent; color: var(--text); text-align: left; padding: var(--space-3); border-radius: var(--radius-sm); cursor: pointer; display: grid; gap: var(--space-1); min-width: 0; }
-+.aiw-session strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-+.aiw-session small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
-+.aiw-session-star { border: 0; background: transparent; color: var(--muted); padding: 6px; cursor: pointer; }
-+.aiw-session-star svg { width: 15px; height: 15px; }
-+.aiw-session-star .is-favorite { fill: #f5b942; color: #f5b942; }
-+.aiw-conversation { display: flex; flex-direction: column; min-width: 0; min-height: 650px; overflow: hidden; }
-+.aiw-chat-topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); padding-bottom: var(--space-2); border-bottom: 1px solid var(--border); }
-+.aiw-chat-topbar .aiw-toolbar { margin: 0; }
-+.aiw-chat-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-1); }
-+.aiw-findbar { display: grid; grid-template-columns: 18px minmax(120px, 1fr) auto 28px 28px 28px; align-items: center; gap: var(--space-1); margin: var(--space-2) var(--space-3) 0 auto; width: min(460px, calc(100% - var(--space-6))); padding: 5px 7px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--raised); }
-+.aiw-findbar > svg { width: 14px; color: var(--muted); }
-+.aiw-findbar input { border: 0; outline: 0; background: transparent; color: var(--text); }
-+.aiw-findbar button { display: grid; place-items: center; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
-+.aiw-findbar button svg { width: 14px; }
-+.aiw-messages { overflow: auto; padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-4); }
-+.aiw-message { max-width: min(86%, 820px); display: grid; gap: var(--space-2); line-height: var(--leading-relaxed); }
-+.aiw-message header { display: flex; align-items: center; gap: var(--space-2); color: var(--muted); font-size: var(--text-caption); font-weight: var(--weight-semibold); }
-+.aiw-message header .aiw-copy { opacity: 0; border: 0; background: transparent; color: var(--muted); cursor: pointer; transition: opacity .15s; }
-+.aiw-message:hover header .aiw-copy, .aiw-message header .aiw-copy:focus { opacity: 1; }
-+.aiw-message header .aiw-copy svg { width: 13px; }
-+.aiw-message--user { align-self: flex-end; background: var(--raised); border-radius: var(--radius-lg); padding: var(--space-3) var(--space-4); }
-+.aiw-message--assistant { align-self: flex-start; }
-+.aiw-message > small { color: var(--muted); font-variant-numeric: tabular-nums; }
-+.aiw-markdown { min-width: 0; overflow-wrap: anywhere; }
-+.aiw-markdown > :first-child { margin-top: 0; }
-+.aiw-markdown > :last-child { margin-bottom: 0; }
-+.aiw-markdown pre { overflow: auto; padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); }
-+.aiw-markdown code { font-family: var(--mono); }
-+.aiw-markdown table { display: block; max-width: 100%; overflow: auto; border-collapse: collapse; }
-+.aiw-markdown th, .aiw-markdown td { padding: 6px 9px; border: 1px solid var(--border); }
-+.aiw-attachments { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: var(--space-2); }
-+.aiw-attachments img { display: block; width: 100%; height: 110px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border); }
-+.aiw-attachment-strip { display: flex; flex-wrap: wrap; gap: var(--space-2); padding: var(--space-2) 0; }
-+.aiw-attachment-strip > span { display: flex; align-items: center; gap: var(--space-1); padding: 5px 9px; border-radius: 999px; background: var(--raised); font-size: var(--text-caption); }
-+.aiw-attachment-strip button { border: 0; background: transparent; color: var(--muted); cursor: pointer; }
-+.aiw-attachment-strip svg { width: 12px; }
-+.aiw-composer { display: flex; align-items: flex-end; gap: var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-2); }
-+.aiw-composer textarea { border: 0; box-shadow: none; min-height: 58px; max-height: 180px; flex: 1; font-family: var(--font); resize: none; }
-+.aiw-composer textarea:focus { box-shadow: none; }
-+.aiw-chat-followups { display: flex; justify-content: center; gap: var(--space-2); padding-top: var(--space-2); }
-+.aiw-chat-workspace .text-destructive { color: var(--danger); }
-+.aiw-chat-workspace .text-amber-500, .aiw-chat-workspace .dark\:text-amber-400 { color: #d69e2e; }
-+.aiw-chat-workspace .text-muted-foreground { color: var(--muted); }
-+@media (max-width: 900px) {
-+  .aiw-chat-layout { grid-template-columns: 1fr; }
-+  .aiw-conversation-rail { max-height: 220px; }
-+  .aiw-message { max-width: 94%; }
-+  .aiw-chat-topbar { flex-direction: column; }
-+  .aiw-chat-actions { justify-content: flex-start; }
++function comparePinnedHistoryItems(
++  left: SessionRecord,
++  right: SessionRecord,
++): number {
++  if (Boolean(left.favorite) === Boolean(right.favorite)) return 0;
++  return left.favorite ? -1 : 1;
  }

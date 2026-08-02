@@ -17,6 +17,10 @@ import {
 import {
   ChatFindHighlighter, contextUsageTone, formatContextWindowTokens,
 } from "./traycer-chat-runtime";
+import {
+  projectSessionHistory,
+  type SessionHistorySort,
+} from "./traycer-session-history";
 
 interface Message {
   id: string;
@@ -94,6 +98,7 @@ export default function ChatPage() {
   const [notice, setNotice] = useState("");
   const [sessionSearch, setSessionSearch] = useState("");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [sessionSort, setSessionSort] = useState<SessionHistorySort>("recent");
   const [chatSearch, setChatSearch] = useState("");
   const [activeMatch, setActiveMatch] = useState(0);
   const [usage, setUsage] = useState<UsageSummary>();
@@ -146,10 +151,11 @@ export default function ChatPage() {
     return available?.length ? available : ["low", "medium", "high", "xhigh"];
   }, [model, models]);
 
-  const visibleSessions = useMemo(() => sessions.filter(session => {
-    const matches = session.title.toLocaleLowerCase().includes(sessionSearch.toLocaleLowerCase());
-    return matches && (!favoritesOnly || session.favorite);
-  }), [favoritesOnly, sessionSearch, sessions]);
+  const visibleSessions = useMemo(() => projectSessionHistory(sessions, {
+    query: sessionSearch,
+    favoritesOnly,
+    sort: sessionSearch.trim() && sessionSort === "recent" ? "relevance" : sessionSort,
+  }), [favoritesOnly, sessionSearch, sessionSort, sessions]);
 
   const currentSession = sessions.find(session => session.id === sessionId);
 
@@ -252,7 +258,20 @@ export default function ChatPage() {
         <aside className="aiw-conversation-rail panel">
           <button type="button" className="btn btn-primary" onClick={newSession}><IconPlus /> {t("aiw.chat.new")}</button>
           <label className="aiw-session-search"><IconSearch /><input value={sessionSearch} onChange={event => setSessionSearch(event.target.value)} placeholder={t("aiw.chat.searchSessions")} /></label>
-          <button type="button" className={`btn btn-sm ${favoritesOnly ? "btn-primary" : "btn-ghost"}`} onClick={() => setFavoritesOnly(value => !value)}><IconStar /> {t("aiw.chat.favorites")}</button>
+          <div className="aiw-session-controls">
+            <button type="button" className={`btn btn-sm ${favoritesOnly ? "btn-primary" : "btn-ghost"}`} onClick={() => setFavoritesOnly(value => !value)}><IconStar /> {t("aiw.chat.favorites")}</button>
+            <Select
+              value={sessionSort}
+              options={[
+                { value: "recent", label: t("aiw.chat.sortRecent") },
+                { value: "oldest", label: t("aiw.chat.sortOldest") },
+                { value: "title-asc", label: t("aiw.chat.sortTitleAsc") },
+                { value: "title-desc", label: t("aiw.chat.sortTitleDesc") },
+              ]}
+              onChange={value => setSessionSort(value as SessionHistorySort)}
+              label={t("aiw.chat.sort")}
+            />
+          </div>
           <div className="section-sep"><span className="section-label">{t("aiw.chat.history")}</span></div>
           <div className="aiw-session-list">
             {visibleSessions.map(session => (

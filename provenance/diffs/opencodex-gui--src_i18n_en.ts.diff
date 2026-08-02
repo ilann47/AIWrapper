@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\en.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\en.ts"
-index 26aa5f653..8309d3f5d 100644
+index 26aa5f653..cc5712fe3 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\en.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\en.ts"	
-@@ -10,6 +10,183 @@ export const en = {
+@@ -10,6 +10,188 @@ export const en = {
    "nav.subagents": "Subagents",
    "nav.logs": "Logs & Debug",
    "nav.usage": "Usage",
@@ -85,6 +85,11 @@ index 26aa5f653..8309d3f5d 100644
 +  "aiw.chat.send": "Send",
 +  "aiw.chat.searchSessions": "Search conversations…",
 +  "aiw.chat.favorites": "Favorites",
++  "aiw.chat.sort": "Sort conversations",
++  "aiw.chat.sortRecent": "Most recent",
++  "aiw.chat.sortOldest": "Oldest",
++  "aiw.chat.sortTitleAsc": "Title A–Z",
++  "aiw.chat.sortTitleDesc": "Title Z–A",
 +  "aiw.chat.favorite": "Toggle favorite",
 +  "aiw.chat.quotaLeft": "{percent}% quota left",
 +  "aiw.chat.rename": "Rename",
@@ -186,7 +191,7 @@ index 26aa5f653..8309d3f5d 100644
    "common.github": "GitHub",
    "common.save": "Save",
    "common.saving": "Saving…",
-@@ -1036,6 +1213,9 @@ export const en = {
+@@ -1036,6 +1218,9 @@ export const en = {
    "nav.codexAuth": "Codex Auth",
    "nav.api": "API",
    "nav.openMenu": "Open menu",

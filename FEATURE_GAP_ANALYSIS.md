@@ -18,6 +18,7 @@ Audit date: 2026-08-01. Exact line counts, reuse percentages and unified diffs a
 |---|---:|---:|---:|---:|---|---|---|
 | Traycer | In-chat mounted-range highlighting | No | Yes | Yes | `chat-find-highlighter.ts` → `traycer-chat-runtime.ts` | Re-export and message-container binding | wired |
 | Traycer | Context-window formatting/warning tone | Partial | Yes | Yes | `context-usage.ts` → `traycer-chat-runtime.ts` | Feed per-user quota data | wired |
+| Traycer | Fuzzy conversation search and favorite-first history ordering | Partial | Yes | Yes | `use-history-query.ts`, `home-page.data.ts` → `traycer-session-history.ts` | Traycer's host/cloud task boundary is replaced by authenticated AIWrapper sessions; Fuse thresholds, relevance flow and sorting architecture are retained | wired |
 | Traycer | Agent/workspace collaboration | No | Yes | Snapshot only | `upstream/traycer/` | Needs Traycer desktop services/project graph | preserved |
 | Traycer | Chat/composer/session UX | Partial | Yes | Selected modules | Complete snapshot plus runtime exports | AIWrapper keeps authenticated HTTP/SSE boundary | wired |
 | 9router | RTK token compression | No | Yes | Yes | `open-sse/rtk/index.js` → `nine-router-bridge.mjs` | JSON subprocess boundary only | wired |
@@ -32,6 +33,7 @@ Audit date: 2026-08-01. Exact line counts, reuse percentages and unified diffs a
 | 9router | Grouping by model/day/outcome | Partial | Yes | Yes | codex-multi-auth summarizer + 9router-style UI | Existing bridge gained a grouping input | wired |
 | 9router | Persistent Token Saver settings and product control | No | Yes | Yes | `settingsRepo.js`, `nodeSqliteAdapter.js`, `TokenSaverClient.js` adapted into runtime repository, SQLite boundary and `TokenSaverPanel.tsx` | Canonical AIWrapper database, administrator auth, external Headroom status and OpenCodex design tokens | wired |
 | 9router | Headroom local installer/process manager | No | Conditional | No | `src/lib/headroom/process.js` remains in `upstream/` | Mutates host Python packages and starts detached processes; production topology requires a separately managed service instead | audited, not wired |
+| 9router | PXPIPE image-context transform | No | Conditional | No | `open-sse/rtk/pxpipe.js`, `src/lib/pxpipe/loader.js`, `src/lib/pxpipe/install.js` remain in `upstream/` | The transform only accepts Claude bodies after provider translation, but AIWrapper's policy boundary runs on OpenAI bodies before OpenCodex routing. The actual `pxpipe-proxy` source is absent and upstream installs mutable `@latest`; adapting at this layer would either corrupt provider-neutral routing or require a replacement implementation. | audited, not wired |
 | 9router | Header/sidebar navigation search | No | Yes | Yes | `headerSearchStore.js` and `Header.js` adapted into `header-search-store.ts` and `NavigationSearch.tsx` | Strict TypeScript, OpenCodex hash navigation and existing SVG/CSS tokens | wired |
 | Traycer | Full command palette | No | Yes | No | `apps/desktop/src/renderer/components/command-palette/` | Depends on Traycer's Radix/cmdk stack, analytics, workspace stores and TanStack route graph; mounting it would import a second application shell. The portable global-search need is fulfilled with the smaller original 9router store/component instead. | audited |
 | Odysseus | Tauri shell, terminal and file tools | No | Conditional | No | None | AGPL and incompatible desktop topology | blocked |
@@ -43,12 +45,14 @@ Audit date: 2026-08-01. Exact line counts, reuse percentages and unified diffs a
 
 - User navigation: Chat, Conversations, Sharing and personal Usage.
 - Global navigation search: filters every role-visible destination and focuses with `Ctrl+K`/`Cmd+K`, preserving the 9router registration/query lifecycle.
+- Conversation history uses Traycer's Fuse-based tolerant search, relevance ordering and favorite-first recent/oldest/title projections.
 - Administrator navigation: Administration, Monitoring, System and Configuration.
 - Chat: search, favorites, history, recent/new/continued sessions, rename, delete, share, Markdown export, model, effort, streaming, cancel, copy, regenerate, edit/resend, Markdown/GFM, code and image attachments.
 - Usage: 5-hour/7-day quota bars, health, request/input/cache/output/cost cards, usage by day and usage by model.
 - RTK compression runs before Codex and reports saved bytes in `X-AIWrapper-RTK-Saved-Bytes`.
 - Administrators can configure RTK, external Headroom, Caveman and Ponytail from the dashboard; the complete 9router settings repository persists every choice transactionally, while `AIWRAPPER_RTK_ENABLED` remains a deployment-level RTK safety lock.
 - The canonical Docker topology routes Codex-Wrapper through OpenCodex's original data plane, so provider OAuth, account pools, model visibility, fallback and measured token usage now affect AIWrapper chat requests instead of remaining a disconnected administration surface.
+- The OpenCodex image now builds the GUI in its real `apps/` + `extensions/` repository layout with a frozen Bun lock, then copies only the compiled static output into the unchanged runtime; clean container builds no longer omit AIWrapper pages or create a second React instance.
 
 ## Production integration increment (2026-08-02)
 

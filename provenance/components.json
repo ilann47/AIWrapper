@@ -19,7 +19,7 @@
       "kind": "directory",
       "source": "upstream/opencodex/gui",
       "destination": "apps/opencodex-gui",
-      "exclude": ["dist", "tests/aiwrapper-token-saver.test.ts"]
+      "exclude": ["dist", "tests/aiwrapper-token-saver.test.ts", "tests/aiwrapper-traycer-session-history.test.ts", "tests/aiwrapper-container-layout.test.ts"]
     },
     {
       "id": "opencodex-data-plane-execution",
@@ -396,6 +396,32 @@
       "parityAudit": { "retained": ["contextUsageTone", "formatContextWindowTokens"], "lost": [], "decision": "Direct re-export with no utility rewrite." }
     },
     {
+      "id": "traycer-session-history-fuzzy-search",
+      "functionality": "Tolerant conversation-history search with relevance ranking across title and model",
+      "project": "traycerai/traycer",
+      "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
+      "license": "MIT",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/traycer/clients/gui-app/src/hooks/home/use-history-query.ts",
+      "destination": "extensions/aiwrapper-chat/src/traycer-session-history.ts",
+      "incompatibility": "Traycer's complete hook queries its proprietary cloud task index and host worktree RPCs through TanStack Query. AIWrapper already receives user-scoped SessionRecord rows from Codex-Wrapper and has no Traycer host, repository facet or worktree entity. The portable Fuse projection is preserved while only the item shape and data boundary are adapted.",
+      "parityAudit": { "retained": ["Fuse.js 7.5.0 dependency", "threshold 0.4", "location-independent matching", "weighted title search", "secondary metadata search", "relevance order", "stable result mapping"], "lost": ["Traycer cloud task pagination", "repository and worktree facets", "host RPC enrichment"], "decision": "Reuse the complete portable local projection at the existing authenticated session boundary; importing the host-bound hook would require running Traycer's unavailable proprietary backend." }
+    },
+    {
+      "id": "traycer-session-history-sorting",
+      "functionality": "Favorite-first conversation ordering by recency, age and title",
+      "project": "traycerai/traycer",
+      "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
+      "license": "MIT",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/traycer/clients/gui-app/src/components/home/data/home-page.data.ts",
+      "destination": "extensions/aiwrapper-chat/src/traycer-session-history.ts",
+      "incompatibility": "Traycer's HistoryItem is a project/task aggregate with protocol-only ownership, workspace and worktree fields. AIWrapper's conversation record has the corresponding title, updatedAt and favorite fields but deliberately no Traycer project graph. Type and timestamp access are adapted; the switch-based sort and stable pinned-first algorithm are retained.",
+      "parityAudit": { "retained": ["recent sort", "oldest sort", "ascending and descending title sort", "stable pinned-first relevance partition", "pin precedence across explicit sorts"], "lost": ["last-viewed server order because AIWrapper has no last-viewed timestamp", "recency bucket tie-break because sessions have exact timestamps"], "decision": "Map favorite to Traycer's pinned flag and updatedAt to updatedAtMs while preserving the original ordering architecture." }
+    },
+    {
       "id": "nine-router-fastapi-adapter",
       "functionality": "Fail-open asynchronous FastAPI process boundary for 9router RTK",
       "project": "decolua/9router",
@@ -739,11 +765,11 @@
       "kind": "file",
       "source": "upstream/opencodex/package.json",
       "destination": "Dockerfile.opencodex",
-      "incompatibility": "OpenCodex has no upstream Dockerfile to import. Its Bun package scripts are therefore invoked unchanged from a minimal container integration file.",
+      "incompatibility": "OpenCodex has no upstream Dockerfile to import. Its Bun package scripts are therefore invoked unchanged from a minimal container integration file. AIWrapper's GUI modules live in a sibling extensions/ tree, so a repository-shaped build stage is required; copying only gui/ makes the original relative imports unavailable in a clean image.",
       "parityAudit": {
-        "retained": ["Pinned Bun version", "Original package install", "Original CLI start command", "Original Vite GUI build"],
+        "retained": ["Pinned Bun version", "Original frozen OpenCodex package install", "Original CLI start command", "Original Vite GUI build", "Original OpenCodex runtime tree", "Single React dependency instance across GUI and extensions"],
         "lost": [],
-        "decision": "The container adds packaging only and executes the imported OpenCodex server and GUI without replacing either implementation."
+        "decision": "Build the traceable GUI and extension tree in a repository-shaped stage, copy only its static dist into the unchanged OpenCodex runtime image, and keep the upstream server executable authoritative."
       }
     },
     {

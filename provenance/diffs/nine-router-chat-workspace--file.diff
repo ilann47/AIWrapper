@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\app\\(dashboard)\\dashboard\\basic-chat\\BasicChatPageClient.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-chat\\src\\ChatPage.tsx"
-index f93310747..b1ad35f50 100644
+index f93310747..edfc30e32 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\app\\(dashboard)\\dashboard\\basic-chat\\BasicChatPageClient.js"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-chat\\src\\ChatPage.tsx"	
-@@ -1,967 +1,324 @@
+@@ -1,967 +1,343 @@
 -"use client";
 -
 -import { useEffect, useMemo, useRef, useState } from "react";
@@ -20,8 +20,39 @@ index f93310747..b1ad35f50 100644
 -function createId() {
 -  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
 -  return `chat_${Date.now()}_${Math.random().toString(16).slice(2)}`;
--}
--
++import { useCallback, useEffect, useMemo, useRef, useState } from "react";
++import ReactMarkdown from "react-markdown";
++import remarkGfm from "remark-gfm";
++import {
++  IconArrowDown, IconArrowUp, IconCheck, IconExternal, IconLink, IconPlus,
++  IconRefresh, IconSearch, IconStar, IconTrash, IconX,
++} from "../../../apps/opencodex-gui/src/icons";
++import { useT } from "../../../apps/opencodex-gui/src/i18n/shared";
++import { EmptyState, Notice, Select } from "../../../apps/opencodex-gui/src/ui";
++import { PageFrame } from "../../aiwrapper-admin/src/PageFrame";
++import { useAIWrapper } from "../../aiwrapper-admin/src/auth";
++import type { ModelRecord, SessionRecord } from "../../aiwrapper-admin/src/client";
++import {
++  buildUserContent, createChatId, fileToDataUrl, formatRelativeTime,
++  type ChatAttachment,
++} from "./nine-router-chat-core";
++import {
++  ChatFindHighlighter, contextUsageTone, formatContextWindowTokens,
++} from "./traycer-chat-runtime";
++import {
++  projectSessionHistory,
++  type SessionHistorySort,
++} from "./traycer-session-history";
++
++interface Message {
++  id: string;
++  role: "user" | "assistant";
++  text: string;
++  attachments?: ChatAttachment[];
++  elapsed?: number;
++  status?: "streaming" | "done" | "error";
+ }
+ 
 -function safeParse(value, fallback) {
 -  try {
 -    return JSON.parse(value);
@@ -44,34 +75,9 @@ index f93310747..b1ad35f50 100644
 -    }
 -  }
 -  return String(value);
-+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-+import ReactMarkdown from "react-markdown";
-+import remarkGfm from "remark-gfm";
-+import {
-+  IconArrowDown, IconArrowUp, IconCheck, IconExternal, IconLink, IconPlus,
-+  IconRefresh, IconSearch, IconStar, IconTrash, IconX,
-+} from "../../../apps/opencodex-gui/src/icons";
-+import { useT } from "../../../apps/opencodex-gui/src/i18n/shared";
-+import { EmptyState, Notice, Select } from "../../../apps/opencodex-gui/src/ui";
-+import { PageFrame } from "../../aiwrapper-admin/src/PageFrame";
-+import { useAIWrapper } from "../../aiwrapper-admin/src/auth";
-+import type { ModelRecord, SessionRecord } from "../../aiwrapper-admin/src/client";
-+import {
-+  buildUserContent, createChatId, fileToDataUrl, formatRelativeTime,
-+  type ChatAttachment,
-+} from "./nine-router-chat-core";
-+import {
-+  ChatFindHighlighter, contextUsageTone, formatContextWindowTokens,
-+} from "./traycer-chat-runtime";
-+
-+interface Message {
-+  id: string;
-+  role: "user" | "assistant";
-+  text: string;
-+  attachments?: ChatAttachment[];
-+  elapsed?: number;
-+  status?: "streaming" | "done" | "error";
- }
+-}
++interface UsageWindow { used: number; limit: number }
++interface UsageSummary { windows: { "5h": UsageWindow; "7d": UsageWindow }; used_percent: number }
  
 -function humanize(value = "") {
 -  return String(value)
@@ -90,9 +96,7 @@ index f93310747..b1ad35f50 100644
 -  if (diffHours < 24) return `${diffHours}h`;
 -  return `${Math.round(diffHours / 24)}d`;
 -}
-+interface UsageWindow { used: number; limit: number }
-+interface UsageSummary { windows: { "5h": UsageWindow; "7d": UsageWindow }; used_percent: number }
- 
+-
 -function makeSessionTitle(text = "") {
 -  const normalized = textValue(text).replace(/\s+/g, " ").trim();
 -  if (!normalized) return "New chat";
@@ -294,6 +298,7 @@ index f93310747..b1ad35f50 100644
 +  const [notice, setNotice] = useState("");
 +  const [sessionSearch, setSessionSearch] = useState("");
 +  const [favoritesOnly, setFavoritesOnly] = useState(false);
++  const [sessionSort, setSessionSort] = useState<SessionHistorySort>("recent");
 +  const [chatSearch, setChatSearch] = useState("");
 +  const [activeMatch, setActiveMatch] = useState(0);
 +  const [usage, setUsage] = useState<UsageSummary>();
@@ -312,8 +317,18 @@ index f93310747..b1ad35f50 100644
    useEffect(() => {
 -    setIsHydrated(true);
 -  }, []);
--
--  useEffect(() => {
++    if (!client) return;
++    void Promise.all([
++      refreshSessions(),
++      client.get<{ data: ModelRecord[] }>("/v1/models").then(result => {
++        setModels(result.data);
++        if (result.data[0]?.id) setModel(result.data[0].id);
++      }),
++      client.get<UsageSummary>("/v1/me/usage").then(setUsage),
++    ]).catch(reason => setError(reason instanceof Error ? reason.message : String(reason)));
++  }, [client, refreshSessions]);
+ 
+   useEffect(() => {
 -    let cancelled = false;
 -
 -    async function loadData() {
@@ -418,18 +433,12 @@ index f93310747..b1ad35f50 100644
 -    return () => {
 -      cancelled = true;
 -    };
--  }, []);
-+    if (!client) return;
-+    void Promise.all([
-+      refreshSessions(),
-+      client.get<{ data: ModelRecord[] }>("/v1/models").then(result => {
-+        setModels(result.data);
-+        if (result.data[0]?.id) setModel(result.data[0].id);
-+      }),
-+      client.get<UsageSummary>("/v1/me/usage").then(setUsage),
-+    ]).catch(reason => setError(reason instanceof Error ? reason.message : String(reason)));
-+  }, [client, refreshSessions]);
++    const highlighter = new ChatFindHighlighter("aiwrapper-chat");
++    highlighterRef.current = highlighter;
++    return () => { highlighter.dispose(); highlighterRef.current = null; };
+   }, []);
  
++  const matchCount = useMemo(() => countMatches(messages, chatSearch.trim()), [chatSearch, messages]);
    useEffect(() => {
 -    const handleClickOutside = (event) => {
 -      if (modelMenuRef.current && !modelMenuRef.current.contains(event.target)) {
@@ -442,11 +451,8 @@ index f93310747..b1ad35f50 100644
 -
 -    document.addEventListener("mousedown", handleClickOutside);
 -    return () => document.removeEventListener("mousedown", handleClickOutside);
-+    const highlighter = new ChatFindHighlighter("aiwrapper-chat");
-+    highlighterRef.current = highlighter;
-+    return () => { highlighter.dispose(); highlighterRef.current = null; };
-   }, []);
- 
+-  }, []);
+-
 -  const modelIndex = useMemo(() => {
 -    const map = new Map();
 -    for (const group of providerGroups) {
@@ -478,19 +484,6 @@ index f93310747..b1ad35f50 100644
 -  const currentMessages = currentSession?.messages || [];
 -  const sessionItems = useMemo(() => [...sessions].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()), [sessions]);
 -  const canSend = !isSending && !!activeModel && (draft.trim().length > 0 || attachments.length > 0);
--
-+  const matchCount = useMemo(() => countMatches(messages, chatSearch.trim()), [chatSearch, messages]);
-   useEffect(() => {
--    if (!isHydrated) return;
--    try {
--      globalThis.localStorage.setItem(STORAGE_KEYS.sessions, JSON.stringify(sessions));
--      globalThis.localStorage.setItem(STORAGE_KEYS.activeSessionId, activeSessionId);
--      globalThis.localStorage.setItem(STORAGE_KEYS.activeProviderId, activeProviderId);
--      globalThis.localStorage.setItem(STORAGE_KEYS.draft, draft);
--    } catch {
--      // Ignore storage errors.
--    }
--  }, [isHydrated, sessions, activeSessionId, activeProviderId, draft]);
 +    const root = messagesRef.current;
 +    const highlighter = highlighterRef.current;
 +    const query = chatSearch.trim();
@@ -499,6 +492,38 @@ index f93310747..b1ad35f50 100644
 +  }, [activeMatch, chatSearch, matchCount, messages]);
  
    useEffect(() => {
+-    if (!isHydrated) return;
++    const root = messagesRef.current;
++    if (busy) root?.scrollTo({ top: root.scrollHeight, behavior: "smooth" });
++  }, [busy, messages]);
++
++  const efforts = useMemo(() => {
++    const available = models.find(item => item.id === model)?.supportedReasoningEfforts?.map(item => item.reasoningEffort);
++    return available?.length ? available : ["low", "medium", "high", "xhigh"];
++  }, [model, models]);
++
++  const visibleSessions = useMemo(() => projectSessionHistory(sessions, {
++    query: sessionSearch,
++    favoritesOnly,
++    sort: sessionSearch.trim() && sessionSort === "recent" ? "relevance" : sessionSort,
++  }), [favoritesOnly, sessionSearch, sessionSort, sessions]);
++
++  const currentSession = sessions.find(session => session.id === sessionId);
++
++  const openSession = async (id: string) => {
++    if (!client || busy) return;
++    setError("");
+     try {
+-      globalThis.localStorage.setItem(STORAGE_KEYS.sessions, JSON.stringify(sessions));
+-      globalThis.localStorage.setItem(STORAGE_KEYS.activeSessionId, activeSessionId);
+-      globalThis.localStorage.setItem(STORAGE_KEYS.activeProviderId, activeProviderId);
+-      globalThis.localStorage.setItem(STORAGE_KEYS.draft, draft);
+-    } catch {
+-      // Ignore storage errors.
+-    }
+-  }, [isHydrated, sessions, activeSessionId, activeProviderId, draft]);
+-
+-  useEffect(() => {
 -    if (!isHydrated || loadingData || initializedRef.current) return;
 -    if (providerGroups.length === 0) return;
 -
@@ -506,10 +531,7 @@ index f93310747..b1ad35f50 100644
 -    const savedModel = activeModelId && modelIndex.has(activeModelId)
 -      ? modelIndex.get(activeModelId)
 -      : savedProvider.models[0];
-+    const root = messagesRef.current;
-+    if (busy) root?.scrollTo({ top: root.scrollHeight, behavior: "smooth" });
-+  }, [busy, messages]);
- 
+-
 -    if (sessions.length > 0) {
 -      const session = sessions.find((item) => item.id === activeSessionId) || sessions[0];
 -      const sessionModel = session?.modelId && modelIndex.has(session.modelId)
@@ -559,11 +581,7 @@ index f93310747..b1ad35f50 100644
 -      messages: [],
 -    };
 -  };
-+  const efforts = useMemo(() => {
-+    const available = models.find(item => item.id === model)?.supportedReasoningEfforts?.map(item => item.reasoningEffort);
-+    return available?.length ? available : ["low", "medium", "high", "xhigh"];
-+  }, [model, models]);
- 
+-
 -  const handleNewChat = () => {
 -    if (!activeModel) return;
 -    const session = ensureSessionForModel(activeModel);
@@ -585,8 +603,14 @@ index f93310747..b1ad35f50 100644
 -    setActiveProviderId(session.providerId || activeProviderId);
 -    setActiveModelId(session.modelId || activeModelId);
 -    setHistoryOpen(false);
--  };
--
++      const result = await client.get<{ session: SessionRecord; thread: unknown }>(`/v1/sessions/${id}`);
++      setSessionId(id);
++      setModel(result.session.model);
++      setMessages(messagesFromThread(result));
++      setAttachments([]);
++    } catch (reason) { setError(reason instanceof Error ? reason.message : String(reason)); }
+   };
+ 
 -  const handleDeleteCurrentChat = () => {
 -    if (!activeSessionId) return;
 -    const nextSessions = sessions.filter((session) => session.id !== activeSessionId);
@@ -607,11 +631,7 @@ index f93310747..b1ad35f50 100644
 -    const group = providerGroups.find((item) => item.providerId === providerId);
 -    if (!group || group.models.length === 0) return;
 -    const nextModel = group.models[0];
-+  const visibleSessions = useMemo(() => sessions.filter(session => {
-+    const matches = session.title.toLocaleLowerCase().includes(sessionSearch.toLocaleLowerCase());
-+    return matches && (!favoritesOnly || session.favorite);
-+  }), [favoritesOnly, sessionSearch, sessions]);
- 
+-
 -    const current = sessions.find((session) => session.id === activeSessionId);
 -    if (current && current.messages.length > 0) {
 -      const session = ensureSessionForModel(nextModel);
@@ -628,23 +648,12 @@ index f93310747..b1ad35f50 100644
 -      } : item)));
 -      setActiveSessionId(current.id);
 -    }
-+  const currentSession = sessions.find(session => session.id === sessionId);
- 
+-
 -    setActiveProviderId(group.providerId);
 -    setActiveModelId(nextModel.id);
 -    setModelMenuOpen(false);
-+  const openSession = async (id: string) => {
-+    if (!client || busy) return;
-+    setError("");
-+    try {
-+      const result = await client.get<{ session: SessionRecord; thread: unknown }>(`/v1/sessions/${id}`);
-+      setSessionId(id);
-+      setModel(result.session.model);
-+      setMessages(messagesFromThread(result));
-+      setAttachments([]);
-+    } catch (reason) { setError(reason instanceof Error ? reason.message : String(reason)); }
-   };
- 
+-  };
+-
 -  const handleSelectModel = (modelId) => {
 -    const model = modelIndex.get(modelId);
 -    if (!model) return;
@@ -1004,24 +1013,26 @@ index f93310747..b1ad35f50 100644
 -                    </div>
 -                  ))}
 -                </div>
+-              </div>
+-            ) : null}
 +    <PageFrame title="aiw.chat.title" subtitle="aiw.chat.subtitle">
 +      <div className="aiw-chat-layout aiw-chat-workspace">
 +        <aside className="aiw-conversation-rail panel">
 +          <button type="button" className="btn btn-primary" onClick={newSession}><IconPlus /> {t("aiw.chat.new")}</button>
 +          <label className="aiw-session-search"><IconSearch /><input value={sessionSearch} onChange={event => setSessionSearch(event.target.value)} placeholder={t("aiw.chat.searchSessions")} /></label>
-+          <button type="button" className={`btn btn-sm ${favoritesOnly ? "btn-primary" : "btn-ghost"}`} onClick={() => setFavoritesOnly(value => !value)}><IconStar /> {t("aiw.chat.favorites")}</button>
-+          <div className="section-sep"><span className="section-label">{t("aiw.chat.history")}</span></div>
-+          <div className="aiw-session-list">
-+            {visibleSessions.map(session => (
-+              <div className={`aiw-session-row${session.id === sessionId ? " active" : ""}`} key={session.id}>
-+                <button type="button" className="aiw-session" onClick={() => void openSession(session.id)}>
-+                  <strong>{session.title || t("aiw.chat.untitled")}</strong>
-+                  <small>{session.model} · {formatRelativeTime(session.updatedAt)}</small>
-+                </button>
-+                <button type="button" className="aiw-session-star" aria-label={t("aiw.chat.favorite")} onClick={() => void updateSession(session.id, { favorite: !session.favorite })}><IconStar className={session.favorite ? "is-favorite" : ""} /></button>
-               </div>
--            ) : null}
-+            ))}
++          <div className="aiw-session-controls">
++            <button type="button" className={`btn btn-sm ${favoritesOnly ? "btn-primary" : "btn-ghost"}`} onClick={() => setFavoritesOnly(value => !value)}><IconStar /> {t("aiw.chat.favorites")}</button>
++            <Select
++              value={sessionSort}
++              options={[
++                { value: "recent", label: t("aiw.chat.sortRecent") },
++                { value: "oldest", label: t("aiw.chat.sortOldest") },
++                { value: "title-asc", label: t("aiw.chat.sortTitleAsc") },
++                { value: "title-desc", label: t("aiw.chat.sortTitleDesc") },
++              ]}
++              onChange={value => setSessionSort(value as SessionHistorySort)}
++              label={t("aiw.chat.sort")}
++            />
            </div>
 -
 -          <div className="flex items-center gap-2">
@@ -1069,7 +1080,18 @@ index f93310747..b1ad35f50 100644
 -                );
 -              })}
 -            </div>
--          </div>
++          <div className="section-sep"><span className="section-label">{t("aiw.chat.history")}</span></div>
++          <div className="aiw-session-list">
++            {visibleSessions.map(session => (
++              <div className={`aiw-session-row${session.id === sessionId ? " active" : ""}`} key={session.id}>
++                <button type="button" className="aiw-session" onClick={() => void openSession(session.id)}>
++                  <strong>{session.title || t("aiw.chat.untitled")}</strong>
++                  <small>{session.model} · {formatRelativeTime(session.updatedAt)}</small>
++                </button>
++                <button type="button" className="aiw-session-star" aria-label={t("aiw.chat.favorite")} onClick={() => void updateSession(session.id, { favorite: !session.favorite })}><IconStar className={session.favorite ? "is-favorite" : ""} /></button>
++              </div>
++            ))}
+           </div>
 -        ) : null}
 -
 -        {loadError ? (

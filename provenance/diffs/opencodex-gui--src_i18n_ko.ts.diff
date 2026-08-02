@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ko.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ko.ts"
-index 2372bf500..d8bd97e9f 100644
+index 2372bf500..2540d9601 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ko.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ko.ts"	
-@@ -10,6 +10,183 @@ export const ko: Record<TKey, string> = {
+@@ -10,6 +10,188 @@ export const ko: Record<TKey, string> = {
    "nav.subagents": "서브에이전트",
    "nav.logs": "로그&디버그",
    "nav.usage": "사용량",
@@ -85,6 +85,11 @@ index 2372bf500..d8bd97e9f 100644
 +  "aiw.chat.send": "Send",
 +  "aiw.chat.searchSessions": "Search conversations…",
 +  "aiw.chat.favorites": "Favorites",
++  "aiw.chat.sort": "대화 정렬",
++  "aiw.chat.sortRecent": "최신순",
++  "aiw.chat.sortOldest": "오래된순",
++  "aiw.chat.sortTitleAsc": "제목 A–Z",
++  "aiw.chat.sortTitleDesc": "제목 Z–A",
 +  "aiw.chat.favorite": "Toggle favorite",
 +  "aiw.chat.quotaLeft": "{percent}% quota left",
 +  "aiw.chat.rename": "Rename",
@@ -186,7 +191,7 @@ index 2372bf500..d8bd97e9f 100644
    "common.github": "GitHub",
    "common.save": "저장",
    "common.saving": "저장 중…",
-@@ -639,6 +816,9 @@ export const ko: Record<TKey, string> = {
+@@ -639,6 +821,9 @@ export const ko: Record<TKey, string> = {
    "nav.api": "API",
    "nav.codexAuth": "Codex 인증",
    "nav.openMenu": "메뉴 열기",
