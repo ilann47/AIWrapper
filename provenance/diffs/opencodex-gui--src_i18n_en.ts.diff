@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\en.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\en.ts"
-index 26aa5f653..228243cc4 100644
+index 26aa5f653..c8a4c7803 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\en.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\en.ts"	
-@@ -10,6 +10,209 @@ export const en = {
+@@ -10,6 +10,234 @@ export const en = {
    "nav.subagents": "Subagents",
    "nav.logs": "Logs & Debug",
    "nav.usage": "Usage",
@@ -12,6 +12,7 @@ index 26aa5f653..228243cc4 100644
 +  "nav.aiwrapperSessions": "Sessions",
 +  "nav.aiwrapperSharing": "Sharing",
 +  "nav.aiwrapperBilling": "Billing",
++  "nav.aiwrapperConnections": "Connect apps",
 +  "aiw.overview.title": "AIWrapper operations",
 +  "aiw.overview.subtitle": "Per-user gateway activity during the last 24 hours.",
 +  "aiw.overview.notConnected": "Connect with an administrator key to view operations.",
@@ -76,6 +77,30 @@ index 26aa5f653..228243cc4 100644
 +  "aiw.notifications.category.system": "System issues",
 +  "aiw.notifications.filterEmpty": "No activity matches this filter.",
 +  "aiw.notifications.resetFilters": "Reset filters",
++  "aiw.connections.title": "Connect apps",
++  "aiw.connections.subtitle": "Use your individual quota safely from Codex CLI and OpenAI-compatible tools.",
++  "aiw.connections.codexTitle": "Codex CLI",
++  "aiw.connections.codexDescription": "Generate the two local files that route Codex through AIWrapper.",
++  "aiw.connections.endpoint": "AIWrapper endpoint",
++  "aiw.connections.loopbackHint": "This local address works only on the server computer. Remote users need the HTTPS or private-network address.",
++  "aiw.connections.individualKey": "Your individual key",
++  "aiw.connections.model": "Default model",
++  "aiw.connections.loadingModels": "Loading models…",
++  "aiw.connections.modelsUnavailable": "Live model discovery is unavailable. Enter a model ID manually.",
++  "aiw.connections.subagentModel": "Subagent model",
++  "aiw.connections.sameAsDefault": "Same as default model",
++  "aiw.connections.subagentHint": "Leave blank to use the default model.",
++  "aiw.connections.memoryOnly": "Your key stays only in this page's memory. It is never sent to storage or written on the server.",
++  "aiw.connections.filesTitle": "Manual configuration",
++  "aiw.connections.filesDescription": "Save these files on the computer where Codex CLI will run.",
++  "aiw.connections.showSecret": "Show secret",
++  "aiw.connections.hideSecret": "Hide secret",
++  "aiw.connections.copy": "Copy",
++  "aiw.connections.copied": "Copied",
++  "aiw.connections.copyUnavailable": "Copy unavailable",
++  "aiw.connections.environmentTitle": "Other OpenAI-compatible apps",
++  "aiw.connections.environmentDescription": "Use these environment variables in clients that accept an OpenAI base URL.",
++  "aiw.connections.copyEnvironment": "Copy variables",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -212,7 +237,7 @@ index 26aa5f653..228243cc4 100644
    "common.github": "GitHub",
    "common.save": "Save",
    "common.saving": "Saving…",
-@@ -1036,6 +1239,9 @@ export const en = {
+@@ -1036,6 +1264,9 @@ export const en = {
    "nav.codexAuth": "Codex Auth",
    "nav.api": "API",
    "nav.openMenu": "Open menu",

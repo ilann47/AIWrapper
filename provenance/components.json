@@ -19,7 +19,7 @@
       "kind": "directory",
       "source": "upstream/opencodex/gui",
       "destination": "apps/opencodex-gui",
-      "exclude": ["dist", "tests/aiwrapper-token-saver.test.ts", "tests/aiwrapper-traycer-session-history.test.ts", "tests/aiwrapper-traycer-notifications.test.ts", "tests/aiwrapper-container-layout.test.ts"]
+      "exclude": ["dist", "tests/aiwrapper-token-saver.test.ts", "tests/aiwrapper-traycer-session-history.test.ts", "tests/aiwrapper-traycer-notifications.test.ts", "tests/aiwrapper-nine-router-connections.test.ts", "tests/aiwrapper-container-layout.test.ts"]
     },
     {
       "id": "opencodex-data-plane-execution",
@@ -316,6 +316,32 @@
       "destination": "extensions/aiwrapper-runtime/src/nine-router-bridge.mjs",
       "incompatibility": "Only the portable detector is needed; provider fallback requires 9router's credential topology.",
       "parityAudit": { "retained": ["detectRequiredCapabilities"], "lost": ["Combo routing remains preserved but not wired"], "decision": "Direct import of the portable detector." }
+    },
+    {
+      "id": "nine-router-codex-cli-manual-config",
+      "functionality": "Generate Codex CLI config.toml, auth.json and OpenAI-compatible environment settings for an individual AIWrapper key",
+      "project": "decolua/9router",
+      "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/9router/src/app/(dashboard)/dashboard/cli-tools/components/CodexToolCard.js",
+      "destination": "extensions/aiwrapper-connections/src/nine-router-codex-config.ts",
+      "incompatibility": "9router's automatic POST/DELETE route writes ~/.codex/config.toml and auth.json on the server host and forces auth_mode=apikey. In AIWrapper that host runs the shared ChatGPT OAuth data plane, so executing it would replace the gateway identity rather than configure the end user's computer. Browser code also cannot safely write arbitrary client files. The manual generator is portable and is retained; host mutation is deliberately excluded.",
+      "parityAudit": { "retained": ["config.toml model and provider projection", "Responses wire protocol", "provider base URL normalization", "subagent model", "auth.json API-key mode", "manual per-file output"], "lost": ["server-host Codex installation detection", "automatic server-host write and reset", "9router-specific endpoint presets and tunnel status"], "decision": "Adapt getManualConfigs into a pure client-side generator and let users copy files to their own machine, preserving the shared gateway's ChatGPT OAuth credentials." }
+    },
+    {
+      "id": "nine-router-manual-config-product-ui",
+      "functionality": "User-facing connection wizard with endpoint, individual key, model selection, secret-safe previews and per-file copy feedback",
+      "project": "decolua/9router and lidge-jun/OpenCodex",
+      "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/9router/src/shared/components/ManualConfigModal.js",
+      "destination": "extensions/aiwrapper-connections/src/ConnectionsPage.tsx",
+      "incompatibility": "The upstream modal depends on Next.js, Tailwind, 9router Card/Button/Modal and its copy hook, which reports success before clipboard completion. AIWrapper uses the OpenCodex Vite shell and its mature race-safe copy-feedback hook. The per-file preview/copy architecture is preserved as a full user page because it also needs authenticated model discovery and remote endpoint guidance.",
+      "parityAudit": { "retained": ["per-file filename and preview", "copy action and feedback", "manual configuration workflow", "model and key selection", "Codex and generic OpenAI configuration"], "lost": ["Next.js modal shell", "automatic server-host mutation"], "decision": "Reuse the upstream manual-configuration workflow inside the OpenCodex page shell and replace only incompatible UI primitives and the unsafe copy implementation." }
     },
     {
       "id": "nine-router-chat-core",

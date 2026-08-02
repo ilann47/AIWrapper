@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-02T07:56:14.240Z",
+  "generatedAt": "2026-08-02T08:08:28.592Z",
   "generatorUpstream": {
     "project": "ndycode/codex-multi-auth",
     "commit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
@@ -368,16 +368,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "ded6ebfd26dbcbb90c3fcccba21bd081a1f7a392e73426ef35043f18e0c2e1cc",
-          "sha256": "3240086056d65476e97f9ab44a982ee9bc96319528bfa0490cb84a4a2bdee675",
+          "sha256": "b5e08e18a86280adb63f8e48f70831c60ac21e01d8524b454ccd14f2253a01ca",
           "diff": "provenance/diffs/opencodex-gui--src_app-routing.ts.diff",
-          "diffSha256": "4569ea5ec81a728be489e0db2a6824ecd9170d3f804e58f1621ec24868245b95",
+          "diffSha256": "a44c26a5fbcd8be78a6d23d77b09e79ad4d01ef93e2341129d66a0d680103d2d",
           "lines": {
             "source": 93,
-            "destination": 114,
+            "destination": 116,
             "preserved": 92,
             "changed": 1,
             "removed": 0,
-            "added": 21,
+            "added": 23,
             "reusePercent": 98.92
           }
         },
@@ -387,16 +387,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "68d2ddf4ec49dae13487a4593c6ba25b906ff41f160fba96ff3e84d03ec63707",
-          "sha256": "1c54308a26f3847c0f99d23bb073f19e79d4b0574fddb743b6c6d7e245e13f2d",
+          "sha256": "2fa30e7ec0c455c56cd081be8c872e666275f5988996a65fd9b328349b9220f0",
           "diff": "provenance/diffs/opencodex-gui--src_App.tsx.diff",
-          "diffSha256": "a85030439aca453c1b0a91fdcfba99488af483138d80852c17c6310dbf949a94",
+          "diffSha256": "49033bb74cecd0b37b2aecbf7e3d04205cc93dad756715b3165b0f258de7dcab",
           "lines": {
             "source": 318,
-            "destination": 406,
+            "destination": 410,
             "preserved": 308,
             "changed": 10,
             "removed": 0,
-            "added": 88,
+            "added": 92,
             "reusePercent": 96.86
           }
         },
@@ -1698,16 +1698,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "3d0d5b807df91e18824f186caa190f69d146aed7cbb5a42ba12128e5ec74e480",
-          "sha256": "5547862941afb4e190db2ec673cda7221b551ccfe1c107dddd2c411ab4026031",
+          "sha256": "6cd022c661bf5de5945eab435e5af6a1ea760628fd151fd6ddada102c1883f4d",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_de.ts.diff",
-          "diffSha256": "262802c535d359c4a35089dcf5d7756aa04970b40993c96abc10c9faa8c8764e",
+          "diffSha256": "9dfa247ae181e3a47e9c14211a9cf6f72138041c86b09ba19f254dc4cbb36607",
           "lines": {
             "source": 1487,
-            "destination": 1693,
+            "destination": 1718,
             "preserved": 1487,
             "changed": 0,
             "removed": 0,
-            "added": 206,
+            "added": 231,
             "reusePercent": 100
           }
         },
@@ -1717,16 +1717,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "09084a0703ed3a9adc0ac00dea9aa372a1a2a4a0f7b800affead04fea5a1afa6",
-          "sha256": "893b03a1b712dfae0907b65fd87d7e88f0d1f7bd178adbe5e340b2a832736939",
+          "sha256": "17322e1b3d85f054c81b51d6aa275668699aec308448c106dfdd04958650f833",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_en.ts.diff",
-          "diffSha256": "8121cc6deb79392c6cd32b1c19841e2f516d402eded0c468d9c25b51d8eb71e5",
+          "diffSha256": "43b2f5e65f1345be719f88aaf1a3c20ed0a9086a312dd192a28bf719035de9d2",
           "lines": {
             "source": 1514,
-            "destination": 1720,
+            "destination": 1745,
             "preserved": 1514,
             "changed": 0,
             "removed": 0,
-            "added": 206,
+            "added": 231,
             "reusePercent": 100
           }
         },
@@ -1755,16 +1755,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "d7449a464d2dc077af41b39d0c81e4d55f0b5589f58af181cbef3b34be0a54f0",
-          "sha256": "ff7d4faa7714b9907faee664fb3e90ed07c0155f4966527f9b2ed5d9eb38308f",
+          "sha256": "33b98f5b5131ab40ae60bb95772d405f78e4c3d026a5b2c098bf21a9ba9f9b8f",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_ja.ts.diff",
-          "diffSha256": "56c16975ae464d69207aedb873a9544b5ad487f94c63a23fe54db76f9144e804",
+          "diffSha256": "97e99017b3111313fde2868e3d04bf756a411e150b2fcca7e835b335ea773461",
           "lines": {
             "source": 1508,
-            "destination": 1714,
+            "destination": 1739,
             "preserved": 1508,
             "changed": 0,
             "removed": 0,
-            "added": 206,
+            "added": 231,
             "reusePercent": 100
           }
         },
@@ -1774,16 +1774,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "5b2b64b2cd03ffbc16d15a6bad3c4163f7007927e3f602ee20e12fb96234e6e0",
-          "sha256": "d830bb42c12490abb4e3a658052a0618e1e9e1c8ebe1659d2164053dacac7d2f",
+          "sha256": "e28f407d261d66ab970109f2b86a2d927fe77796aa039f82814a1b84bf446416",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_ko.ts.diff",
-          "diffSha256": "fe9cbc203a7970be11aae91e91ef679d722f748d5bfe7bdb043e8b2eae43780f",
+          "diffSha256": "0039ce2716f52ff2ca82e40b5cf2a4cc145cbf4e6d2bfda1aa39a0ef2f7534c6",
           "lines": {
             "source": 1508,
-            "destination": 1714,
+            "destination": 1739,
             "preserved": 1508,
             "changed": 0,
             "removed": 0,
-            "added": 206,
+            "added": 231,
             "reusePercent": 100
           }
         },
@@ -1812,16 +1812,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "95c74a1b27980cfab1931395f5ffe800f3c0ddf9f101cb5badb360343de26e6a",
-          "sha256": "d72028dbead13ecd447084df1d3d7f2098f5a7aab354306a06427bc33ba399a0",
+          "sha256": "f9bac0af1aa7dbb5e091239578fecc49e400ee844b2e7f17452aa43fc4aaa050",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_ru.ts.diff",
-          "diffSha256": "126572ff6f260598f7b7f00322190cb4cc6ab8b3d00c870af48a3479a6fd34b7",
+          "diffSha256": "93362699ec2f8063af59b93e9114619a0e00ed937af34b88b1621208f773908d",
           "lines": {
             "source": 1510,
-            "destination": 1716,
+            "destination": 1741,
             "preserved": 1510,
             "changed": 0,
             "removed": 0,
-            "added": 206,
+            "added": 231,
             "reusePercent": 100
           }
         },
@@ -1850,16 +1850,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "b6b8fdb362c7a8a7d29ca6cc7c34772aec34b7ddfe66ba6521087990d644893f",
-          "sha256": "cb2fd8dfa25c8e008112cf0c93a3ac04d9ab43e63be2ced08fbd267b3565bf32",
+          "sha256": "cf1794c4756b95f2c44676ee9527a9409401be2a4c73c740d3fd05037173cdab",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_zh.ts.diff",
-          "diffSha256": "dc229cf2a95304f8acd3693ae86bce82da80ba1c40981f94efceae8c9a883198",
+          "diffSha256": "84315376a63a45ee32b898d473e2e89386a7a74db8e0a8682449c37041b35135",
           "lines": {
             "source": 1508,
-            "destination": 1714,
+            "destination": 1739,
             "preserved": 1508,
             "changed": 0,
             "removed": 0,
-            "added": 206,
+            "added": 231,
             "reusePercent": 100
           }
         },
@@ -24494,6 +24494,94 @@
             "removed": 479,
             "added": 0,
             "reusePercent": 2.45
+          }
+        }
+      ]
+    },
+    {
+      "id": "nine-router-codex-cli-manual-config",
+      "functionality": "Generate Codex CLI config.toml, auth.json and OpenAI-compatible environment settings for an individual AIWrapper key",
+      "project": "decolua/9router",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "9router's automatic POST/DELETE route writes ~/.codex/config.toml and auth.json on the server host and forces auth_mode=apikey. In AIWrapper that host runs the shared ChatGPT OAuth data plane, so executing it would replace the gateway identity rather than configure the end user's computer. Browser code also cannot safely write arbitrary client files. The manual generator is portable and is retained; host mutation is deliberately excluded.",
+      "parityAudit": {
+        "retained": [
+          "config.toml model and provider projection",
+          "Responses wire protocol",
+          "provider base URL normalization",
+          "subagent model",
+          "auth.json API-key mode",
+          "manual per-file output"
+        ],
+        "lost": [
+          "server-host Codex installation detection",
+          "automatic server-host write and reset",
+          "9router-specific endpoint presets and tunnel status"
+        ],
+        "decision": "Adapt getManualConfigs into a pure client-side generator and let users copy files to their own machine, preserving the shared gateway's ChatGPT OAuth credentials."
+      },
+      "files": [
+        {
+          "source": "upstream/9router/src/app/(dashboard)/dashboard/cli-tools/components/CodexToolCard.js",
+          "destination": "extensions/aiwrapper-connections/src/nine-router-codex-config.ts",
+          "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+          "license": "MIT / project adapter code",
+          "sourceSha256": "f2fc00a9f6c9e1d2749797853d3cf297c58d44f65ffecc6e8bcb6c41e038904d",
+          "sha256": "7c9a58a73c0757c6ac3b6dc3fc36d75be4af43ce6180c4dc31d360e845089fa5",
+          "diff": "provenance/diffs/nine-router-codex-cli-manual-config--file.diff",
+          "diffSha256": "a1d208034258e1f3c1571e39b8d94ac0c7c1691c3a714d8e479ba0982959a40d",
+          "lines": {
+            "source": 406,
+            "destination": 57,
+            "preserved": 14,
+            "changed": 43,
+            "removed": 349,
+            "added": 0,
+            "reusePercent": 3.45
+          }
+        }
+      ]
+    },
+    {
+      "id": "nine-router-manual-config-product-ui",
+      "functionality": "User-facing connection wizard with endpoint, individual key, model selection, secret-safe previews and per-file copy feedback",
+      "project": "decolua/9router and lidge-jun/OpenCodex",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "The upstream modal depends on Next.js, Tailwind, 9router Card/Button/Modal and its copy hook, which reports success before clipboard completion. AIWrapper uses the OpenCodex Vite shell and its mature race-safe copy-feedback hook. The per-file preview/copy architecture is preserved as a full user page because it also needs authenticated model discovery and remote endpoint guidance.",
+      "parityAudit": {
+        "retained": [
+          "per-file filename and preview",
+          "copy action and feedback",
+          "manual configuration workflow",
+          "model and key selection",
+          "Codex and generic OpenAI configuration"
+        ],
+        "lost": [
+          "Next.js modal shell",
+          "automatic server-host mutation"
+        ],
+        "decision": "Reuse the upstream manual-configuration workflow inside the OpenCodex page shell and replace only incompatible UI primitives and the unsafe copy implementation."
+      },
+      "files": [
+        {
+          "source": "upstream/9router/src/shared/components/ManualConfigModal.js",
+          "destination": "extensions/aiwrapper-connections/src/ConnectionsPage.tsx",
+          "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+          "license": "MIT / project adapter code",
+          "sourceSha256": "aa5efbfc572440c66ff8fbbd23f12de13c8205d13b6c7b25b34feb67b530ed9d",
+          "sha256": "8155a94f610facc60b7a6bf0347e04ee5781da7e4a65b60135c858fc4bb2529e",
+          "diff": "provenance/diffs/nine-router-manual-config-product-ui--file.diff",
+          "diffSha256": "e3adbb7f38d51967261b4bcb93c2b4f2853bf5292c7a926f215e7dfbaec018ad",
+          "lines": {
+            "source": 45,
+            "destination": 79,
+            "preserved": 9,
+            "changed": 36,
+            "removed": 0,
+            "added": 34,
+            "reusePercent": 20
           }
         }
       ]

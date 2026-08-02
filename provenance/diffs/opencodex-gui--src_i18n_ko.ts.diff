@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ko.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ko.ts"
-index 2372bf500..123b8965b 100644
+index 2372bf500..7bbc0f8c4 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ko.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ko.ts"	
-@@ -10,6 +10,209 @@ export const ko: Record<TKey, string> = {
+@@ -10,6 +10,234 @@ export const ko: Record<TKey, string> = {
    "nav.subagents": "서브에이전트",
    "nav.logs": "로그&디버그",
    "nav.usage": "사용량",
@@ -12,6 +12,7 @@ index 2372bf500..123b8965b 100644
 +  "nav.aiwrapperSessions": "Sessions",
 +  "nav.aiwrapperSharing": "Sharing",
 +  "nav.aiwrapperBilling": "Billing",
++  "nav.aiwrapperConnections": "앱 연결",
 +  "aiw.overview.title": "AIWrapper 운영",
 +  "aiw.overview.subtitle": "최근 24시간의 사용자별 게이트웨이 활동입니다.",
 +  "aiw.overview.notConnected": "운영 정보를 보려면 관리자 키로 연결하세요.",
@@ -76,6 +77,30 @@ index 2372bf500..123b8965b 100644
 +  "aiw.notifications.category.system": "시스템 문제",
 +  "aiw.notifications.filterEmpty": "이 필터와 일치하는 활동이 없습니다.",
 +  "aiw.notifications.resetFilters": "필터 재설정",
++  "aiw.connections.title": "앱 연결",
++  "aiw.connections.subtitle": "Codex CLI와 OpenAI 호환 도구에서 개인 할당량을 안전하게 사용합니다.",
++  "aiw.connections.codexTitle": "Codex CLI",
++  "aiw.connections.codexDescription": "Codex를 AIWrapper로 연결하는 로컬 설정 파일을 생성합니다.",
++  "aiw.connections.endpoint": "AIWrapper 엔드포인트",
++  "aiw.connections.loopbackHint": "이 로컬 주소는 서버 컴퓨터에서만 작동합니다. 원격 사용자는 HTTPS 또는 사설 네트워크 주소가 필요합니다.",
++  "aiw.connections.individualKey": "개인 키",
++  "aiw.connections.model": "기본 모델",
++  "aiw.connections.loadingModels": "모델 불러오는 중…",
++  "aiw.connections.modelsUnavailable": "모델 목록을 가져올 수 없습니다. 모델 ID를 직접 입력하세요.",
++  "aiw.connections.subagentModel": "하위 에이전트 모델",
++  "aiw.connections.sameAsDefault": "기본 모델과 동일",
++  "aiw.connections.subagentHint": "기본 모델을 사용하려면 비워 두세요.",
++  "aiw.connections.memoryOnly": "키는 이 페이지의 메모리에만 유지되며 저장되거나 서버에 기록되지 않습니다.",
++  "aiw.connections.filesTitle": "수동 구성",
++  "aiw.connections.filesDescription": "Codex CLI를 실행할 컴퓨터에 이 파일들을 저장하세요.",
++  "aiw.connections.showSecret": "키 표시",
++  "aiw.connections.hideSecret": "키 숨기기",
++  "aiw.connections.copy": "복사",
++  "aiw.connections.copied": "복사됨",
++  "aiw.connections.copyUnavailable": "복사 불가",
++  "aiw.connections.environmentTitle": "기타 OpenAI 호환 앱",
++  "aiw.connections.environmentDescription": "OpenAI 기본 URL을 지원하는 클라이언트에서 이 환경 변수를 사용하세요.",
++  "aiw.connections.copyEnvironment": "변수 복사",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -212,7 +237,7 @@ index 2372bf500..123b8965b 100644
    "common.github": "GitHub",
    "common.save": "저장",
    "common.saving": "저장 중…",
-@@ -639,6 +842,9 @@ export const ko: Record<TKey, string> = {
+@@ -639,6 +867,9 @@ export const ko: Record<TKey, string> = {
    "nav.api": "API",
    "nav.codexAuth": "Codex 인증",
    "nav.openMenu": "메뉴 열기",

@@ -34,6 +34,7 @@ import AdminOverviewPanel from "../../../extensions/aiwrapper-admin/src/AdminOve
 import NavigationSearch from "../../../extensions/aiwrapper-admin/src/NavigationSearch";
 import TokenSaverPanel from "../../../extensions/aiwrapper-admin/src/TokenSaverPanel";
 import NotificationsCenter from "../../../extensions/aiwrapper-notifications/src/NotificationsCenter";
+import ConnectionsPage from "../../../extensions/aiwrapper-connections/src/ConnectionsPage";
 import { useHeaderSearchStore } from "../../../extensions/aiwrapper-admin/src/header-search-store";
 import "../../../extensions/aiwrapper-admin/src/styles.css";
 import "../../../extensions/aiwrapper-chat/src/styles.css";
@@ -63,6 +64,7 @@ const PAGE_TKEY: Record<Page, TKey> = {
   "aiwrapper-sessions": "nav.aiwrapperSessions",
   "aiwrapper-sharing": "nav.aiwrapperSharing",
   "aiwrapper-billing": "nav.aiwrapperBilling",
+  "aiwrapper-connections": "nav.aiwrapperConnections",
   "aiwrapper-shared": "aiw.shared.title",
 };
 
@@ -76,6 +78,7 @@ const NAV_GROUPS: { label: TKey; adminOnly?: boolean; items: NavEntry[] }[] = [
   { id: "aiwrapper-sessions", tkey: "nav.aiwrapperSessions", Icon: IconList },
   { id: "aiwrapper-sharing", tkey: "nav.aiwrapperSharing", Icon: IconLink },
   { id: "aiwrapper-billing", tkey: "nav.aiwrapperBilling", Icon: IconActivity },
+  { id: "aiwrapper-connections", tkey: "nav.aiwrapperConnections", Icon: IconGlobe },
  ]},
  { label: "nav.section.admin", adminOnly: true, items: [
   { id: "aiwrapper-users", tkey: "nav.aiwrapperUsers", Icon: IconBot },
@@ -103,7 +106,7 @@ const NAV_GROUPS: { label: TKey; adminOnly?: boolean; items: NavEntry[] }[] = [
 
 const THEME_ICON = { light: IconSun, dark: IconMoon, system: IconMonitor } as const;
 const THEME_TKEY: Record<Theme, TKey> = { light: "theme.light", dark: "theme.dark", system: "theme.system" };
-const USER_PAGES = new Set<Page>(["aiwrapper-chat", "aiwrapper-sessions", "aiwrapper-sharing", "aiwrapper-billing", "aiwrapper-shared"]);
+const USER_PAGES = new Set<Page>(["aiwrapper-chat", "aiwrapper-sessions", "aiwrapper-sharing", "aiwrapper-billing", "aiwrapper-connections", "aiwrapper-shared"]);
 
 function readRuntimeVersion(data: unknown): string | null {
   if (!data || typeof data !== "object" || !("version" in data)) return null;
@@ -393,6 +396,7 @@ function AppContent() {
             {page === "aiwrapper-sessions" && <SessionsPage />}
             {page === "aiwrapper-sharing" && <SharingPage />}
             {page === "aiwrapper-billing" && <BillingPage />}
+            {page === "aiwrapper-connections" && <ConnectionsPage />}
           </ErrorBoundary>
         </div>
       </main>

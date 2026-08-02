@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ja.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ja.ts"
-index 47b1de3f0..28f1079c3 100644
+index 47b1de3f0..375a3129f 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ja.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ja.ts"	
-@@ -10,6 +10,209 @@ export const ja: Record<TKey, string> = {
+@@ -10,6 +10,234 @@ export const ja: Record<TKey, string> = {
    "nav.subagents": "サブエージェント",
    "nav.logs": "ログ & デバッグ",
    "nav.usage": "使用量",
@@ -12,6 +12,7 @@ index 47b1de3f0..28f1079c3 100644
 +  "nav.aiwrapperSessions": "Sessions",
 +  "nav.aiwrapperSharing": "Sharing",
 +  "nav.aiwrapperBilling": "Billing",
++  "nav.aiwrapperConnections": "アプリを接続",
 +  "aiw.overview.title": "AIWrapper 運用",
 +  "aiw.overview.subtitle": "過去24時間のユーザー別ゲートウェイの稼働状況。",
 +  "aiw.overview.notConnected": "運用状況を表示するには管理者キーで接続してください。",
@@ -76,6 +77,30 @@ index 47b1de3f0..28f1079c3 100644
 +  "aiw.notifications.category.system": "システムの問題",
 +  "aiw.notifications.filterEmpty": "このフィルターに一致するアクティビティはありません。",
 +  "aiw.notifications.resetFilters": "フィルターをリセット",
++  "aiw.connections.title": "アプリを接続",
++  "aiw.connections.subtitle": "Codex CLI と OpenAI 互換ツールから個人クォータを安全に利用します。",
++  "aiw.connections.codexTitle": "Codex CLI",
++  "aiw.connections.codexDescription": "Codex を AIWrapper 経由にするローカル設定ファイルを生成します。",
++  "aiw.connections.endpoint": "AIWrapper エンドポイント",
++  "aiw.connections.loopbackHint": "このローカルアドレスはサーバー上でのみ利用できます。リモート利用者には HTTPS またはプライベートネットワークのアドレスが必要です。",
++  "aiw.connections.individualKey": "個人キー",
++  "aiw.connections.model": "既定のモデル",
++  "aiw.connections.loadingModels": "モデルを読み込み中…",
++  "aiw.connections.modelsUnavailable": "モデル一覧を取得できません。モデル ID を手動で入力してください。",
++  "aiw.connections.subagentModel": "サブエージェントモデル",
++  "aiw.connections.sameAsDefault": "既定のモデルと同じ",
++  "aiw.connections.subagentHint": "既定のモデルを使う場合は空欄にします。",
++  "aiw.connections.memoryOnly": "キーはこのページのメモリだけに保持され、保存やサーバーへの書き込みは行われません。",
++  "aiw.connections.filesTitle": "手動設定",
++  "aiw.connections.filesDescription": "Codex CLI を実行するコンピューターにこれらのファイルを保存してください。",
++  "aiw.connections.showSecret": "キーを表示",
++  "aiw.connections.hideSecret": "キーを隠す",
++  "aiw.connections.copy": "コピー",
++  "aiw.connections.copied": "コピー済み",
++  "aiw.connections.copyUnavailable": "コピー不可",
++  "aiw.connections.environmentTitle": "その他の OpenAI 互換アプリ",
++  "aiw.connections.environmentDescription": "OpenAI ベース URL に対応するクライアントでこの環境変数を使用します。",
++  "aiw.connections.copyEnvironment": "変数をコピー",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -212,7 +237,7 @@ index 47b1de3f0..28f1079c3 100644
    "common.github": "GitHub",
    "common.save": "保存",
    "common.saving": "保存中…",
-@@ -993,6 +1196,9 @@ export const ja: Record<TKey, string> = {
+@@ -993,6 +1221,9 @@ export const ja: Record<TKey, string> = {
    "nav.codexAuth": "Codex 認証",
    "nav.api": "API",
    "nav.openMenu": "メニューを開く",

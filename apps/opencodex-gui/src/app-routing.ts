@@ -22,6 +22,7 @@ export type Page =
   | "aiwrapper-sessions"
   | "aiwrapper-sharing"
   | "aiwrapper-billing"
+  | "aiwrapper-connections"
   | "aiwrapper-shared";
 
 export const VALID_PAGES = new Set<Page>([
@@ -44,6 +45,7 @@ export const VALID_PAGES = new Set<Page>([
   "aiwrapper-sessions",
   "aiwrapper-sharing",
   "aiwrapper-billing",
+  "aiwrapper-connections",
   "aiwrapper-shared",
 ]);
 

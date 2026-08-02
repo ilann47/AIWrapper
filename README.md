@@ -12,7 +12,7 @@ Laboratório multiusuário para o Codex autenticado por uma conta ChatGPT. O pro
 | `services/codex-wrapper/` | `circlemouth/Codex-Wrapper` | FastAPI, OpenAI proxy, Codex CLI, modelos, OAuth e streaming SSE |
 | `packages/codex-multi-auth/` | `ndycode/codex-multi-auth` | ledger, usage, accounting, budgets, policies, routing e rotação |
 | `packages/codex-profiles/` | `Ducksss/codex-profiles` | perfis e isolamento real de `CODEX_HOME`/`auth.json` |
-| `extensions/` | AIWrapper | somente Chat, Users, Organizations, Sessions, Sharing, Billing, permissões e adapters |
+| `extensions/` | AIWrapper + módulos comunitários rastreados | Chat, Users, Organizations, Sessions, Sharing, Billing, notificações, conexão de clientes, permissões e adapters |
 
 As quatro árvores upstream, commits e licenças estão preservados em `upstream/`. A evidência linha a linha é gerada em `docs/generated/PROVENANCE_EVIDENCE.md`; os unified diffs ficam em `provenance/diffs/`.
 
@@ -47,6 +47,8 @@ Abra `http://127.0.0.1:8765`. O item **Codex Auth** mantém o OAuth original do 
 O frontend dev separado também pode ser iniciado com `pnpm dev:web`, usando `OPENCODEX_PROXY_TARGET=http://127.0.0.1:8765` quando precisar encaminhar as APIs de gerenciamento do OpenCodex.
 
 Use `Ctrl+K` (ou `Cmd+K`) para focar a busca global da barra lateral. Ela filtra somente as páginas permitidas para o papel autenticado e reutiliza o ciclo de registro e consulta do header search original do 9router.
+
+Em **Conectar aplicativos**, cada usuário pode informar temporariamente sua chave individual, escolher o modelo e gerar os arquivos `~/.codex/config.toml` e `~/.codex/auth.json` para usar o Codex CLI através do AIWrapper. A tela também gera `OPENAI_BASE_URL` e `OPENAI_API_KEY` para outros clientes compatíveis. A chave permanece somente na memória da página; a gravação automática do 9router no host foi deliberadamente excluída porque alteraria o OAuth compartilhado do servidor em vez do computador do usuário.
 
 ## Fluxo de uma conversa
 

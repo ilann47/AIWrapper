@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ru.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ru.ts"
-index e0ae4bdf4..3995c1e29 100644
+index e0ae4bdf4..22c6e813b 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ru.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ru.ts"	
-@@ -10,6 +10,209 @@ export const ru: Record<TKey, string> = {
+@@ -10,6 +10,234 @@ export const ru: Record<TKey, string> = {
    "nav.subagents": "Подагенты",
    "nav.logs": "Логи и отладка",
    "nav.usage": "Использование",
@@ -12,6 +12,7 @@ index e0ae4bdf4..3995c1e29 100644
 +  "nav.aiwrapperSessions": "Sessions",
 +  "nav.aiwrapperSharing": "Sharing",
 +  "nav.aiwrapperBilling": "Billing",
++  "nav.aiwrapperConnections": "Подключить приложения",
 +  "aiw.overview.title": "Работа AIWrapper",
 +  "aiw.overview.subtitle": "Активность пользовательского шлюза за последние 24 часа.",
 +  "aiw.overview.notConnected": "Подключитесь с ключом администратора для просмотра.",
@@ -76,6 +77,30 @@ index e0ae4bdf4..3995c1e29 100644
 +  "aiw.notifications.category.system": "Системные проблемы",
 +  "aiw.notifications.filterEmpty": "Нет активности, соответствующей фильтру.",
 +  "aiw.notifications.resetFilters": "Сбросить фильтры",
++  "aiw.connections.title": "Подключить приложения",
++  "aiw.connections.subtitle": "Безопасно используйте личную квоту из Codex CLI и OpenAI-совместимых инструментов.",
++  "aiw.connections.codexTitle": "Codex CLI",
++  "aiw.connections.codexDescription": "Создайте локальные файлы, направляющие Codex через AIWrapper.",
++  "aiw.connections.endpoint": "Адрес AIWrapper",
++  "aiw.connections.loopbackHint": "Локальный адрес работает только на сервере. Удалённым пользователям нужен HTTPS-адрес или адрес частной сети.",
++  "aiw.connections.individualKey": "Ваш личный ключ",
++  "aiw.connections.model": "Модель по умолчанию",
++  "aiw.connections.loadingModels": "Загрузка моделей…",
++  "aiw.connections.modelsUnavailable": "Список моделей недоступен. Введите идентификатор модели вручную.",
++  "aiw.connections.subagentModel": "Модель субагента",
++  "aiw.connections.sameAsDefault": "Как модель по умолчанию",
++  "aiw.connections.subagentHint": "Оставьте пустым, чтобы использовать модель по умолчанию.",
++  "aiw.connections.memoryOnly": "Ключ хранится только в памяти страницы и не сохраняется на сервере.",
++  "aiw.connections.filesTitle": "Ручная настройка",
++  "aiw.connections.filesDescription": "Сохраните эти файлы на компьютере, где запускается Codex CLI.",
++  "aiw.connections.showSecret": "Показать ключ",
++  "aiw.connections.hideSecret": "Скрыть ключ",
++  "aiw.connections.copy": "Копировать",
++  "aiw.connections.copied": "Скопировано",
++  "aiw.connections.copyUnavailable": "Копирование недоступно",
++  "aiw.connections.environmentTitle": "Другие OpenAI-совместимые приложения",
++  "aiw.connections.environmentDescription": "Используйте эти переменные в клиентах с поддержкой базового URL OpenAI.",
++  "aiw.connections.copyEnvironment": "Копировать переменные",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -212,7 +237,7 @@ index e0ae4bdf4..3995c1e29 100644
    "common.github": "GitHub",
    "common.save": "Сохранить",
    "common.saving": "Сохранение…",
-@@ -1035,6 +1238,9 @@ export const ru: Record<TKey, string> = {
+@@ -1035,6 +1263,9 @@ export const ru: Record<TKey, string> = {
    "nav.codexAuth": "Аутентификация Codex",
    "nav.api": "API",
    "nav.openMenu": "Открыть меню",

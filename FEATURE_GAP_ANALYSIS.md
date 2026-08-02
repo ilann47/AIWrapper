@@ -36,6 +36,7 @@ Audit date: 2026-08-01. Exact line counts, reuse percentages and unified diffs a
 | 9router | Headroom local installer/process manager | No | Conditional | No | `src/lib/headroom/process.js` remains in `upstream/` | Mutates host Python packages and starts detached processes; production topology requires a separately managed service instead | audited, not wired |
 | 9router | PXPIPE image-context transform | No | Conditional | No | `open-sse/rtk/pxpipe.js`, `src/lib/pxpipe/loader.js`, `src/lib/pxpipe/install.js` remain in `upstream/` | The transform only accepts Claude bodies after provider translation, but AIWrapper's policy boundary runs on OpenAI bodies before OpenCodex routing. The actual `pxpipe-proxy` source is absent and upstream installs mutable `@latest`; adapting at this layer would either corrupt provider-neutral routing or require a replacement implementation. | audited, not wired |
 | 9router | Header/sidebar navigation search | No | Yes | Yes | `headerSearchStore.js` and `Header.js` adapted into `header-search-store.ts` and `NavigationSearch.tsx` | Strict TypeScript, OpenCodex hash navigation and existing SVG/CSS tokens | wired |
+| 9router | Codex CLI and OpenAI-client connection wizard | No | Yes | Yes | `CodexToolCard.js`, `ManualConfigModal.js` → `aiwrapper-connections` | Preserves manual config generation and copy flow; intentionally excludes server-host writes that would replace the gateway's ChatGPT OAuth | wired |
 | Traycer | Full command palette | No | Yes | No | `apps/desktop/src/renderer/components/command-palette/` | Depends on Traycer's Radix/cmdk stack, analytics, workspace stores and TanStack route graph; mounting it would import a second application shell. The portable global-search need is fulfilled with the smaller original 9router store/component instead. | audited |
 | Odysseus | Tauri shell, terminal and file tools | No | Conditional | No | None | AGPL and incompatible desktop topology | blocked |
 | Odysseus | MCP/plugin workflows | Partial | Yes | No | None | Existing Codex/OpenCodex surface avoids AGPL copy | blocked |
@@ -45,6 +46,7 @@ Audit date: 2026-08-01. Exact line counts, reuse percentages and unified diffs a
 ## Product UX delivered
 
 - User navigation: Chat, Conversations, Sharing and personal Usage.
+- Connect apps: users generate Codex CLI `config.toml`/`auth.json` and OpenAI-compatible environment variables with endpoint guidance, live model discovery and memory-only individual-key handling.
 - Global navigation search: filters every role-visible destination and focuses with `Ctrl+K`/`Cmd+K`, preserving the 9router registration/query lifecycle.
 - Conversation history uses Traycer's Fuse-based tolerant search, relevance ordering and favorite-first recent/oldest/title projections.
 - Notifications use Traycer's original lifecycle, category, popover-filter, occurrence, live-arrival, scroll-anchor and calendar-grouping modules with a persistent per-user quota/audit feed, unread badge, Attention/Recent center, N-new reveal control and live Sonner toasts.

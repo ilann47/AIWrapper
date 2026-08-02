@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\app-routing.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\app-routing.ts"
-index bb03f96a8..136173747 100644
+index bb03f96a8..55368fc23 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\app-routing.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\app-routing.ts"	
-@@ -15,7 +15,14 @@ export type Page =
+@@ -15,7 +15,15 @@ export type Page =
    | "codex-auth"
    | "api"
    | "claude"
@@ -14,11 +14,12 @@ index bb03f96a8..136173747 100644
 +  | "aiwrapper-sessions"
 +  | "aiwrapper-sharing"
 +  | "aiwrapper-billing"
++  | "aiwrapper-connections"
 +  | "aiwrapper-shared";
  
  export const VALID_PAGES = new Set<Page>([
    "dashboard",
-@@ -31,12 +38,20 @@ export const VALID_PAGES = new Set<Page>([
+@@ -31,12 +39,21 @@ export const VALID_PAGES = new Set<Page>([
    "api",
    "claude",
    "grok",
@@ -28,6 +29,7 @@ index bb03f96a8..136173747 100644
 +  "aiwrapper-sessions",
 +  "aiwrapper-sharing",
 +  "aiwrapper-billing",
++  "aiwrapper-connections",
 +  "aiwrapper-shared",
  ]);
  
@@ -39,7 +41,7 @@ index bb03f96a8..136173747 100644
    // Sub-views use a "/" suffix (e.g. #logs/debug); the first segment is the page id.
    const pageId = raw.split("/")[0] as Page;
    // Legacy: Debug used to be a standalone page; it now lives as a tab on Logs.
-@@ -53,10 +68,16 @@ export const DASHBOARD_TAB_HASHES = ["dashboard/providers", "dashboard/models"]
+@@ -53,10 +70,16 @@ export const DASHBOARD_TAB_HASHES = ["dashboard/providers", "dashboard/models"]
  
  export function hashBelongsToPage(rawHash: string, page: Page): boolean {
    return rawHash === page
