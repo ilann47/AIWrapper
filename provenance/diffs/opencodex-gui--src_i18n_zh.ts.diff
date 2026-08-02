@@ -1,5 +1,5 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\zh.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\zh.ts"
-index 3a50a7658..0b99ba8c4 100644
+index 3a50a7658..d446b1f14 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\zh.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\zh.ts"	
 @@ -10,6 +10,162 @@ export const zh: Record<TKey, string> = {
@@ -165,3 +165,13 @@ index 3a50a7658..0b99ba8c4 100644
    "common.github": "GitHub",
    "common.save": "保存",
    "common.saving": "保存中…",
+@@ -639,6 +795,9 @@ export const zh: Record<TKey, string> = {
+   "nav.api": "API",
+   "nav.codexAuth": "Codex 认证",
+   "nav.openMenu": "打开菜单",
++  "nav.searchPlaceholder": "查找页面…",
++  "nav.searchEmpty": "未找到页面",
++  "nav.clearSearch": "清除搜索",
+   "nav.closeMenu": "关闭菜单",
+   "codexAuth.mainAccount": "主账号",
+   "codexAuth.codexApp": "Codex App",

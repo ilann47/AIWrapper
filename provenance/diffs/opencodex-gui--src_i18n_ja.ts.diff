@@ -1,5 +1,5 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ja.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ja.ts"
-index 47b1de3f0..34a016307 100644
+index 47b1de3f0..4346c4bc2 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ja.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ja.ts"	
 @@ -10,6 +10,162 @@ export const ja: Record<TKey, string> = {
@@ -165,3 +165,13 @@ index 47b1de3f0..34a016307 100644
    "common.github": "GitHub",
    "common.save": "保存",
    "common.saving": "保存中…",
+@@ -993,6 +1149,9 @@ export const ja: Record<TKey, string> = {
+   "nav.codexAuth": "Codex 認証",
+   "nav.api": "API",
+   "nav.openMenu": "メニューを開く",
++  "nav.searchPlaceholder": "ページを検索…",
++  "nav.searchEmpty": "ページが見つかりません",
++  "nav.clearSearch": "検索をクリア",
+   "nav.closeMenu": "メニューを閉じる",
+   "codexAuth.mainAccount": "メインアカウント",
+   "codexAuth.codexApp": "Codex App",

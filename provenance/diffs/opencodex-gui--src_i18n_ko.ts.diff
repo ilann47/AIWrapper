@@ -1,5 +1,5 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ko.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ko.ts"
-index 2372bf500..935115ebe 100644
+index 2372bf500..d34824cec 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ko.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ko.ts"	
 @@ -10,6 +10,162 @@ export const ko: Record<TKey, string> = {
@@ -165,3 +165,13 @@ index 2372bf500..935115ebe 100644
    "common.github": "GitHub",
    "common.save": "저장",
    "common.saving": "저장 중…",
+@@ -639,6 +795,9 @@ export const ko: Record<TKey, string> = {
+   "nav.api": "API",
+   "nav.codexAuth": "Codex 인증",
+   "nav.openMenu": "메뉴 열기",
++  "nav.searchPlaceholder": "페이지 찾기…",
++  "nav.searchEmpty": "페이지를 찾을 수 없습니다",
++  "nav.clearSearch": "검색 지우기",
+   "nav.closeMenu": "메뉴 닫기",
+   "codexAuth.mainAccount": "메인 계정",
+   "codexAuth.codexApp": "Codex App",

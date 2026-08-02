@@ -1,5 +1,5 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ru.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ru.ts"
-index e0ae4bdf4..5582dbce9 100644
+index e0ae4bdf4..8f65bfb69 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ru.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ru.ts"	
 @@ -10,6 +10,162 @@ export const ru: Record<TKey, string> = {
@@ -165,3 +165,13 @@ index e0ae4bdf4..5582dbce9 100644
    "common.github": "GitHub",
    "common.save": "Сохранить",
    "common.saving": "Сохранение…",
+@@ -1035,6 +1191,9 @@ export const ru: Record<TKey, string> = {
+   "nav.codexAuth": "Аутентификация Codex",
+   "nav.api": "API",
+   "nav.openMenu": "Открыть меню",
++  "nav.searchPlaceholder": "Найти страницу…",
++  "nav.searchEmpty": "Страницы не найдены",
++  "nav.clearSearch": "Очистить поиск",
+   "nav.closeMenu": "Закрыть меню",
+   "codexAuth.mainAccount": "Основной аккаунт",
+   "codexAuth.codexApp": "Codex App",

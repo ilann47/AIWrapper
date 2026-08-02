@@ -1,5 +1,5 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\de.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\de.ts"
-index 5e85333ed..7c0492723 100644
+index 5e85333ed..f156b59e8 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\de.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\de.ts"	
 @@ -10,6 +10,162 @@ export const de: Record<TKey, string> = {
@@ -165,3 +165,13 @@ index 5e85333ed..7c0492723 100644
    "common.github": "GitHub",
    "common.save": "Speichern",
    "common.saving": "Speichern…",
+@@ -622,6 +778,9 @@ export const de: Record<TKey, string> = {
+   "nav.codexAuth": "Codex-Auth",
+   "nav.api": "API",
+   "nav.openMenu": "Menü öffnen",
++  "nav.searchPlaceholder": "Seite suchen…",
++  "nav.searchEmpty": "Keine Seiten gefunden",
++  "nav.clearSearch": "Suche löschen",
+   "nav.closeMenu": "Menü schließen",
+   "codexAuth.mainAccount": "Hauptkonto",
+   "codexAuth.codexApp": "Codex App",

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { setClientResourceData, useKeyedClientResource } from "./client-resource";
 import Dashboard from "./pages/Dashboard";
 import Providers from "./pages/Providers";
@@ -31,6 +31,8 @@ import SharingPage from "../../../extensions/aiwrapper-sharing/src/SharingPage";
 import BillingPage from "../../../extensions/aiwrapper-billing/src/BillingPage";
 import SharedConversationPage from "../../../extensions/aiwrapper-sharing/src/SharedConversationPage";
 import AdminOverviewPanel from "../../../extensions/aiwrapper-admin/src/AdminOverviewPanel";
+import NavigationSearch from "../../../extensions/aiwrapper-admin/src/NavigationSearch";
+import { useHeaderSearchStore } from "../../../extensions/aiwrapper-admin/src/header-search-store";
 import "../../../extensions/aiwrapper-admin/src/styles.css";
 import "../../../extensions/aiwrapper-chat/src/styles.css";
 import "../../../extensions/aiwrapper-sharing/src/styles.css";
@@ -118,6 +120,7 @@ function AppContent() {
   const { locale, setLocale } = useI18n();
   const t = useT();
   const { principal } = useAIWrapper();
+  const navigationQuery = useHeaderSearchStore(state => state.query);
   // Keep the imported OpenCodex controls available while the AIWrapper identity
   // is unresolved/disconnected; once a user is authenticated, enforce its role.
   const isAdministrator = !principal || principal.role === "admin" || principal.role === "owner";
@@ -163,6 +166,17 @@ function AppContent() {
   const cycleTheme = () => setTheme(t => (t === "light" ? "dark" : t === "dark" ? "system" : "light"));
   const ThemeIcon = THEME_ICON[theme];
   const displayedVersion: string = healthPoll.data ?? __APP_VERSION__;
+
+  const visibleNavGroups = useMemo(() => {
+    const query = navigationQuery.trim().toLocaleLowerCase();
+    return NAV_GROUPS
+      .filter(group => !group.adminOnly || isAdministrator)
+      .map(group => ({
+        ...group,
+        items: query ? group.items.filter(item => t(item.tkey).toLocaleLowerCase().includes(query)) : group.items,
+      }))
+      .filter(group => group.items.length > 0);
+  }, [isAdministrator, navigationQuery, t]);
 
   const [stopping, setStopping] = useState(false);
   // Claude navigation row also owns the connection toggle.
@@ -280,6 +294,13 @@ function AppContent() {
             <IconX />
           </button>
         </div>
+        <NavigationSearch
+          placeholder={t("nav.searchPlaceholder")}
+          clearLabel={t("nav.clearSearch")}
+          onShortcut={() => {
+            if (window.matchMedia("(max-width: 760px)").matches) setNavOpen(true);
+          }}
+        />
         <nav>
           {/*
             Codex Auth was once filtered out of this list whenever the workspace layout
@@ -287,7 +308,7 @@ function AppContent() {
             account pool. It is now promoted to the second slot instead: there is only
             one layout, so that filter would have hidden the page permanently.
           */}
-          {NAV_GROUPS.filter(group => !group.adminOnly || isAdministrator).map(group => <div className="nav-group" key={group.label}>
+          {visibleNavGroups.map(group => <div className="nav-group" key={group.label}>
             <span className="nav-group-label">{t(group.label)}</span>
             {group.items.map(({ id, tkey, Icon }) => (
             <div key={id} className={`nav-entry${id === "claude" ? ` nav-entry-claude${page === id ? " active" : ""}` : ""}`}>
@@ -311,6 +332,7 @@ function AppContent() {
             </div>
             ))}
           </div>)}
+          {visibleNavGroups.length === 0 ? <p className="aiw-navigation-search__empty">{t("nav.searchEmpty")}</p> : null}
         </nav>
         <div className="sidebar-foot">
           <div className="lang-toggle">

@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { useHeaderSearchStore } from "../../../extensions/aiwrapper-admin/src/header-search-store";
 
 /**
  * Superseded by WP2a (devlog/_plan/260725_gui_view_consolidation/020_nav_and_dashboard_tabs.md).
@@ -16,9 +17,26 @@ test("Codex Auth is always present in the sidebar, never filtered by view mode",
 
   // The old conditional filter must not come back.
   expect(src).not.toContain('viewMode === "workspace" && id === "codex-auth"');
-  expect(src).toContain("NAV_GROUPS.filter(group => !group.adminOnly || isAdministrator)");
+  expect(src).toMatch(/NAV_GROUPS\s*\.filter\(group => !group\.adminOnly \|\| isAdministrator\)/);
 
   // It stays in the nav table and remains routable for deep links.
   expect(src).toContain('{ id: "codex-auth", tkey: "nav.codexAuth", Icon: IconKey }');
   expect(src).toContain('{page === "codex-auth" && <CodexAuth apiBase={API_BASE} />}');
+});
+
+test("9router header search state filters the consolidated navigation and resets cleanly", async () => {
+  const src = await Bun.file(new URL("../src/App.tsx", import.meta.url)).text();
+  const search = await Bun.file(new URL("../../../extensions/aiwrapper-admin/src/NavigationSearch.tsx", import.meta.url)).text();
+
+  useHeaderSearchStore.getState().register("Find a page");
+  useHeaderSearchStore.getState().setQuery("models");
+  expect(useHeaderSearchStore.getState()).toMatchObject({ visible: true, placeholder: "Find a page", query: "models" });
+  expect(src).toContain("visibleNavGroups.map");
+  expect(src).toContain("t(item.tkey).toLocaleLowerCase().includes(query)");
+  expect(src).toContain('window.matchMedia("(max-width: 760px)").matches');
+  expect(search).toContain('event.key.toLocaleLowerCase() === "k"');
+  expect(search).toContain("requestAnimationFrame");
+
+  useHeaderSearchStore.getState().unregister();
+  expect(useHeaderSearchStore.getState()).toMatchObject({ visible: false, placeholder: "", query: "" });
 });

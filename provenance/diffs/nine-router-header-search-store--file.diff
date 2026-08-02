@@ -1,0 +1,28 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\store\\headerSearchStore.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\header-search-store.ts"
+index 779278736..0f5063746 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\store\\headerSearchStore.js"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\header-search-store.ts"	
+@@ -1,11 +1,19 @@
+ /**
+- * Header Search Store — Zustand-based reusable search input in Header.
+- * Pages register placeholder on mount, read query, unregister on unmount.
++ * Header Search Store — directly adapted from 9router's Zustand store.
++ * Pages register a placeholder, read the query and unregister on unmount.
+  */
+-
+ import { create } from "zustand";
+ 
+-export const useHeaderSearchStore = create((set) => ({
++interface HeaderSearchState {
++  query: string;
++  placeholder: string;
++  visible: boolean;
++  setQuery: (query: string) => void;
++  register: (placeholder?: string) => void;
++  unregister: () => void;
++}
++
++export const useHeaderSearchStore = create<HeaderSearchState>((set) => ({
+   query: "",
+   placeholder: "",
+   visible: false,

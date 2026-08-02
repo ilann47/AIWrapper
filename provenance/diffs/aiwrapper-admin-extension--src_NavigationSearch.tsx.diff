@@ -1,8 +1,8 @@
-diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\api.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\styles.css"
-index ec1546551..d42188be0 100644
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\api.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\NavigationSearch.tsx"
+index ec1546551..de2a4d69e 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\api.ts"	
-+++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\styles.css"	
-@@ -1,213 +1,48 @@
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\NavigationSearch.tsx"	
+@@ -1,213 +1,67 @@
 -let installed = false;
 -/** Shared 401 refresh gate — concurrent waiters join one prompt / token resolution. */
 -let resolutionInFlight: Promise<string | null> | null = null;
@@ -215,52 +215,70 @@ index ec1546551..d42188be0 100644
 -  resolutionInFlight = null;
 -  rawFetch = null;
 -  promptCancelled = false;
--}
-+.aiw-gate { max-width: 520px; margin: 9vh auto 0; display: grid; gap: var(--space-3); justify-items: start; }
-+.aiw-gate > svg { width: 28px; height: 28px; }
-+.aiw-gate h2, .aiw-gate .page-sub { margin: 0; }
-+.aiw-gate .btn { min-width: 140px; }
-+.aiw-field { display: grid; gap: var(--space-2); width: 100%; color: var(--muted); font-size: var(--text-label); }
-+.aiw-endpoint { color: var(--faint); font-size: var(--text-caption); overflow-wrap: anywhere; }
-+.aiw-identity { display: flex; align-items: center; gap: var(--space-2); }
-+.aiw-toolbar { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin-bottom: var(--space-4); }
-+.aiw-toolbar .custom-select { min-width: 180px; }
-+.aiw-table-wrap { overflow: auto; }
-+.aiw-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
-+.aiw-form-grid .aiw-field:last-of-type { grid-column: 1 / -1; }
-+.aiw-secret { display: block; margin-top: var(--space-3); padding: var(--space-3); border: 1px dashed var(--border); border-radius: var(--radius-sm); overflow-wrap: anywhere; }
-+.aiw-stack { display: grid; gap: var(--space-4); }
-+.aiw-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3); }
-+.aiw-admin-overview { display: grid; gap: var(--space-4); margin-bottom: var(--space-6); padding-bottom: var(--space-6); border-bottom: 1px solid var(--border); }
-+.aiw-admin-overview__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
-+.aiw-admin-overview__head h3, .aiw-admin-overview__head p { margin: 0; }
-+.aiw-admin-overview__head p { margin-top: 4px; color: var(--muted); }
-+.aiw-admin-overview__actions { display: flex; gap: var(--space-2); flex-wrap: wrap; justify-content: flex-end; }
-+.aiw-audit-strip h4 { margin: 0 0 var(--space-2); }
-+.aiw-quota-input { width: 112px; }
-+.aiw-navigation-search { position: relative; display: flex; align-items: center; gap: 7px; margin: 0 4px 10px; padding: 7px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--faint); }
-+.aiw-navigation-search:focus-within { border-color: var(--primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 18%, transparent); }
-+.aiw-navigation-search > svg { width: 15px; height: 15px; flex: 0 0 auto; }
-+.aiw-navigation-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; font-size: var(--text-control); }
-+.aiw-navigation-search input::-webkit-search-cancel-button { display: none; }
-+.aiw-navigation-search button { display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
-+.aiw-navigation-search button svg { width: 14px; height: 14px; }
-+.aiw-navigation-search kbd { padding: 1px 4px; border: 1px solid var(--border); border-radius: 4px; color: var(--faint); font-size: 9px; white-space: nowrap; }
-+.aiw-navigation-search__empty { margin: var(--space-4) var(--space-2); color: var(--muted); font-size: var(--text-control); text-align: center; }
-+@media (max-width: 700px) {
-+  .aiw-form-grid { grid-template-columns: 1fr; }
-+  .aiw-form-grid .aiw-field:last-of-type { grid-column: auto; }
-+  .aiw-identity { width: 100%; justify-content: space-between; }
-+}
++import { useEffect, useRef } from "react";
++import { IconSearch, IconX } from "../../../apps/opencodex-gui/src/icons";
++import { useHeaderSearchStore } from "./header-search-store";
 +
-+.aiw-usage-hero { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:var(--space-6); padding:var(--space-6); border:1px solid var(--border); border-radius:var(--radius-lg); background:radial-gradient(circle at 50% 0,color-mix(in srgb,var(--primary) 18%,transparent),transparent 48%),var(--surface); }
-+.aiw-usage-hero>div:not(.aiw-quota-ring){display:grid;gap:6px}.aiw-usage-hero span,.aiw-usage-hero small{color:var(--muted)}.aiw-usage-hero strong{font-size:1.6rem}.aiw-outcome{text-align:right}
-+.aiw-quota-ring{--quota:0deg;width:132px;aspect-ratio:1;border-radius:50%;display:grid;place-content:center;text-align:center;background:radial-gradient(circle,var(--surface) 58%,transparent 60%),conic-gradient(var(--primary) var(--quota),var(--border) 0)}
-+.aiw-quota-ring span{color:var(--text);font-size:1.45rem;font-weight:760}.aiw-window-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--space-3)}.aiw-window-grid .card{padding:var(--space-4)}.aiw-window-grid .card>div:first-child{display:flex;justify-content:space-between}.aiw-window-grid small{color:var(--muted)}
-+.aiw-progress{height:8px;margin:12px 0 8px;overflow:hidden;border-radius:999px;background:var(--border)}.aiw-progress span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--primary),#22c55e)}
-+.aiw-usage-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--space-3)}.aiw-usage-cards .stat{min-width:0}.aiw-usage-cards .value{overflow:hidden;text-overflow:ellipsis}.aiw-usage-cards .primary{color:var(--primary)}.aiw-usage-cards .info{color:#38bdf8}.aiw-usage-cards .success{color:#34d399}.aiw-usage-cards .warning{color:#f59e0b}.aiw-usage-cards small{color:var(--muted);font-size:10px}
-+.aiw-usage-grid{display:grid;gap:var(--space-4)}.aiw-usage-chart,.aiw-usage-table{padding:0;overflow:hidden}.aiw-card-heading{display:flex;justify-content:space-between;padding:var(--space-4);border-bottom:1px solid var(--border)}.aiw-card-heading h3,.aiw-card-heading p{margin:0}.aiw-card-heading p{margin-top:4px;color:var(--muted)}
-+.aiw-bar-chart{min-height:230px;display:flex;align-items:end;gap:10px;padding:24px}.aiw-bar-column{flex:1;min-width:24px;display:grid;gap:8px;text-align:center;color:var(--muted);font-size:11px}.aiw-bar-track{height:170px;display:flex;align-items:end;border-radius:8px;overflow:hidden;background:color-mix(in srgb,var(--border) 55%,transparent)}.aiw-bar-track span{width:100%;border-radius:8px 8px 0 0;background:linear-gradient(180deg,var(--primary),color-mix(in srgb,var(--primary) 55%,#22c55e));transition:height .25s ease}
-+.aiw-usage-table table{width:100%;border-collapse:collapse}.aiw-usage-table th,.aiw-usage-table td{padding:12px 16px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}.aiw-usage-table th:first-child,.aiw-usage-table td:first-child{text-align:left}.aiw-usage-table th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}.aiw-usage-table tr:hover td{background:color-mix(in srgb,var(--primary) 5%,transparent)}
-+@media(max-width:700px){.aiw-usage-hero{grid-template-columns:1fr;text-align:center}.aiw-quota-ring{margin:auto}.aiw-outcome{text-align:center}.aiw-window-grid{grid-template-columns:1fr}.aiw-usage-cards{grid-template-columns:repeat(2,1fr)}}
-+.aiw-area-chart{padding:18px 12px 8px}.aiw-chart-empty{min-height:230px;display:grid;place-content:center}
++export default function NavigationSearch({
++  placeholder,
++  clearLabel,
++  onShortcut,
++}: {
++  placeholder: string;
++  clearLabel: string;
++  onShortcut?: () => void;
++}) {
++  const inputRef = useRef<HTMLInputElement>(null);
++  const visible = useHeaderSearchStore(state => state.visible);
++  const query = useHeaderSearchStore(state => state.query);
++  const registeredPlaceholder = useHeaderSearchStore(state => state.placeholder);
++  const setQuery = useHeaderSearchStore(state => state.setQuery);
++  const register = useHeaderSearchStore(state => state.register);
++  const unregister = useHeaderSearchStore(state => state.unregister);
++
++  useEffect(() => {
++    register(placeholder);
++    return unregister;
++  }, [placeholder, register, unregister]);
++
++  useEffect(() => {
++    const focusSearch = (event: KeyboardEvent) => {
++      if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === "k") {
++        event.preventDefault();
++        onShortcut?.();
++        requestAnimationFrame(() => {
++          inputRef.current?.focus();
++          inputRef.current?.select();
++        });
++      }
++      if (event.key === "Escape" && document.activeElement === inputRef.current) {
++        setQuery("");
++        inputRef.current?.blur();
++      }
++    };
++    window.addEventListener("keydown", focusSearch);
++    return () => window.removeEventListener("keydown", focusSearch);
++  }, [onShortcut, setQuery]);
++
++  if (!visible) return null;
++
++  return (
++    <div className="aiw-navigation-search">
++      <IconSearch aria-hidden />
++      <input
++        ref={inputRef}
++        type="search"
++        value={query}
++        onChange={event => setQuery(event.target.value)}
++        placeholder={registeredPlaceholder}
++        aria-label={registeredPlaceholder}
++        aria-keyshortcuts="Control+K Meta+K"
++      />
++      {query ? (
++        <button type="button" onClick={() => setQuery("")} aria-label={clearLabel}>
++          <IconX aria-hidden />
++        </button>
++      ) : <kbd>Ctrl K</kbd>}
++    </div>
++  );
+ }

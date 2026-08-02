@@ -426,6 +426,40 @@
       }
     },
     {
+      "id": "nine-router-header-search-store",
+      "functionality": "Reusable global navigation-search registration, query and reset state",
+      "project": "decolua/9router",
+      "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+      "license": "MIT",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/9router/src/store/headerSearchStore.js",
+      "destination": "extensions/aiwrapper-admin/src/header-search-store.ts",
+      "incompatibility": "The source is untyped JavaScript while the OpenCodex GUI enforces strict TypeScript. The Zustand state/actions are unchanged; only a TypeScript interface is added.",
+      "parityAudit": {
+        "retained": ["Zustand store", "Query update", "Register/unregister lifecycle", "Placeholder and visibility state", "Reset on lifecycle boundary"],
+        "lost": [],
+        "decision": "Copy the complete store and add compile-time types without changing runtime behavior."
+      }
+    },
+    {
+      "id": "nine-router-navigation-search-ui",
+      "functionality": "Commercial-style sidebar page search with clear action and Ctrl/Cmd+K focus shortcut",
+      "project": "decolua/9router",
+      "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/9router/src/shared/components/Header.js",
+      "destination": "extensions/aiwrapper-admin/src/NavigationSearch.tsx",
+      "incompatibility": "9router's HeaderSearch is embedded in a Next.js header, uses path registration, Material Symbols and Tailwind. AIWrapper uses the imported OpenCodex sidebar, hash routing, SVG icons and CSS tokens, so the complete Header cannot be mounted. The search field/store/clear interaction is retained and bound to OpenCodex navigation labels.",
+      "parityAudit": {
+        "retained": ["Reactive Zustand query", "Search icon and clear action", "Page-provided placeholder", "Responsive compact input"],
+        "lost": ["Next.js pathname-derived page heading and breadcrumbs"],
+        "decision": "Adapt the portable HeaderSearch subcomponent at the navigation boundary and add the requested keyboard discovery shortcut."
+      }
+    },
+    {
       "id": "nine-router-backup-fastapi-adapter",
       "functionality": "FastAPI administration boundary for creating, listing and downloading 9router-format SQLite safety backups",
       "project": "decolua/9router",

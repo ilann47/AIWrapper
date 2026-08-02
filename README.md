@@ -46,6 +46,8 @@ Abra `http://127.0.0.1:8765`. O item **Codex Auth** mantém o OAuth original do 
 
 O frontend dev separado também pode ser iniciado com `pnpm dev:web`, usando `OPENCODEX_PROXY_TARGET=http://127.0.0.1:8765` quando precisar encaminhar as APIs de gerenciamento do OpenCodex.
 
+Use `Ctrl+K` (ou `Cmd+K`) para focar a busca global da barra lateral. Ela filtra somente as páginas permitidas para o papel autenticado e reutiliza o ciclo de registro e consulta do header search original do 9router.
+
 ## Fluxo de uma conversa
 
 1. A chave individual identifica usuário, organização, papel e perfil.
