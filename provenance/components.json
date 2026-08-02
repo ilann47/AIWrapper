@@ -19,7 +19,7 @@
       "kind": "directory",
       "source": "upstream/opencodex/gui",
       "destination": "apps/opencodex-gui",
-      "exclude": ["dist", "tests/aiwrapper-token-saver.test.ts", "tests/aiwrapper-traycer-session-history.test.ts", "tests/aiwrapper-container-layout.test.ts"]
+      "exclude": ["dist", "tests/aiwrapper-token-saver.test.ts", "tests/aiwrapper-traycer-session-history.test.ts", "tests/aiwrapper-traycer-notifications.test.ts", "tests/aiwrapper-container-layout.test.ts"]
     },
     {
       "id": "opencodex-data-plane-execution",
@@ -420,6 +420,86 @@
       "destination": "extensions/aiwrapper-chat/src/traycer-session-history.ts",
       "incompatibility": "Traycer's HistoryItem is a project/task aggregate with protocol-only ownership, workspace and worktree fields. AIWrapper's conversation record has the corresponding title, updatedAt and favorite fields but deliberately no Traycer project graph. Type and timestamp access are adapted; the switch-based sort and stable pinned-first algorithm are retained.",
       "parityAudit": { "retained": ["recent sort", "oldest sort", "ascending and descending title sort", "stable pinned-first relevance partition", "pin precedence across explicit sorts"], "lost": ["last-viewed server order because AIWrapper has no last-viewed timestamp", "recency bucket tie-break because sessions have exact timestamps"], "decision": "Map favorite to Traycer's pinned flag and updatedAt to updatedAtMs while preserving the original ordering architecture." }
+    },
+    {
+      "id": "traycer-notification-lifecycle",
+      "functionality": "Attention/Recent lifecycle classification and deterministic blocking-first ordering",
+      "project": "traycerai/traycer",
+      "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
+      "license": "MIT",
+      "classification": "copied",
+      "kind": "file",
+      "source": "upstream/traycer/clients/gui-app/src/lib/notifications/notification-lifecycle.ts",
+      "destination": "extensions/aiwrapper-notifications/src/notification-lifecycle.ts",
+      "incompatibility": "The algorithm is portable, but its imported types resolve through Traycer's proprietary host and merged cloud-task store graph. Only those imports are replaced with equivalent local string-union boundary types; the implementation is preserved.",
+      "parityAudit": { "retained": ["single lifecycle classifier", "blocking and failure tiers", "global exclusion", "deterministic feed-id comparison", "blocking-first and newest-first ordering"], "lost": [], "decision": "Copy the complete module and adapt only its external type imports so production builds do not load Traycer's unavailable host graph." }
+    },
+    {
+      "id": "traycer-notification-occurrence",
+      "functionality": "Stable notification-arrival identity for live unread toast detection",
+      "project": "traycerai/traycer",
+      "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
+      "license": "MIT",
+      "classification": "copied",
+      "kind": "file",
+      "source": "upstream/traycer/clients/gui-app/src/lib/notifications/notification-occurrence.ts",
+      "destination": "extensions/aiwrapper-notifications/src/notification-occurrence.ts",
+      "incompatibility": "None; this dependency-free module is copied unchanged into the deployable extension boundary.",
+      "parityAudit": { "retained": ["feed ID", "created-at", "source-ref supersede semantics", "null-safe JSON encoding"], "lost": [], "decision": "Preserve the complete upstream module." }
+    },
+    {
+      "id": "traycer-notification-temporal-groups",
+      "functionality": "Local-calendar Today, Yesterday and Earlier notification grouping",
+      "project": "traycerai/traycer",
+      "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
+      "license": "MIT",
+      "classification": "copied",
+      "kind": "file",
+      "source": "upstream/traycer/clients/gui-app/src/lib/notifications/notification-temporal-group.ts",
+      "destination": "extensions/aiwrapper-notifications/src/notification-temporal-group.ts",
+      "incompatibility": "None; this dependency-free module is copied unchanged into the deployable extension boundary.",
+      "parityAudit": { "retained": ["local midnight boundaries", "Today", "Yesterday", "Earlier"], "lost": [], "decision": "Preserve the complete upstream module." }
+    },
+    {
+      "id": "traycer-notification-center-ui",
+      "functionality": "Authenticated notification bell, unread counter, Attention/Recent feed, receipt actions and live-arrival toasts",
+      "project": "traycerai/traycer",
+      "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/traycer/clients/gui-app/src/components/notifications/notifications-popover.tsx",
+      "destination": "extensions/aiwrapper-notifications/src/NotificationsCenter.tsx",
+      "incompatibility": "Traycer's component depends on its TanStack router, host notification RPCs, project/worktree graph, analytics, Radix primitives and cloud stores. Those services do not exist in the FastAPI/OpenCodex browser topology, so the full component cannot mount. The adapter retains its feed architecture and actions while replacing only data and shell boundaries.",
+      "parityAudit": { "retained": ["notification bell and unread badge", "Attention and Recent sections", "blocking-first lifecycle", "Today/Yesterday/Earlier separators", "mark all read", "per-row read, resolve and clear", "live-arrival Sonner toast", "Escape close"], "lost": ["project/worktree navigation", "cloud collaboration rows", "Traycer analytics events", "native operating-system notification and chime", "host-window focus suppression", "Radix popover positioning"], "decision": "Reuse the complete portable lifecycle modules and adapt the mature interaction architecture to the authenticated AIWrapper REST feed; importing the original UI would require a second proprietary application host." }
+    },
+    {
+      "id": "aiwrapper-notification-feed",
+      "functionality": "Per-user quota and audit notification feed with persistent read, resolved and cleared state",
+      "project": "Traycer reviewed; host notification backend is not present in the public snapshot",
+      "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
+      "license": "MIT / project code",
+      "classification": "IMPLEMENTAÇÃO PRÓPRIA",
+      "referenceOnly": true,
+      "kind": "file",
+      "source": "upstream/traycer/protocol/src/host/notifications/contracts.ts",
+      "destination": "services/codex-wrapper/app/aiwrapper/router.py",
+      "incompatibility": "Traycer publishes RPC contracts and a GUI but not the proprietary host implementation that stores notification receipts. Its TypeScript desktop identity and RPC model cannot be imported into AIWrapper's Python service, SQLite user store and quota ledger. An adapter is insufficient because the upstream backend implementation is absent.",
+      "parityAudit": { "retained": ["list", "mark read", "resolve", "clear", "unread count", "severity and event types"], "lost": ["Traycer host project notifications", "cloud collaboration notification sources"], "decision": "Implement the missing backend domain narrowly at the existing authenticated user and governance boundary; consume it through the reused Traycer lifecycle UI." }
+    },
+    {
+      "id": "aiwrapper-notification-receipts",
+      "functionality": "Durable user-scoped notification receipt schema and atomic lifecycle updates",
+      "project": "Traycer reviewed; host notification backend is not present in the public snapshot",
+      "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
+      "license": "MIT / project code",
+      "classification": "IMPLEMENTAÇÃO PRÓPRIA",
+      "referenceOnly": true,
+      "kind": "file",
+      "source": "upstream/traycer/protocol/src/host/notifications/contracts.ts",
+      "destination": "services/codex-wrapper/app/aiwrapper/store.py",
+      "incompatibility": "Only the Traycer RPC contract is public; no reusable storage implementation is included. AIWrapper needs receipts keyed to its own persisted users and feed IDs inside the canonical SQLite database.",
+      "parityAudit": { "retained": ["read timestamp", "resolved timestamp", "clear timestamp", "per-user isolation"], "lost": [], "decision": "Add the absent persistence implementation to the existing AIWrapper store rather than mislabeling contract-inspired Python as reused backend code." }
     },
     {
       "id": "nine-router-fastapi-adapter",

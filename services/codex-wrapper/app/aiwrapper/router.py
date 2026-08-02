@@ -1,5 +1,6 @@
 import re
 import time
+from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -95,6 +96,99 @@ async def admin_overview(request: Request):
         "throughputPerMinute": round(float(totals.get("requests", 0)) / elapsed_minutes, 3),
         "window": {"since": since_ms, "until": now_ms},
     }
+
+
+_QUIET_NOTIFICATION_ACTIONS = {"auth.session.created", "auth.session.refreshed"}
+
+
+def _audit_notification(event: dict[str, Any]) -> dict[str, Any]:
+    action = str(event["action"])
+    severity = "failure" if any(marker in action for marker in ("failed", "blocked", "denied")) else "done"
+    target = str(event.get("target_type") or "AIWrapper")
+    return {
+        "feedId": f"audit:{event['id']}",
+        "source": "app-local",
+        "sourceRef": str(event.get("target_id") or event["id"]),
+        "severity": severity,
+        "eventType": action,
+        "title": action.replace(".", " ").replace("_", " ").title(),
+        "body": target.replace("_", " ").capitalize(),
+        "createdAt": event["created_at"],
+    }
+
+
+def _quota_notifications(user: dict[str, Any], used_5h: int, used_7d: int, now_ms: int) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for window, used, limit, duration_ms in (
+        ("5h", used_5h, int(user["quota_5h"]), 5 * 60 * 60 * 1000),
+        ("7d", used_7d, int(user["quota_7d"]), 7 * 24 * 60 * 60 * 1000),
+    ):
+        percent = round(used / max(1, limit) * 100)
+        if percent < 80:
+            continue
+        bucket_ms = now_ms // duration_ms * duration_ms
+        rows.append({
+            "feedId": f"quota:{window}:{bucket_ms}",
+            "source": "app-local",
+            "sourceRef": f"quota-{window}",
+            "severity": "needs_action" if percent >= 100 else "info",
+            "eventType": "quota.exhausted" if percent >= 100 else "quota.warning",
+            "title": f"{window} quota {'exhausted' if percent >= 100 else 'is running low'}",
+            "body": f"{used:,} of {limit:,} weighted units used ({percent}%).",
+            "createdAt": datetime.fromtimestamp(bucket_ms / 1000, timezone.utc).isoformat(),
+        })
+    return rows
+
+
+@router.get("/v1/me/notifications")
+async def my_notifications(request: Request):
+    user = principal(request)
+    now_ms = int(time.time() * 1000)
+    summary_5h = await governance("summary", {"userId": user["id"], "since": now_ms - 5 * 60 * 60 * 1000})
+    summary_7d = await governance("summary", {"userId": user["id"], "since": now_ms - 7 * 24 * 60 * 60 * 1000})
+    used_5h = int(summary_5h["totals"]["totalTokens"])
+    used_7d = int(summary_7d["totals"]["totalTokens"])
+    audit_user_id = None if user["role"] in {"admin", "owner"} else user["id"]
+    audit_rows = [
+        _audit_notification(event)
+        for event in store.list_audit_events(50, audit_user_id)
+        if event["action"] not in _QUIET_NOTIFICATION_ACTIONS
+    ]
+    rows = _quota_notifications(user, used_5h, used_7d, now_ms) + audit_rows
+    receipts = store.notification_receipts(user["id"], [row["feedId"] for row in rows])
+    visible = []
+    for row in rows:
+        receipt = receipts.get(row["feedId"], {})
+        if receipt.get("cleared_at"):
+            continue
+        visible.append({
+            **row,
+            "readAt": receipt.get("read_at"),
+            "resolvedAt": receipt.get("resolved_at"),
+        })
+    visible.sort(key=lambda row: row["createdAt"], reverse=True)
+    return {"data": visible[:100], "unreadCount": sum(1 for row in visible if row["readAt"] is None)}
+
+
+@router.patch("/v1/me/notifications")
+async def update_my_notifications(request: Request):
+    user = principal(request)
+    body = await request.json()
+    action = body.get("action")
+    feed_ids = body.get("ids")
+    if action not in {"read", "resolve", "clear"}:
+        raise HTTPException(status_code=400, detail="action must be read, resolve or clear")
+    if not isinstance(feed_ids, list) or not feed_ids or len(feed_ids) > 100:
+        raise HTTPException(status_code=400, detail="ids must be a non-empty list with at most 100 entries")
+    if not all(
+        isinstance(feed_id, str)
+        and len(feed_id) <= 200
+        and re.fullmatch(r"(?:audit:\d+|quota:(?:5h|7d):\d+)", feed_id)
+        for feed_id in feed_ids
+    ):
+        raise HTTPException(status_code=400, detail="invalid notification id")
+    store.update_notification_receipts(user["id"], feed_ids, action)
+    return {"updated": len(set(feed_ids))}
 
 
 @router.get("/admin/audit")

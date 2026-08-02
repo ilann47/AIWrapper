@@ -1,79 +1,17 @@
-diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\app\\api\\settings\\route.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"
-index 6a7134331..b7d17c342 100644
---- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\app\\api\\settings\\route.js"	
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\traycer\\protocol\\src\\host\\notifications\\contracts.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"
+index f33833896..b7d17c342 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\traycer\\protocol\\src\\host\\notifications\\contracts.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"	
-@@ -1,118 +1,444 @@
--import { NextResponse } from "next/server";
--import { getSettings, updateSettings } from "@/lib/localDb";
--import { applyOutboundProxyEnv } from "@/lib/network/outboundProxy";
--import { resetComboRotation } from "open-sse/services/combo.js";
--import bcrypt from "bcryptjs";
+@@ -1,9 +1,444 @@
+-import {
+-  notificationsSubscribeV10,
+-  notificationsSubscribeV11,
+-} from "@traycer/protocol/host/notifications/subscribe";
 -
--export const dynamic = "force-dynamic";
--export const revalidate = 0;
--
--const SETTINGS_RESPONSE_HEADERS = {
--  "Cache-Control": "no-store"
--};
--
--// Secrets must never be mass-assigned from request body (CWE-915)
--const PROTECTED_SETTING_KEYS = ["password", "mitmSudoEncrypted"];
--
--export async function GET() {
--  try {
--    const settings = await getSettings();
--    const { password, oidcClientSecret, ...safeSettings } = settings;
--    safeSettings.oidcConfigured = !!(safeSettings.oidcIssuerUrl && safeSettings.oidcClientId && oidcClientSecret);
--    
--    const enableRequestLogs = process.env.ENABLE_REQUEST_LOGS === "true";
--    const enableTranslator = process.env.ENABLE_TRANSLATOR === "true";
--    
--    return NextResponse.json({ 
--      ...safeSettings, 
--      enableRequestLogs,
--      enableTranslator,
--      hasPassword: !!password
--    }, { headers: SETTINGS_RESPONSE_HEADERS });
--  } catch (error) {
--    console.log("Error getting settings:", error);
--    return NextResponse.json({ error: error.message }, { status: 500 });
--  }
--}
--
--export async function PATCH(request) {
--  try {
--    const body = await request.json();
--
--    // Strip protected secrets before any internal handling sets them
--    for (const key of PROTECTED_SETTING_KEYS) delete body[key];
--
--    // If updating password, hash it
--    if (body.newPassword) {
--      const settings = await getSettings();
--      const currentHash = settings.password;
--
--      // Verify current password if it exists
--      if (currentHash) {
--        if (!body.currentPassword) {
--          return NextResponse.json({ error: "Current password required" }, { status: 400 });
--        }
--        const isValid = await bcrypt.compare(body.currentPassword, currentHash);
--        if (!isValid) {
--          return NextResponse.json({ error: "Invalid current password" }, { status: 401 });
--        }
--      } else {
--        // First time setting password, no current password needed
--        // Allow empty currentPassword or default "123456"
--        if (body.currentPassword && body.currentPassword !== "123456") {
--           return NextResponse.json({ error: "Invalid current password" }, { status: 401 });
--        }
--      }
--
--      const salt = await bcrypt.genSalt(10);
--      body.password = await bcrypt.hash(body.newPassword, salt);
--      delete body.newPassword;
--      delete body.currentPassword;
--    }
+-export * from "@traycer/protocol/host/notifications/host-notifications";
+-export * from "@traycer/protocol/host/notifications/payloads";
+-export * from "@traycer/protocol/host/notifications/presentation";
+-export { notificationsSubscribeV10, notificationsSubscribeV11 };
 +import re
 +import time
 +from datetime import datetime, timezone
@@ -108,11 +46,7 @@ index 6a7134331..b7d17c342 100644
 +    if value["role"] not in {"admin", "owner"}:
 +        raise HTTPException(status_code=403, detail="Administrator role required")
 +    return value
- 
--    if (Object.prototype.hasOwnProperty.call(body, "oidcClientSecret")) {
--      if (!body.oidcClientSecret || !String(body.oidcClientSecret).trim()) {
--        delete body.oidcClientSecret;
--      }
++
 +
 +@router.get("/v1/me")
 +async def me(request: Request):
@@ -142,17 +76,9 @@ index 6a7134331..b7d17c342 100644
 +        "models": summary_7d["buckets"],
 +        "days": summary_days["buckets"],
 +        "outcomes": summary_outcomes["buckets"],
-     }
- 
--    const settings = await updateSettings(body);
- 
--    // Apply outbound proxy settings immediately (no restart required)
--    if (
--      Object.prototype.hasOwnProperty.call(body, "outboundProxyEnabled") ||
--      Object.prototype.hasOwnProperty.call(body, "outboundProxyUrl") ||
--      Object.prototype.hasOwnProperty.call(body, "outboundNoProxy")
--    ) {
--      applyOutboundProxyEnv(settings);
++    }
++
++
 +@router.get("/admin/users")
 +async def users(request: Request):
 +    administrator(request)
@@ -183,15 +109,8 @@ index 6a7134331..b7d17c342 100644
 +        "audit": store.list_audit_events(10),
 +        "throughputPerMinute": round(float(totals.get("requests", 0)) / elapsed_minutes, 3),
 +        "window": {"since": since_ms, "until": now_ms},
-     }
- 
--    // Invalidate combo rotation state when strategy settings change
--    if (
--      Object.prototype.hasOwnProperty.call(body, "comboStrategy") ||
--      Object.prototype.hasOwnProperty.call(body, "comboStickyRoundRobinLimit") ||
--      Object.prototype.hasOwnProperty.call(body, "comboStrategies")
--    ) {
--      resetComboRotation();
++    }
++
 +
 +_QUIET_NOTIFICATION_ACTIONS = {"auth.session.created", "auth.session.refreshed"}
 +
@@ -209,16 +128,8 @@ index 6a7134331..b7d17c342 100644
 +        "title": action.replace(".", " ").replace("_", " ").title(),
 +        "body": target.replace("_", " ").capitalize(),
 +        "createdAt": event["created_at"],
-     }
- 
--    if (
--      Object.prototype.hasOwnProperty.call(body, "claudeAutoPing") ||
--      Object.prototype.hasOwnProperty.call(body, "codexAutoPing")
--    ) {
--      // Keep the scheduler absent when no account opted in; load its provider graph only on demand.
--      import("@/shared/services/quotaAutoPing")
--        .then(({ configureQuotaAutoPing }) => {
--          configureQuotaAutoPing(settings);
++    }
++
 +
 +def _quota_notifications(user: dict[str, Any], used_5h: int, used_7d: int, now_ms: int) -> list[dict[str, Any]]:
 +    rows: list[dict[str, Any]] = []
@@ -239,8 +150,7 @@ index 6a7134331..b7d17c342 100644
 +            "title": f"{window} quota {'exhausted' if percent >= 100 else 'is running low'}",
 +            "body": f"{used:,} of {limit:,} weighted units used ({percent}%).",
 +            "createdAt": datetime.fromtimestamp(bucket_ms / 1000, timezone.utc).isoformat(),
-         })
--        .catch((error) => console.warn("[AutoPing] settings update failed:", error.message));
++        })
 +    return rows
 +
 +
@@ -349,16 +259,8 @@ index 6a7134331..b7d17c342 100644
 +        "headroomEnabled": runtime_settings.get("headroomEnabled") is True,
 +        "headroomUrl": runtime_settings.get("headroomUrl", "http://localhost:8787"),
 +        "headroomCompressUserMessages": runtime_settings.get("headroomCompressUserMessages") is True,
-     }
- 
--    const { password, oidcClientSecret, ...safeSettings } = settings;
--    safeSettings.oidcConfigured = !!(safeSettings.oidcIssuerUrl && safeSettings.oidcClientId && oidcClientSecret);
--    return NextResponse.json(safeSettings, { headers: SETTINGS_RESPONSE_HEADERS });
--  } catch (error) {
--    console.log("Error updating settings:", error);
--    return NextResponse.json({ error: error.message }, { status: 500 });
--  }
--}
++    }
++
 +
 +@router.get("/admin/token-saver")
 +async def token_saver_settings(request: Request):

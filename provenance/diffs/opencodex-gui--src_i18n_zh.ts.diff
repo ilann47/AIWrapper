@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\zh.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\zh.ts"
-index 3a50a7658..3d327fdf6 100644
+index 3a50a7658..74d6bb005 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\zh.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\zh.ts"	
-@@ -10,6 +10,188 @@ export const zh: Record<TKey, string> = {
+@@ -10,6 +10,200 @@ export const zh: Record<TKey, string> = {
    "nav.subagents": "子代理",
    "nav.logs": "日志与调试",
    "nav.usage": "用量",
@@ -55,6 +55,18 @@ index 3a50a7658..3d327fdf6 100644
 +  "aiw.tokenSaver.reachable": "可连接",
 +  "aiw.tokenSaver.unreachable": "不可连接",
 +  "aiw.tokenSaver.compressUserMessages": "允许 Headroom 压缩用户消息",
++  "aiw.notifications.open": "打开通知",
++  "aiw.notifications.title": "通知",
++  "aiw.notifications.subtitle": "配额、安全和账户活动。",
++  "aiw.notifications.markAllRead": "全部标为已读",
++  "aiw.notifications.markRead": "标为已读",
++  "aiw.notifications.clear": "清除通知",
++  "aiw.notifications.resolve": "解决",
++  "aiw.notifications.attention": "需要注意",
++  "aiw.notifications.today": "今天",
++  "aiw.notifications.yesterday": "昨天",
++  "aiw.notifications.earlier": "更早",
++  "aiw.notifications.empty": "没有新通知。",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -191,7 +203,7 @@ index 3a50a7658..3d327fdf6 100644
    "common.github": "GitHub",
    "common.save": "保存",
    "common.saving": "保存中…",
-@@ -639,6 +821,9 @@ export const zh: Record<TKey, string> = {
+@@ -639,6 +833,9 @@ export const zh: Record<TKey, string> = {
    "nav.api": "API",
    "nav.codexAuth": "Codex 认证",
    "nav.openMenu": "打开菜单",

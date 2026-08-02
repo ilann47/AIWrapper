@@ -47,6 +47,13 @@ def test_aiwrapper_store_users_sessions_organizations_and_shares(tmp_path):
     assert refreshed and refreshed["accessToken"] != auth["accessToken"]
     assert store.authenticate(auth["accessToken"], "http://127.0.0.1:8765") is None
     assert store.list_audit_events()[0]["action"] == "auth.session.refreshed"
+    assert store.list_audit_events(user_id=created["id"])[0]["user_id"] == created["id"]
+    store.update_notification_receipts(created["id"], ["quota:5h:test"], "read")
+    receipt = store.notification_receipts(created["id"], ["quota:5h:test"])["quota:5h:test"]
+    assert receipt["read_at"] is not None
+    assert receipt["resolved_at"] is None
+    store.update_notification_receipts(created["id"], ["quota:5h:test"], "resolve")
+    assert store.notification_receipts(created["id"], ["quota:5h:test"])["quota:5h:test"]["resolved_at"] is not None
 
 
 def test_browser_session_and_public_share_end_to_end(tmp_path, monkeypatch):
@@ -97,6 +104,43 @@ def test_browser_session_and_public_share_end_to_end(tmp_path, monkeypatch):
     )
     assert revoked.status_code == 204
     assert client.get(f"/public/shares/{share_token}").status_code == 404
+
+
+def test_user_notification_feed_and_receipts(tmp_path, monkeypatch):
+    store_module = importlib.import_module("app.aiwrapper.store")
+    auth_module = importlib.import_module("app.aiwrapper.auth")
+    router_module = importlib.import_module("app.aiwrapper.router")
+    local_store = AIWrapperStore(str(tmp_path / "notifications.db"))
+    created = local_store.create_user("Notification User", "user", "notification-user", str(tmp_path / ".codex-notifications"), 100, 100)
+    monkeypatch.setattr(store_module, "store", local_store)
+    monkeypatch.setattr(auth_module, "store", local_store)
+    monkeypatch.setattr(router_module, "store", local_store)
+    monkeypatch.setattr(settings, "aiwrapper_cors_origins", "http://127.0.0.1:8765")
+
+    async def fake_governance(operation, payload):
+        assert operation == "summary"
+        assert payload["userId"] == created["id"]
+        return {"totals": {"totalTokens": 90}}
+
+    monkeypatch.setattr(router_module, "governance", fake_governance)
+    origin = "http://127.0.0.1:8765"
+    client = TestClient(app)
+    login = client.post("/auth/sessions", headers={"Authorization": f"Bearer {created['apiKey']['secret']}", "Origin": origin})
+    headers = {"Authorization": f"Bearer {login.json()['accessToken']}", "Origin": origin}
+
+    response = client.get("/v1/me/notifications", headers=headers)
+    assert response.status_code == 200
+    quota_row = next(row for row in response.json()["data"] if row["eventType"] == "quota.warning")
+    assert quota_row["severity"] == "info"
+    assert quota_row["readAt"] is None
+
+    marked = client.patch("/v1/me/notifications", headers=headers, json={"ids": [quota_row["feedId"]], "action": "read"})
+    assert marked.status_code == 200
+    invalid = client.patch("/v1/me/notifications", headers=headers, json={"ids": ["arbitrary:receipt"], "action": "read"})
+    assert invalid.status_code == 400
+    refreshed = client.get("/v1/me/notifications", headers=headers)
+    refreshed_quota = next(row for row in refreshed.json()["data"] if row["feedId"] == quota_row["feedId"])
+    assert refreshed_quota["readAt"] is not None
 
 
 def test_administrator_can_create_list_and_download_database_backup(tmp_path, monkeypatch):

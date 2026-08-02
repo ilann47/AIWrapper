@@ -18,6 +18,25 @@ export interface AIWrapperBrowserSession {
   expiresAt: number;
 }
 
+function parseBrowserSession(value: unknown): AIWrapperSessionResponse {
+  if (!value || typeof value !== "object") throw new Error("Invalid AIWrapper session response");
+  const session = value as Partial<AIWrapperSessionResponse>;
+  if (
+    typeof session.accessToken !== "string"
+    || session.accessToken.length === 0
+    || typeof session.expiresIn !== "number"
+    || !Number.isFinite(session.expiresIn)
+    || session.expiresIn <= 0
+    || !session.principal
+    || typeof session.principal.userId !== "string"
+    || typeof session.principal.profileId !== "string"
+    || !["user", "operator", "admin", "owner"].includes(String(session.principal.role))
+  ) {
+    throw new Error("Invalid AIWrapper session response");
+  }
+  return session as AIWrapperSessionResponse;
+}
+
 export interface ModelRecord {
   id: string;
   displayName?: string;
@@ -53,7 +72,7 @@ export class AIWrapperClient {
       headers: { Authorization: `Bearer ${apiKey}` },
     });
     if (!response.ok) throw new Error(await response.text());
-    const session = await response.json() as AIWrapperSessionResponse;
+    const session = parseBrowserSession(await response.json());
     return { client: new AIWrapperClient(baseUrl, session.accessToken), principal: session.principal, expiresAt: Date.now() + session.expiresIn * 1000 };
   }
 
@@ -65,7 +84,7 @@ export class AIWrapperClient {
     });
     if (response.status === 401) return null;
     if (!response.ok) throw new Error(await response.text());
-    const session = await response.json() as AIWrapperSessionResponse;
+    const session = parseBrowserSession(await response.json());
     return { client: new AIWrapperClient(baseUrl, session.accessToken), principal: session.principal, expiresAt: Date.now() + session.expiresIn * 1000 };
   }
 

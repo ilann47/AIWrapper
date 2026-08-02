@@ -1,18 +1,21 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\package.json" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\package.json"
-index ce7f602b0..3b674582e 100644
+index ce7f602b0..1708f3ced 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\package.json"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\package.json"	
-@@ -15,8 +15,14 @@
+@@ -15,8 +15,16 @@
    },
    "dependencies": {
      "@tanstack/react-virtual": "^3.14.5",
-+    "fuse.js": "7.5.0",
-     "react": "^19.2.7",
+-    "react": "^19.2.7",
 -    "react-dom": "^19.2.7"
-+    "react-dom": "^19.2.7",
++    "fuse.js": "7.5.0",
++    "lucide-react": "1.28.0",
++    "react": "19.2.7",
++    "react-dom": "19.2.7",
 +    "react-markdown": "^10.1.0",
 +    "recharts": "3.10.1",
 +    "remark-gfm": "^4.0.1",
++    "sonner": "2.0.7",
 +    "zod": "4.4.3",
 +    "zustand": "5.0.14"
    },

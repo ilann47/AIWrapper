@@ -33,6 +33,7 @@ import SharedConversationPage from "../../../extensions/aiwrapper-sharing/src/Sh
 import AdminOverviewPanel from "../../../extensions/aiwrapper-admin/src/AdminOverviewPanel";
 import NavigationSearch from "../../../extensions/aiwrapper-admin/src/NavigationSearch";
 import TokenSaverPanel from "../../../extensions/aiwrapper-admin/src/TokenSaverPanel";
+import NotificationsCenter from "../../../extensions/aiwrapper-notifications/src/NotificationsCenter";
 import { useHeaderSearchStore } from "../../../extensions/aiwrapper-admin/src/header-search-store";
 import "../../../extensions/aiwrapper-admin/src/styles.css";
 import "../../../extensions/aiwrapper-chat/src/styles.css";
@@ -273,6 +274,7 @@ function AppContent() {
 
   return (
     <div className="app">
+      <NotificationsCenter />
       {/* inert while the drawer is open: keeps focus and assistive tech inside the drawer */}
       <header className="mobile-topbar" inert={navOpen}>
         <button ref={menuBtnRef} type="button" className="menu-toggle" onClick={() => setNavOpen(o => !o)}

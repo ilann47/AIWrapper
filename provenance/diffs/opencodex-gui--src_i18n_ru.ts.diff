@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ru.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ru.ts"
-index e0ae4bdf4..532bfc56d 100644
+index e0ae4bdf4..05861c559 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ru.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ru.ts"	
-@@ -10,6 +10,188 @@ export const ru: Record<TKey, string> = {
+@@ -10,6 +10,200 @@ export const ru: Record<TKey, string> = {
    "nav.subagents": "Подагенты",
    "nav.logs": "Логи и отладка",
    "nav.usage": "Использование",
@@ -55,6 +55,18 @@ index e0ae4bdf4..532bfc56d 100644
 +  "aiw.tokenSaver.reachable": "Доступен",
 +  "aiw.tokenSaver.unreachable": "Недоступен",
 +  "aiw.tokenSaver.compressUserMessages": "Разрешить Headroom сжимать сообщения пользователя",
++  "aiw.notifications.open": "Открыть уведомления",
++  "aiw.notifications.title": "Уведомления",
++  "aiw.notifications.subtitle": "Квоты, безопасность и активность аккаунта.",
++  "aiw.notifications.markAllRead": "Отметить всё прочитанным",
++  "aiw.notifications.markRead": "Отметить прочитанным",
++  "aiw.notifications.clear": "Удалить уведомление",
++  "aiw.notifications.resolve": "Решить",
++  "aiw.notifications.attention": "Требует внимания",
++  "aiw.notifications.today": "Сегодня",
++  "aiw.notifications.yesterday": "Вчера",
++  "aiw.notifications.earlier": "Ранее",
++  "aiw.notifications.empty": "Новых уведомлений нет.",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -191,7 +203,7 @@ index e0ae4bdf4..532bfc56d 100644
    "common.github": "GitHub",
    "common.save": "Сохранить",
    "common.saving": "Сохранение…",
-@@ -1035,6 +1217,9 @@ export const ru: Record<TKey, string> = {
+@@ -1035,6 +1229,9 @@ export const ru: Record<TKey, string> = {
    "nav.codexAuth": "Аутентификация Codex",
    "nav.api": "API",
    "nav.openMenu": "Открыть меню",

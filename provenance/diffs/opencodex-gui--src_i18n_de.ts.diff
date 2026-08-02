@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\de.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\de.ts"
-index 5e85333ed..f7ed004d1 100644
+index 5e85333ed..3851eee29 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\de.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\de.ts"	
-@@ -10,6 +10,188 @@ export const de: Record<TKey, string> = {
+@@ -10,6 +10,200 @@ export const de: Record<TKey, string> = {
    "nav.subagents": "Sub-Agenten",
    "nav.logs": "Protokolle & Diagnose",
    "nav.usage": "Nutzung",
@@ -55,6 +55,18 @@ index 5e85333ed..f7ed004d1 100644
 +  "aiw.tokenSaver.reachable": "Erreichbar",
 +  "aiw.tokenSaver.unreachable": "Nicht erreichbar",
 +  "aiw.tokenSaver.compressUserMessages": "Headroom darf Benutzernachrichten komprimieren",
++  "aiw.notifications.open": "Benachrichtigungen öffnen",
++  "aiw.notifications.title": "Benachrichtigungen",
++  "aiw.notifications.subtitle": "Kontingent-, Sicherheits- und Kontoaktivität.",
++  "aiw.notifications.markAllRead": "Alle als gelesen markieren",
++  "aiw.notifications.markRead": "Als gelesen markieren",
++  "aiw.notifications.clear": "Benachrichtigung löschen",
++  "aiw.notifications.resolve": "Erledigen",
++  "aiw.notifications.attention": "Achtung",
++  "aiw.notifications.today": "Heute",
++  "aiw.notifications.yesterday": "Gestern",
++  "aiw.notifications.earlier": "Früher",
++  "aiw.notifications.empty": "Alles erledigt.",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -191,7 +203,7 @@ index 5e85333ed..f7ed004d1 100644
    "common.github": "GitHub",
    "common.save": "Speichern",
    "common.saving": "Speichern…",
-@@ -622,6 +804,9 @@ export const de: Record<TKey, string> = {
+@@ -622,6 +816,9 @@ export const de: Record<TKey, string> = {
    "nav.codexAuth": "Codex-Auth",
    "nav.api": "API",
    "nav.openMenu": "Menü öffnen",

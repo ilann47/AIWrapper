@@ -93,12 +93,19 @@ class AIWrapperStore:
                     action TEXT NOT NULL, target_type TEXT, target_id TEXT,
                     metadata TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS notification_receipts (
+                    user_id TEXT NOT NULL, feed_id TEXT NOT NULL,
+                    read_at TEXT, resolved_at TEXT, cleared_at TEXT,
+                    PRIMARY KEY (user_id, feed_id),
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                );
                 CREATE INDEX IF NOT EXISTS idx_sessions_user_updated ON sessions(user_id, status, updated_at DESC);
                 CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id, id);
                 CREATE INDEX IF NOT EXISTS idx_shares_user_created ON shares(user_id, created_at DESC);
                 CREATE INDEX IF NOT EXISTS idx_auth_access ON auth_sessions(access_token_hash, access_expires_at);
                 CREATE INDEX IF NOT EXISTS idx_auth_refresh ON auth_sessions(refresh_token_hash, refresh_expires_at);
                 CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_events(created_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_notification_receipts_user ON notification_receipts(user_id, cleared_at);
             """)
             session_columns = {
                 row["name"] for row in self._connection.execute("PRAGMA table_info(sessions)").fetchall()
@@ -243,13 +250,52 @@ class AIWrapperStore:
                 (user_id, action, target_type, target_id, json.dumps(metadata or {}, separators=(",", ":"), sort_keys=True), _now()),
             )
 
-    def list_audit_events(self, limit: int = 200) -> list[dict[str, Any]]:
+    def list_audit_events(self, limit: int = 200, user_id: Optional[str] = None) -> list[dict[str, Any]]:
+        with self._lock:
+            bounded_limit = max(1, min(1000, limit))
+            if user_id is None:
+                rows = self._connection.execute(
+                    "SELECT * FROM audit_events ORDER BY id DESC LIMIT ?",
+                    (bounded_limit,),
+                ).fetchall()
+            else:
+                rows = self._connection.execute(
+                    "SELECT * FROM audit_events WHERE user_id = ? ORDER BY id DESC LIMIT ?",
+                    (user_id, bounded_limit),
+                ).fetchall()
+        return [{**dict(row), "metadata": json.loads(row["metadata"])} for row in rows]
+
+    def notification_receipts(self, user_id: str, feed_ids: list[str]) -> dict[str, dict[str, Any]]:
+        if not feed_ids:
+            return {}
+        unique_ids = list(dict.fromkeys(feed_ids[:200]))
+        placeholders = ",".join("?" for _ in unique_ids)
         with self._lock:
             rows = self._connection.execute(
-                "SELECT * FROM audit_events ORDER BY id DESC LIMIT ?",
-                (max(1, min(1000, limit)),),
+                f"SELECT * FROM notification_receipts WHERE user_id = ? AND feed_id IN ({placeholders})",
+                (user_id, *unique_ids),
             ).fetchall()
-        return [{**dict(row), "metadata": json.loads(row["metadata"])} for row in rows]
+        return {row["feed_id"]: dict(row) for row in rows}
+
+    def update_notification_receipts(self, user_id: str, feed_ids: list[str], action: str) -> None:
+        if action not in {"read", "resolve", "clear"}:
+            raise ValueError("Unsupported notification action")
+        timestamp = _now()
+        unique_ids = list(dict.fromkeys(feed_ids[:200]))
+        with self._lock, self._connection:
+            for feed_id in unique_ids:
+                read_at = timestamp
+                resolved_at = timestamp if action in {"resolve", "clear"} else None
+                cleared_at = timestamp if action == "clear" else None
+                self._connection.execute(
+                    """INSERT INTO notification_receipts (user_id, feed_id, read_at, resolved_at, cleared_at)
+                       VALUES (?, ?, ?, ?, ?)
+                       ON CONFLICT(user_id, feed_id) DO UPDATE SET
+                         read_at = COALESCE(notification_receipts.read_at, excluded.read_at),
+                         resolved_at = COALESCE(notification_receipts.resolved_at, excluded.resolved_at),
+                         cleared_at = COALESCE(notification_receipts.cleared_at, excluded.cleared_at)""",
+                    (user_id, feed_id, read_at, resolved_at, cleared_at),
+                )
 
     def health(self) -> bool:
         with self._lock:

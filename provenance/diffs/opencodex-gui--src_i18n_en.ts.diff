@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\en.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\en.ts"
-index 26aa5f653..cc5712fe3 100644
+index 26aa5f653..a8886cf7b 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\en.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\en.ts"	
-@@ -10,6 +10,188 @@ export const en = {
+@@ -10,6 +10,200 @@ export const en = {
    "nav.subagents": "Subagents",
    "nav.logs": "Logs & Debug",
    "nav.usage": "Usage",
@@ -55,6 +55,18 @@ index 26aa5f653..cc5712fe3 100644
 +  "aiw.tokenSaver.reachable": "Reachable",
 +  "aiw.tokenSaver.unreachable": "Unreachable",
 +  "aiw.tokenSaver.compressUserMessages": "Allow Headroom to compress user messages",
++  "aiw.notifications.open": "Open notifications",
++  "aiw.notifications.title": "Notifications",
++  "aiw.notifications.subtitle": "Quota, security, and account activity.",
++  "aiw.notifications.markAllRead": "Mark all read",
++  "aiw.notifications.markRead": "Mark as read",
++  "aiw.notifications.clear": "Clear notification",
++  "aiw.notifications.resolve": "Resolve",
++  "aiw.notifications.attention": "Attention",
++  "aiw.notifications.today": "Today",
++  "aiw.notifications.yesterday": "Yesterday",
++  "aiw.notifications.earlier": "Earlier",
++  "aiw.notifications.empty": "You're all caught up.",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -191,7 +203,7 @@ index 26aa5f653..cc5712fe3 100644
    "common.github": "GitHub",
    "common.save": "Save",
    "common.saving": "Saving…",
-@@ -1036,6 +1218,9 @@ export const en = {
+@@ -1036,6 +1230,9 @@ export const en = {
    "nav.codexAuth": "Codex Auth",
    "nav.api": "API",
    "nav.openMenu": "Open menu",

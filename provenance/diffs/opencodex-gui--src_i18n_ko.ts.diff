@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ko.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ko.ts"
-index 2372bf500..2540d9601 100644
+index 2372bf500..a3c893f60 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ko.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ko.ts"	
-@@ -10,6 +10,188 @@ export const ko: Record<TKey, string> = {
+@@ -10,6 +10,200 @@ export const ko: Record<TKey, string> = {
    "nav.subagents": "서브에이전트",
    "nav.logs": "로그&디버그",
    "nav.usage": "사용량",
@@ -55,6 +55,18 @@ index 2372bf500..2540d9601 100644
 +  "aiw.tokenSaver.reachable": "연결 가능",
 +  "aiw.tokenSaver.unreachable": "연결 불가",
 +  "aiw.tokenSaver.compressUserMessages": "사용자 메시지 압축 허용",
++  "aiw.notifications.open": "알림 열기",
++  "aiw.notifications.title": "알림",
++  "aiw.notifications.subtitle": "할당량, 보안 및 계정 활동입니다.",
++  "aiw.notifications.markAllRead": "모두 읽음",
++  "aiw.notifications.markRead": "읽음으로 표시",
++  "aiw.notifications.clear": "알림 지우기",
++  "aiw.notifications.resolve": "해결",
++  "aiw.notifications.attention": "주의 필요",
++  "aiw.notifications.today": "오늘",
++  "aiw.notifications.yesterday": "어제",
++  "aiw.notifications.earlier": "이전",
++  "aiw.notifications.empty": "새 알림이 없습니다.",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -191,7 +203,7 @@ index 2372bf500..2540d9601 100644
    "common.github": "GitHub",
    "common.save": "저장",
    "common.saving": "저장 중…",
-@@ -639,6 +821,9 @@ export const ko: Record<TKey, string> = {
+@@ -639,6 +833,9 @@ export const ko: Record<TKey, string> = {
    "nav.api": "API",
    "nav.codexAuth": "Codex 인증",
    "nav.openMenu": "메뉴 열기",

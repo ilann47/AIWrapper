@@ -1,0 +1,24 @@
+.aiw-notifications { position: fixed; top: var(--space-4); right: var(--space-4); z-index: 80; }
+.aiw-notifications__bell { position: relative; display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--border); border-radius: 50%; background: var(--panel); color: var(--text); box-shadow: var(--shadow); cursor: pointer; }
+.aiw-notifications__bell > svg { width: 18px; height: 18px; }
+.aiw-notifications__bell > span { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 4px; border: 2px solid var(--bg); border-radius: 999px; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; line-height: 14px; text-align: center; }
+.aiw-notifications__panel { position: absolute; top: 48px; right: 0; width: min(430px, calc(100vw - var(--space-6))); max-height: min(720px, calc(100vh - 80px)); overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--panel); box-shadow: var(--shadow-lg); }
+.aiw-notifications__panel > header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); padding: var(--space-4); border-bottom: 1px solid var(--border); }
+.aiw-notifications__panel h2 { margin: 0; font-size: 1rem; }
+.aiw-notifications__panel header p { margin: 3px 0 0; color: var(--muted); font-size: .78rem; }
+.aiw-notifications__panel header > div:last-child { display: flex; align-items: center; gap: var(--space-1); }
+.aiw-notifications__feed { max-height: min(630px, calc(100vh - 160px)); overflow: auto; }
+.aiw-notifications__feed section > h3 { margin: 0; padding: var(--space-3) var(--space-4) var(--space-2); color: var(--muted); font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; }
+.aiw-notification-row { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: var(--space-2); align-items: start; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border); }
+.aiw-notification-row--needs_action, .aiw-notification-row--failure { box-shadow: inset 3px 0 var(--danger); }
+.aiw-notification-row__icon { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--raised); color: var(--muted); }
+.aiw-notification-row__icon svg { width: 14px; height: 14px; }
+.aiw-notification-row--needs_action .aiw-notification-row__icon, .aiw-notification-row--failure .aiw-notification-row__icon { color: var(--danger); }
+.aiw-notification-row__copy { min-width: 0; }
+.aiw-notification-row__copy strong { display: block; font-size: .84rem; }
+.aiw-notification-row__copy p { margin: 3px 0; color: var(--muted); font-size: .78rem; line-height: 1.4; }
+.aiw-notification-row__copy time { color: var(--muted); font-size: .68rem; }
+.aiw-notification-row__actions { display: flex; align-items: center; gap: 2px; }
+.aiw-notification-row__actions svg { width: 14px; height: 14px; }
+.aiw-notifications__empty { padding: var(--space-6); color: var(--muted); text-align: center; }
+@media (max-width: 760px) { .aiw-notifications { top: 12px; right: 64px; } }
