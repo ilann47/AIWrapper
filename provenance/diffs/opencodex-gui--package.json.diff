@@ -1,1 +1,16 @@
-# Files are identical.
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\package.json" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\package.json"
+index ce7f602b0..40e842795 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\package.json"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\package.json"	
+@@ -16,7 +16,10 @@
+   "dependencies": {
+     "@tanstack/react-virtual": "^3.14.5",
+     "react": "^19.2.7",
+-    "react-dom": "^19.2.7"
++    "react-dom": "^19.2.7",
++    "react-markdown": "^10.1.0",
++    "remark-gfm": "^4.0.1",
++    "zod": "4.4.3"
+   },
+   "devDependencies": {
+     "@eslint/js": "^10.0.1",

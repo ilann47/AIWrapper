@@ -1,0 +1,155 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\app\\(dashboard)\\dashboard\\usage\\components\\UsageChart.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-billing\\src\\nine-router-usage.tsx"
+index 14a19c42a..bae6fc475 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\app\\(dashboard)\\dashboard\\usage\\components\\UsageChart.js"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-billing\\src\\nine-router-usage.tsx"	
+@@ -1,141 +1,9 @@
+-"use client";
+-
+-import { useState, useEffect, useCallback } from "react";
+-import PropTypes from "prop-types";
+-import {
+-  AreaChart,
+-  Area,
+-  XAxis,
+-  YAxis,
+-  CartesianGrid,
+-  Tooltip,
+-  ResponsiveContainer,
+-  Legend,
+-} from "recharts";
+-import Card from "@/shared/components/Card";
+-
+-const fmtTokens = (n) => {
+-  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+-  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+-  return String(n || 0);
+-};
+-
+-const fmtCost = (n) => `$${(n || 0).toFixed(4)}`;
+-
+-export default function UsageChart({ period = "7d" }) {
+-  const [data, setData] = useState([]);
+-  const [loading, setLoading] = useState(true);
+-  const [viewMode, setViewMode] = useState("tokens");
+-
+-  const fetchData = useCallback(async () => {
+-    setLoading(true);
+-    try {
+-      const res = await fetch(`/api/usage/chart?period=${period}`);
+-      if (res.ok) {
+-        const json = await res.json();
+-        setData(json);
+-      }
+-    } catch (e) {
+-      console.error("Failed to fetch chart data:", e);
+-    } finally {
+-      setLoading(false);
+-    }
+-  }, [period]);
+-
+-  useEffect(() => {
+-    fetchData();
+-  }, [fetchData]);
+-
+-  const hasData = data.some((d) => d.tokens > 0 || d.cost > 0);
+-
+-  return (
+-    <Card className="flex min-w-0 flex-col gap-3 p-3 sm:p-4">
+-      <div className="grid w-full grid-cols-2 items-center gap-1 rounded-lg border border-border bg-bg-subtle p-1 sm:w-auto sm:self-start">
+-        <button
+-          onClick={() => setViewMode("tokens")}
+-          className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${viewMode === "tokens" ? "bg-primary text-white shadow-sm" : "text-text-muted hover:text-text hover:bg-bg-hover"}`}
+-        >
+-          Tokens
+-        </button>
+-        <button
+-          onClick={() => setViewMode("cost")}
+-          className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${viewMode === "cost" ? "bg-primary text-white shadow-sm" : "text-text-muted hover:text-text hover:bg-bg-hover"}`}
+-        >
+-          Cost
+-        </button>
+-      </div>
+-
+-      {loading ? (
+-        <div className="h-48 flex items-center justify-center text-text-muted text-sm">Loading...</div>
+-      ) : !hasData ? (
+-        <div className="h-48 flex items-center justify-center text-text-muted text-sm">No data for this period</div>
+-      ) : (
+-        <ResponsiveContainer width="100%" height={220}>
+-          <AreaChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+-            <defs>
+-              <linearGradient id="gradTokens" x1="0" y1="0" x2="0" y2="1">
+-                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.25} />
+-                <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+-              </linearGradient>
+-              <linearGradient id="gradCost" x1="0" y1="0" x2="0" y2="1">
+-                <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.25} />
+-                <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+-              </linearGradient>
+-            </defs>
+-            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.1} />
+-            <XAxis
+-              dataKey="label"
+-              tick={{ fontSize: 10, fill: "currentColor", fillOpacity: 0.5 }}
+-              tickLine={false}
+-              axisLine={false}
+-              interval="preserveStartEnd"
+-            />
+-            <YAxis
+-              tick={{ fontSize: 10, fill: "currentColor", fillOpacity: 0.5 }}
+-              tickLine={false}
+-              axisLine={false}
+-              tickFormatter={viewMode === "tokens" ? fmtTokens : fmtCost}
+-              width={50}
+-            />
+-            <Tooltip
+-              contentStyle={{
+-                backgroundColor: "var(--color-bg)",
+-                border: "1px solid var(--color-border)",
+-                borderRadius: "8px",
+-                fontSize: "12px",
+-              }}
+-              formatter={(value, name) =>
+-                name === "tokens" ? [fmtTokens(value), "Tokens"] : [fmtCost(value), "Cost"]
+-              }
+-            />
+-            {viewMode === "tokens" ? (
+-              <Area
+-                type="monotone"
+-                dataKey="tokens"
+-                stroke="#6366f1"
+-                strokeWidth={2}
+-                fill="url(#gradTokens)"
+-                dot={false}
+-                activeDot={{ r: 4 }}
+-              />
+-            ) : (
+-              <Area
+-                type="monotone"
+-                dataKey="cost"
+-                stroke="#f59e0b"
+-                strokeWidth={2}
+-                fill="url(#gradCost)"
+-                dot={false}
+-                activeDot={{ r: 4 }}
+-              />
+-            )}
+-          </AreaChart>
+-        </ResponsiveContainer>
+-      )}
+-    </Card>
+-  );
+-}
+-
+-UsageChart.propTypes = {
+-  period: PropTypes.string,
+-};
++/** MIT adapter of 9router's usage OverviewCards and UsageTable components. */
++import { useT } from "../../../apps/opencodex-gui/src/i18n/shared";
++import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
++export interface UsageBucket { key:string; requests:number; successes:number; failures:number; blocked:number; cancelled:number; inputTokens:number; outputTokens:number; cachedInputTokens:number; reasoningTokens:number; totalTokens:number; costUsd:number }
++export interface UsageStats { totalRequests:number; totalPromptTokens:number; totalCachedTokens:number; totalCompletionTokens:number; totalCost:number }
++const fmt=(value:number)=>new Intl.NumberFormat().format(value||0); const fmtCost=(value:number)=>`$${(value||0).toFixed(2)}`;
++export function OverviewCards({stats}:{stats:UsageStats}){const t=useT();const cards=[[t("aiw.analytics.requests"),fmt(stats.totalRequests),""],[t("aiw.analytics.input"),fmt(stats.totalPromptTokens),"primary"],[t("aiw.analytics.cached"),fmt(stats.totalCachedTokens),"info"],[t("aiw.analytics.output"),fmt(stats.totalCompletionTokens),"success"],[t("aiw.analytics.cost"),`~${fmtCost(stats.totalCost)}`,"warning"]];return <div className="aiw-usage-cards">{cards.map(([label,value,tone])=><section className="stat" key={label}><span className="label">{label}</span><strong className={`value ${tone}`}>{value}</strong>{label===t("aiw.analytics.cost")&&<small>{t("aiw.analytics.costHint")}</small>}</section>)}</div>}
++export function UsageChart({data}:{data:UsageBucket[]}){const t=useT();return <section className="card aiw-usage-chart"><div className="aiw-card-heading"><div><h3>{t("aiw.analytics.overTime")}</h3><p>{t("aiw.analytics.lastSeven")}</p></div></div>{data.length===0?<div className="empty aiw-chart-empty">{t("aiw.analytics.noPeriod")}</div>:<div className="aiw-area-chart" role="img" aria-label={t("aiw.analytics.chartAria")}><ResponsiveContainer width="100%" height={230}><AreaChart data={data.map(item=>({label:item.key.slice(5),tokens:item.totalTokens}))} margin={{top:12,right:18,left:4,bottom:4}}><defs><linearGradient id="aiwTokens" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--primary)" stopOpacity={0.34}/><stop offset="95%" stopColor="var(--primary)" stopOpacity={0}/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="var(--border)"/><XAxis dataKey="label" tick={{fontSize:11,fill:"var(--muted)"}} tickLine={false} axisLine={false}/><YAxis tick={{fontSize:11,fill:"var(--muted)"}} tickLine={false} axisLine={false} width={58}/><Tooltip contentStyle={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:8}} formatter={(value)=>[fmt(Number(value)),t("aiw.analytics.tokens")]}/><Area type="monotone" dataKey="tokens" stroke="var(--primary)" strokeWidth={2} fill="url(#aiwTokens)" dot={false}/></AreaChart></ResponsiveContainer></div>}</section>}
++export function UsageTable({buckets}:{buckets:UsageBucket[]}){const t=useT();return <section className="card aiw-usage-table"><div className="aiw-card-heading"><div><h3>{t("aiw.analytics.models")}</h3><p>{t("aiw.analytics.modelsHint")}</p></div></div><div className="aiw-table-wrap"><table><thead><tr><th>{t("aiw.analytics.model")}</th><th>{t("aiw.analytics.requests")}</th><th>{t("aiw.analytics.input")}</th><th>{t("aiw.analytics.cached")}</th><th>{t("aiw.analytics.output")}</th><th>{t("aiw.analytics.total")}</th><th>{t("aiw.analytics.errors")}</th></tr></thead><tbody>{buckets.map(item=><tr key={item.key}><td><strong>{item.key}</strong></td><td>{fmt(item.requests)}</td><td>{fmt(item.inputTokens)}</td><td>{fmt(item.cachedInputTokens)}</td><td>{fmt(item.outputTokens)}</td><td>{fmt(item.totalTokens)}</td><td>{fmt(item.failures+item.blocked)}</td></tr>)}{buckets.length===0&&<tr><td colSpan={7} className="empty">{t("aiw.analytics.noModels")}</td></tr>}</tbody></table></div></section>}

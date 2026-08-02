@@ -16,7 +16,7 @@ test("Codex Auth is always present in the sidebar, never filtered by view mode",
 
   // The old conditional filter must not come back.
   expect(src).not.toContain('viewMode === "workspace" && id === "codex-auth"');
-  expect(src).toContain("{NAV.map(({ id, tkey, Icon }) => (");
+  expect(src).toContain("NAV_GROUPS.filter(group => !group.adminOnly || isAdministrator)");
 
   // It stays in the nav table and remains routable for deep links.
   expect(src).toContain('{ id: "codex-auth", tkey: "nav.codexAuth", Icon: IconKey }');

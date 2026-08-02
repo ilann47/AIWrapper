@@ -1,0 +1,53 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\app\\(dashboard)\\dashboard\\usage\\components\\OverviewCards.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-billing\\src\\nine-router-usage.tsx"
+index 22020ff26..bae6fc475 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\app\\(dashboard)\\dashboard\\usage\\components\\OverviewCards.js"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-billing\\src\\nine-router-usage.tsx"	
+@@ -1,39 +1,9 @@
+-"use client";
+-
+-import PropTypes from "prop-types";
+-import Card from "@/shared/components/Card";
+-
+-const fmt = (n) => new Intl.NumberFormat().format(n || 0);
+-const fmtCost = (n) => `$${(n || 0).toFixed(2)}`;
+-
+-export default function OverviewCards({ stats }) {
+-  return (
+-    <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 sm:gap-4">
+-      <Card className="flex min-w-0 flex-col gap-1 px-4 py-3">
+-        <span className="text-text-muted text-sm uppercase font-semibold">Total Requests</span>
+-        <span className="truncate text-2xl font-bold">{fmt(stats.totalRequests)}</span>
+-      </Card>
+-      <Card className="flex min-w-0 flex-col gap-1 px-4 py-3">
+-        <span className="text-text-muted text-sm uppercase font-semibold">Total Input Tokens</span>
+-        <span className="truncate text-2xl font-bold text-primary">{fmt(stats.totalPromptTokens)}</span>
+-      </Card>
+-      <Card className="flex min-w-0 flex-col gap-1 px-4 py-3">
+-        <span className="text-text-muted text-sm uppercase font-semibold">Cached Tokens</span>
+-        <span className="truncate text-2xl font-bold text-info">{fmt(stats.totalCachedTokens)}</span>
+-      </Card>
+-      <Card className="flex min-w-0 flex-col gap-1 px-4 py-3">
+-        <span className="text-text-muted text-sm uppercase font-semibold">Output Tokens</span>
+-        <span className="truncate text-2xl font-bold text-success">{fmt(stats.totalCompletionTokens)}</span>
+-      </Card>
+-      <Card className="flex min-w-0 flex-col gap-1 px-4 py-3">
+-        <span className="text-text-muted text-sm uppercase font-semibold">Est. Cost</span>
+-        <span className="truncate text-2xl font-bold text-warning">~{fmtCost(stats.totalCost)}</span>
+-        <span className="text-[10px] text-text-muted">Estimated, not actual billing</span>
+-      </Card>
+-    </div>
+-  );
+-}
+-
+-OverviewCards.propTypes = {
+-  stats: PropTypes.object.isRequired,
+-};
++/** MIT adapter of 9router's usage OverviewCards and UsageTable components. */
++import { useT } from "../../../apps/opencodex-gui/src/i18n/shared";
++import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
++export interface UsageBucket { key:string; requests:number; successes:number; failures:number; blocked:number; cancelled:number; inputTokens:number; outputTokens:number; cachedInputTokens:number; reasoningTokens:number; totalTokens:number; costUsd:number }
++export interface UsageStats { totalRequests:number; totalPromptTokens:number; totalCachedTokens:number; totalCompletionTokens:number; totalCost:number }
++const fmt=(value:number)=>new Intl.NumberFormat().format(value||0); const fmtCost=(value:number)=>`$${(value||0).toFixed(2)}`;
++export function OverviewCards({stats}:{stats:UsageStats}){const t=useT();const cards=[[t("aiw.analytics.requests"),fmt(stats.totalRequests),""],[t("aiw.analytics.input"),fmt(stats.totalPromptTokens),"primary"],[t("aiw.analytics.cached"),fmt(stats.totalCachedTokens),"info"],[t("aiw.analytics.output"),fmt(stats.totalCompletionTokens),"success"],[t("aiw.analytics.cost"),`~${fmtCost(stats.totalCost)}`,"warning"]];return <div className="aiw-usage-cards">{cards.map(([label,value,tone])=><section className="stat" key={label}><span className="label">{label}</span><strong className={`value ${tone}`}>{value}</strong>{label===t("aiw.analytics.cost")&&<small>{t("aiw.analytics.costHint")}</small>}</section>)}</div>}
++export function UsageChart({data}:{data:UsageBucket[]}){const t=useT();return <section className="card aiw-usage-chart"><div className="aiw-card-heading"><div><h3>{t("aiw.analytics.overTime")}</h3><p>{t("aiw.analytics.lastSeven")}</p></div></div>{data.length===0?<div className="empty aiw-chart-empty">{t("aiw.analytics.noPeriod")}</div>:<div className="aiw-area-chart" role="img" aria-label={t("aiw.analytics.chartAria")}><ResponsiveContainer width="100%" height={230}><AreaChart data={data.map(item=>({label:item.key.slice(5),tokens:item.totalTokens}))} margin={{top:12,right:18,left:4,bottom:4}}><defs><linearGradient id="aiwTokens" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--primary)" stopOpacity={0.34}/><stop offset="95%" stopColor="var(--primary)" stopOpacity={0}/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="var(--border)"/><XAxis dataKey="label" tick={{fontSize:11,fill:"var(--muted)"}} tickLine={false} axisLine={false}/><YAxis tick={{fontSize:11,fill:"var(--muted)"}} tickLine={false} axisLine={false} width={58}/><Tooltip contentStyle={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:8}} formatter={(value)=>[fmt(Number(value)),t("aiw.analytics.tokens")]}/><Area type="monotone" dataKey="tokens" stroke="var(--primary)" strokeWidth={2} fill="url(#aiwTokens)" dot={false}/></AreaChart></ResponsiveContainer></div>}</section>}
++export function UsageTable({buckets}:{buckets:UsageBucket[]}){const t=useT();return <section className="card aiw-usage-table"><div className="aiw-card-heading"><div><h3>{t("aiw.analytics.models")}</h3><p>{t("aiw.analytics.modelsHint")}</p></div></div><div className="aiw-table-wrap"><table><thead><tr><th>{t("aiw.analytics.model")}</th><th>{t("aiw.analytics.requests")}</th><th>{t("aiw.analytics.input")}</th><th>{t("aiw.analytics.cached")}</th><th>{t("aiw.analytics.output")}</th><th>{t("aiw.analytics.total")}</th><th>{t("aiw.analytics.errors")}</th></tr></thead><tbody>{buckets.map(item=><tr key={item.key}><td><strong>{item.key}</strong></td><td>{fmt(item.requests)}</td><td>{fmt(item.inputTokens)}</td><td>{fmt(item.cachedInputTokens)}</td><td>{fmt(item.outputTokens)}</td><td>{fmt(item.totalTokens)}</td><td>{fmt(item.failures+item.blocked)}</td></tr>)}{buckets.length===0&&<tr><td colSpan={7} className="empty">{t("aiw.analytics.noModels")}</td></tr>}</tbody></table></div></section>}

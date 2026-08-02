@@ -2,6 +2,7 @@ import asyncio
 from pathlib import Path
 
 from app.aiwrapper.governance import governance
+from app.aiwrapper.nine_router import nine_router
 from app.aiwrapper.store import AIWrapperStore
 from app.config import settings
 
@@ -16,6 +17,10 @@ def test_aiwrapper_store_users_sessions_organizations_and_shares(tmp_path):
     store.append_assistant(session["id"], "world")
     detail = store.get_session(created["id"], session["id"])
     assert [turn["items"][0]["type"] for turn in detail["thread"]["turns"]] == ["userMessage", "agentMessage"]
+    updated = store.update_session(created["id"], session["id"], {"title": "Pinned chat", "favorite": True})
+    assert updated["title"] == "Pinned chat"
+    assert updated["favorite"] is True
+    assert [row["id"] for row in store.list_sessions(created["id"], "Pinned", True)] == [session["id"]]
 
     organization = store.create_organization("Lab")
     assert organization["name"] == "Lab"
@@ -61,3 +66,14 @@ def test_governance_bridge_executes_upstream_ledger_and_budget(tmp_path):
 
     assert summary["totals"]["totalTokens"] == 10
     assert decision["allowed"] is False
+
+
+def test_nine_router_bridge_executes_upstream_rtk():
+    noisy_log = "\n".join([f"src/file.py:{line}: repeated diagnostic payload" for line in range(1, 160)])
+    result = asyncio.run(nine_router("compress", {
+        "body": {"messages": [{"role": "tool", "content": noisy_log}]},
+        "enabled": True,
+    }))
+
+    assert result["stats"]["bytesAfter"] < result["stats"]["bytesBefore"]
+    assert len(result["body"]["messages"][0]["content"]) < len(noisy_log)

@@ -1,0 +1,127 @@
+import { defineRpcContract } from "@traycer/protocol/framework/index";
+import {
+  prepareWorkspaceFoldersRequestSchema,
+  prepareWorkspaceFoldersResponseSchema,
+} from "@traycer/protocol/host/epic/unary-schemas";
+import {
+  workspaceFileMentionSuggestionsResponseSchema,
+  workspaceFolderMentionSuggestionsResponseSchema,
+  workspaceGitBranchMentionSuggestionsResponseSchema,
+  workspaceGitCommitMentionSuggestionsResponseSchema,
+  workspaceGitMentionSuggestionsRequestSchema,
+  workspaceGitRootMentionSuggestionsResponseSchema,
+  workspaceListDirectoryRequestSchema,
+  workspaceListDirectoryResponseSchema,
+  workspaceListFileTreeRequestSchema,
+  workspaceListFileTreeResponseSchema,
+  workspacePathMentionSuggestionsRequestSchema,
+  workspaceReadFileRequestSchema,
+  workspaceReadFileResponseSchema,
+  workspaceResolvePathsByRepoIdentifiersRequestSchema,
+  workspaceResolvePathsByRepoIdentifiersResponseSchema,
+  workspaceSearchPathsRequestSchema,
+  workspaceSearchPathsResponseSchema,
+  workspaceSearchTextRequestSchema,
+  workspaceSearchTextResponseSchema,
+  workspaceWorktreeMentionSuggestionsResponseSchema,
+} from "@traycer/protocol/host/workspace/unary-schemas";
+
+export const workspacePrepareFoldersV10 = defineRpcContract({
+  method: "workspace.prepareFolders",
+  schemaVersion: { major: 1, minor: 0 } as const,
+  requestSchema: prepareWorkspaceFoldersRequestSchema,
+  responseSchema: prepareWorkspaceFoldersResponseSchema,
+});
+
+export const workspaceMentionFilesV10 = defineRpcContract({
+  method: "workspace.mentionFiles",
+  schemaVersion: { major: 1, minor: 0 } as const,
+  requestSchema: workspacePathMentionSuggestionsRequestSchema,
+  responseSchema: workspaceFileMentionSuggestionsResponseSchema,
+});
+
+export const workspaceMentionFoldersV10 = defineRpcContract({
+  method: "workspace.mentionFolders",
+  schemaVersion: { major: 1, minor: 0 } as const,
+  requestSchema: workspacePathMentionSuggestionsRequestSchema,
+  responseSchema: workspaceFolderMentionSuggestionsResponseSchema,
+});
+
+export const workspaceMentionWorktreesV10 = defineRpcContract({
+  method: "workspace.mentionWorktrees",
+  schemaVersion: { major: 1, minor: 0 } as const,
+  requestSchema: workspacePathMentionSuggestionsRequestSchema,
+  responseSchema: workspaceWorktreeMentionSuggestionsResponseSchema,
+});
+
+export const workspaceMentionGitRootV10 = defineRpcContract({
+  method: "workspace.mentionGitRoot",
+  schemaVersion: { major: 1, minor: 0 } as const,
+  requestSchema: workspaceGitMentionSuggestionsRequestSchema,
+  responseSchema: workspaceGitRootMentionSuggestionsResponseSchema,
+});
+
+export const workspaceMentionGitBranchesV10 = defineRpcContract({
+  method: "workspace.mentionGitBranches",
+  schemaVersion: { major: 1, minor: 0 } as const,
+  requestSchema: workspaceGitMentionSuggestionsRequestSchema,
+  responseSchema: workspaceGitBranchMentionSuggestionsResponseSchema,
+});
+
+export const workspaceMentionGitCommitsV10 = defineRpcContract({
+  method: "workspace.mentionGitCommits",
+  schemaVersion: { major: 1, minor: 0 } as const,
+  requestSchema: workspaceGitMentionSuggestionsRequestSchema,
+  responseSchema: workspaceGitCommitMentionSuggestionsResponseSchema,
+});
+
+export const workspaceResolvePathsByRepoIdentifiersV10 = defineRpcContract({
+  method: "workspace.resolvePathsByRepoIdentifiers",
+  schemaVersion: { major: 1, minor: 0 } as const,
+  requestSchema: workspaceResolvePathsByRepoIdentifiersRequestSchema,
+  responseSchema: workspaceResolvePathsByRepoIdentifiersResponseSchema,
+});
+
+/**
+ * @deprecated Legacy "ship the whole tree" snapshot (flat list of up to 50k
+ * paths + workspace-wide git status), superseded by the live single-level
+ * stream `workspace.subscribeFileList` (file explorer) and the host-ranked
+ * `workspace.searchPaths` (path search). It CANNOT be removed - the method is
+ * on the released floor, so hosts must keep serving already-shipped clients -
+ * but its only remaining first-party caller is the file tree's fallback for
+ * hosts that predate `workspace.subscribeFileList`. Do not add new consumers.
+ */
+export const workspaceListFileTreeV10 = defineRpcContract({
+  method: "workspace.listFileTree",
+  schemaVersion: { major: 1, minor: 0 } as const,
+  requestSchema: workspaceListFileTreeRequestSchema,
+  responseSchema: workspaceListFileTreeResponseSchema,
+});
+
+export const workspaceListDirectoryV10 = defineRpcContract({
+  method: "workspace.listDirectory",
+  schemaVersion: { major: 1, minor: 0 } as const,
+  requestSchema: workspaceListDirectoryRequestSchema,
+  responseSchema: workspaceListDirectoryResponseSchema,
+});
+
+export const workspaceReadFileV10 = defineRpcContract({
+  method: "workspace.readFile",
+  schemaVersion: { major: 1, minor: 0 } as const,
+  requestSchema: workspaceReadFileRequestSchema,
+  responseSchema: workspaceReadFileResponseSchema,
+});
+
+export const workspaceSearchPathsV10 = defineRpcContract({
+  method: "workspace.searchPaths",
+  schemaVersion: { major: 1, minor: 0 } as const,
+  requestSchema: workspaceSearchPathsRequestSchema,
+  responseSchema: workspaceSearchPathsResponseSchema,
+});
+
+export const workspaceSearchTextV10 = defineRpcContract({
+  method: "workspace.searchText",
+  schemaVersion: { major: 1, minor: 0 } as const,
+  requestSchema: workspaceSearchTextRequestSchema,
+  responseSchema: workspaceSearchTextResponseSchema,
+});

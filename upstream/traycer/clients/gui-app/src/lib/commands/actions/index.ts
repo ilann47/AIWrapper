@@ -1,0 +1,36 @@
+/**
+ * Docs: see ./README.md
+ *
+ * Barrel for canonical palette action functions. Every command
+ * source's `run` handler imports from here instead of reaching
+ * into stores directly.
+ */
+export { openNewEpic, openNewEpicIntent } from "./new-epic";
+export { duplicateEpicTab } from "./duplicate-tab";
+export { goBack, goForward, type HistoryNavRouter } from "./history-navigation";
+export {
+  openCreatedChatWhenProjected,
+  openCreatedChatWhenProjectedWithNavigation,
+  openNewChatInActiveTile,
+  type CancelFn,
+  type CreateChatCommandCallbacks,
+  type CreateChatCommand,
+  type CreatedChatOpenIntent,
+  type OpenCreatedChatWhenProjectedWithNavigationArgs,
+  type NewChatSplitPosition,
+} from "./new-chat";
+export {
+  ensureHistoryTab,
+  ensureSettingsTab,
+  resolveHistoryTabIntent,
+  resolveSettingsTabIntent,
+  type OpenSettingsOpts,
+} from "./open-system-tab";
+export {
+  openTileIntoTargetGroup,
+  type OpenTileIntoTargetGroupArgs,
+} from "./open-into-target";
+export {
+  openSingletonTileIntoTargetGroup,
+  type OpenSingletonTileIntoTargetGroupArgs,
+} from "./open-singleton-into-target";

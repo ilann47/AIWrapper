@@ -1,5 +1,5 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\docker-compose.yml" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\docker-compose.yml"
-index e729bc00..d0d4ae8e 100644
+index e729bc004..d0d4ae8ee 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\docker-compose.yml"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\docker-compose.yml"	
 @@ -1,24 +1,43 @@

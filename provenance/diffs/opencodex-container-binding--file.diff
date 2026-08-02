@@ -1,5 +1,5 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\src\\config.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\infra\\opencodex\\config.docker.json"
-index 9127897c..1e9f0518 100644
+index 9127897c1..1e9f05183 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\src\\config.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\infra\\opencodex\\config.docker.json"	
 @@ -1,1876 +1,4 @@

@@ -1,0 +1,69 @@
+import path from "path";
+import os from "node:os";
+import { defineConfig } from "vitest/config";
+
+const availableParallelism =
+  typeof os.availableParallelism === "function"
+    ? os.availableParallelism()
+    : os.cpus().length;
+const MAX_TEST_WORKERS = Math.min(
+  2,
+  Math.max(1, Math.floor(availableParallelism / 2)),
+);
+
+export default defineConfig({
+  resolve: {
+    alias: [
+      { find: "@", replacement: path.resolve(__dirname, "src") },
+      {
+        find: "@traycer-clients/shared",
+        replacement: path.resolve(__dirname, "..", "shared"),
+      },
+      {
+        find: /^@traycer\/protocol\/utils\/(.*)$/,
+        replacement: path.resolve(
+          __dirname,
+          "..",
+          "..",
+          "protocol",
+          "utils",
+          "$1",
+        ),
+      },
+      {
+        find: /^@traycer\/protocol\/(.*)$/,
+        replacement: path.resolve(
+          __dirname,
+          "..",
+          "..",
+          "protocol",
+          "src",
+          "$1",
+        ),
+      },
+    ],
+  },
+  test: {
+    environment: "jsdom",
+    setupFiles: ["./__tests__/test-browser-apis.ts"],
+    include: [
+      "__tests__/**/*.test.ts",
+      "__tests__/**/*.test.tsx",
+      "src/**/__tests__/**/*.test.ts",
+      "src/**/__tests__/**/*.test.tsx",
+    ],
+    globals: false,
+    pool: "forks",
+    // A few suites advance large fake-timer windows. Limiting concurrently
+    // running files keeps those timers responsive on CI's shared runners.
+    maxWorkers: MAX_TEST_WORKERS,
+    testTimeout: 20_000,
+    hookTimeout: 20_000,
+    // Don't let a stray post-teardown async error (a timer/socket/microtask
+    // rejecting after a test finished) fail the whole run with exit 1 and no
+    // failing test - the classic intermittent CI flake. The setup file
+    // (`__tests__/test-browser-apis.ts`) still logs every such error, so we keep
+    // visibility instead of silently swallowing it.
+    dangerouslyIgnoreUnhandledErrors: true,
+  },
+});

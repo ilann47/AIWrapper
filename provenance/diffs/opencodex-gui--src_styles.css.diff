@@ -1,1 +1,14 @@
-# Files are identical.
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\styles.css" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\styles.css"
+index 29a04a56d..d6216946b 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\styles.css"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\styles.css"	
+@@ -248,6 +248,9 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
+   flex-direction: column;
+   gap: 4px;
+ }
++.nav-group { display: grid; gap: 3px; padding-bottom: 8px; }
++.nav-group + .nav-group { padding-top: 8px; border-top: 1px solid var(--border); }
++.nav-group-label { padding: 0 10px 4px; color: var(--faint); font-size: 10px; font-weight: var(--weight-semibold); letter-spacing: .08em; text-transform: uppercase; }
+ 
+ .nav-item {
+   display: flex; align-items: center; gap: 10px;

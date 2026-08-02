@@ -52,10 +52,10 @@ export function useAppRouteState() {
     setPageState(action.page);
   }, []);
 
-  const navigateToPage = (id: Page) => {
+  const navigateToPage = useCallback((id: Page) => {
     navigateHash(id);
     setPageState(id);
-  };
+  }, []);
 
   useEffect(() => {
     const onRouteHash = () => {

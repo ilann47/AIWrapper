@@ -1,0 +1,402 @@
+import type { QueryClient } from "@tanstack/react-query";
+import type { AccountContext } from "@traycer/protocol/common/schemas";
+import { withHostQueryErrorBoundary } from "@/lib/query/host-query-error-boundary";
+import type { RequestOfMethod } from "@traycer-clients/shared/host-transport/host-messenger";
+import type { HostRpcRegistry } from "@/lib/host";
+import { stampHostRpcMethod } from "@/lib/host-rpc-policy/host-method-policy-table";
+import { queryKeys } from "@/lib/query-keys";
+import {
+  PROVIDER_RATE_LIMITS_STALE_TIME_MS,
+  type RateLimitProviderId,
+} from "@/lib/rate-limit-providers";
+import {
+  mapResponseToProviderRateLimitEnvelope,
+  type ProviderRateLimitEnvelope,
+  type RateLimitUsageResponse,
+} from "@/lib/rate-limits/rate-limit-envelope";
+import { EPHEMERAL_RATE_LIMIT_POLL_INTERVAL_MS } from "@/lib/rate-limits/rate-limit-timing";
+
+/**
+ * Shared fetch queue for the `ephemeralProcess` rate-limit providers (codex,
+ * claude-code) - the only providers this queue serves. Each pull spawns a real
+ * CLI subprocess on the host, so interval timers, turn completions, and manual
+ * refreshes all route through here. Queue items run serially, but a deliberate
+ * batch (the popover's "Refresh all") may fan out its distinct profile pulls in
+ * parallel before the next queue item begins.
+ *
+ * `httpFetch` providers (openrouter, kilocode) NEVER touch this queue - their
+ * observers opt into the table-owned fixed cadence directly.
+ *
+ * The queue is a plain module holding process-wide state. The long-lived app
+ * shell binds its default host via `configureRateLimitQueue`, while surfaces
+ * that can inspect another host pass an explicit, render-time scope through
+ * `enqueueRateLimitFetchForScope`. Every entry point appends to the same promise
+ * chain, so queue items remain ordered across every host scope. Each enqueue
+ * snapshots its scope, so it cannot be reassigned by a later host swap and
+ * always writes to the query key for the host that receives the RPC.
+ */
+
+type RateLimitUsageParams = RequestOfMethod<
+  HostRpcRegistry,
+  "host.getRateLimitUsage"
+>;
+
+export type RateLimitQueueRequestFn = (
+  hostId: string,
+  method: "host.getRateLimitUsage",
+  params: RateLimitUsageParams,
+) => Promise<RateLimitUsageResponse>;
+
+export interface RateLimitQueueConfig {
+  readonly hostId: string;
+  readonly queryClient: QueryClient;
+  readonly request: RateLimitQueueRequestFn;
+}
+
+export interface RateLimitQueueBatchTarget {
+  readonly providerId: RateLimitProviderId;
+  readonly accountContext: AccountContext;
+  readonly profileId: string | null;
+}
+
+type RateLimitQueueFetch = () => Promise<ProviderRateLimitEnvelope | undefined>;
+
+let deps: RateLimitQueueConfig | null = null;
+// The serial lane itself: every queue item appends to the tail of this promise
+// chain. An item normally contains one fetch, while an explicit batch may
+// contain several profile fetches that run concurrently inside that item.
+let chain: Promise<unknown> = Promise.resolve();
+let inFlightCount = 0;
+const drainingListeners = new Set<() => void>();
+
+/**
+ * Post-`usage_fetch_failed` cool-down: how long *automatic* enqueues (the
+ * interval tick, turn-completion triggers) are suppressed for the affected
+ * provider profile after a fetch resolves with that reason. The tech plan's root
+ * cause is a server-side 429 on Anthropic's usage endpoint with multi-minute
+ * penalty windows; a retry-once (narrowed to the OTHER arm on the host side)
+ * plus continued polling on this arm can keep re-tripping the same limit. This
+ * cool-down, sourced from `EPHEMERAL_RATE_LIMIT_POLL_INTERVAL_MS`
+ * (`rate-limit-timing.ts`, shared with `rate-limit-queue-provider.tsx`'s poll
+ * interval so the two can't drift) - effectively "skip the next automatic
+ * poll" - lets a tripped window drain instead.
+ *
+ * Scoped to `usage_fetch_failed` specifically, NOT the other transient
+ * reasons the view-state retention treatment covers (`timeout`,
+ * `connection_failed`) - those are probe-level failures without the same
+ * server-side-penalty-window mechanics motivating this cool-down.
+ *
+ * A manual refresh (`force: true`) is never subject to this cool-down - it's
+ * always single-shot with no retry loop of its own, so it can't itself
+ * re-trip a tripped limit the way continued automatic polling can.
+ */
+const USAGE_FETCH_FAILURE_COOLDOWN_MS = EPHEMERAL_RATE_LIMIT_POLL_INTERVAL_MS;
+
+// Per-host/provider/profile cool-down expiry (epoch ms), set after a
+// `usage_fetch_failed` resolution and cleared once a later fetch resolves with
+// anything else. The host id is part of the key because the shared lane can
+// service the app-shell default host and an explicitly Settings-selected host.
+const cooldownUntil = new Map<string, number>();
+
+/**
+ * Dev-only (Vite HMR) self-healing for this module's singleton state. An HMR
+ * update that re-executes this module - an edit to it or to anything in its
+ * import chain (`query-keys`, `rate-limit-providers`, `@/lib/host`, ...) -
+ * creates a fresh instance with `deps = null`. `RateLimitQueueProvider`'s
+ * configure effect does not re-run for a bubbled invalidation (its component
+ * and effect deps are unchanged), so nothing would rebind the fresh instance:
+ * every enqueue silently no-ops - buttons stop coordinating, manual refreshes
+ * do nothing - until a full window reload, while the old instance keeps
+ * servicing the interval timer's stale closure so data still looks live.
+ * Carrying the binding across HMR generations closes that gap. Tree-shaken
+ * out of production builds (`import.meta.hot` is statically false there).
+ */
+// `undefined` in the union (rather than an optional marker) is the "no
+// generation has stashed a binding yet" state a fresh `hot.data` object
+// starts in.
+interface RateLimitQueueHotData {
+  rateLimitQueueDeps: RateLimitQueueConfig | null | undefined;
+}
+// Vite types `hot.data` as `any`; the `unknown` hop + structural guard keeps
+// the read type-safe. The guard also handles Vitest, whose truthy
+// `import.meta.hot` stub carries no `data` object, unlike Vite's dev server.
+function isRateLimitQueueHotData(
+  value: unknown,
+): value is RateLimitQueueHotData {
+  return typeof value === "object" && value !== null;
+}
+const hot = import.meta.hot;
+const hotData: unknown = hot?.data;
+if (hot !== undefined && isRateLimitQueueHotData(hotData)) {
+  const carried = hotData.rateLimitQueueDeps;
+  if (carried !== undefined) deps = carried;
+  hot.dispose(() => {
+    hotData.rateLimitQueueDeps = deps;
+  });
+}
+
+function notifyDraining(): void {
+  for (const listener of drainingListeners) listener();
+}
+
+/**
+ * Bind (or, with `null`, unbind) the app-shell default scope. Called from an
+ * effect that re-runs on default-host/client changes. Explicit host scopes do
+ * not replace this binding; they only snapshot their own dependencies for one
+ * enqueue onto the same ordered lane.
+ */
+export function configureRateLimitQueue(
+  next: RateLimitQueueConfig | null,
+): void {
+  deps = next;
+}
+
+/**
+ * `useSyncExternalStore`-compatible pair for the "subprocess work is queued or
+ * running" signal - a bare promise chain isn't React-observable on its own. The
+ * popover consumes this (via `useIsRateLimitQueueDraining`) to disable "Refresh
+ * all" while the lane is draining.
+ */
+export function subscribeRateLimitQueueDraining(
+  listener: () => void,
+): () => void {
+  drainingListeners.add(listener);
+  return () => {
+    drainingListeners.delete(listener);
+  };
+}
+
+export function isRateLimitQueueDraining(): boolean {
+  return inFlightCount > 0;
+}
+
+/**
+ * Applies the post-fetch cool-down policy for `providerId` from the envelope a
+ * fetch just resolved to: sets a `USAGE_FETCH_FAILURE_COOLDOWN_MS` window on
+ * `usage_fetch_failed`, clears any standing cool-down on anything else (a good
+ * reading, or a different/authoritative reason - the condition this cool-down
+ * exists for is no longer the one in effect, so automatic polling should
+ * resume rather than keep suppressing on a stale cause).
+ */
+function rateLimitQueueProfileKey(
+  hostId: string,
+  providerId: RateLimitProviderId,
+  profileId: string | null,
+): string {
+  return profileId === null
+    ? `${hostId}:${providerId}`
+    : `${hostId}:${providerId}:profile:${profileId}`;
+}
+
+function applyCooldownPolicy(
+  hostId: string,
+  providerId: RateLimitProviderId,
+  profileId: string | null,
+  envelope: ProviderRateLimitEnvelope,
+): void {
+  const cooldownKey = rateLimitQueueProfileKey(hostId, providerId, profileId);
+  const latest = envelope.latest;
+  if (
+    latest !== null &&
+    !latest.available &&
+    latest.reason === "usage_fetch_failed"
+  ) {
+    cooldownUntil.set(
+      cooldownKey,
+      Date.now() + USAGE_FETCH_FAILURE_COOLDOWN_MS,
+    );
+    return;
+  }
+  cooldownUntil.delete(cooldownKey);
+}
+
+function isInCooldown(
+  hostId: string,
+  providerId: RateLimitProviderId,
+  profileId: string | null,
+): boolean {
+  const until =
+    cooldownUntil.get(
+      rateLimitQueueProfileKey(hostId, providerId, profileId),
+    ) ?? 0;
+  return Date.now() < until;
+}
+
+/**
+ * Append one `ephemeralProcess` provider/profile pull to the serial lane.
+ * Returns the tail of the chain so the caller can await this item and everything
+ * queued before it.
+ *
+ * - `force: false` (interval timer, turn completion): no-ops if the query's
+ *   cached data is younger than `PROVIDER_RATE_LIMITS_STALE_TIME_MS`, so
+ *   automatic triggers don't re-spawn a subprocess for still-fresh data; ALSO
+ *   no-ops while this provider is in its post-`usage_fetch_failed` cool-down
+ *   (`USAGE_FETCH_FAILURE_COOLDOWN_MS`), so a tripped server-side rate limit
+ *   drains instead of being re-tripped every poll.
+ * - `force: true` (user-initiated refresh): always fetches, bypassing both the
+ *   freshness floor and the cool-down - a manual refresh must never silently
+ *   no-op, and is always single-shot with no retry loop of its own.
+ *
+ * No-ops (returning the current chain) while the queue is unconfigured, mirroring
+ * the host-readiness `enabled` gate the per-provider query uses.
+ */
+export function enqueueRateLimitFetch(
+  providerId: RateLimitProviderId,
+  accountContext: AccountContext,
+  opts: { readonly force: boolean; readonly profileId: string | null },
+): Promise<unknown> {
+  return enqueueRateLimitFetchForScope(deps, providerId, accountContext, opts);
+}
+
+/**
+ * Append one queue item whose distinct provider/profile pulls start together
+ * when that item reaches the front of the lane. Used by the popover's "Refresh
+ * all" action so profiles do not wait top-to-bottom, while later timers, turn
+ * completions, and clicks still wait for the whole refresh round to settle.
+ */
+export function enqueueRateLimitFetchBatch(
+  targets: ReadonlyArray<RateLimitQueueBatchTarget>,
+  opts: { readonly force: boolean },
+): Promise<unknown> {
+  return enqueueRateLimitFetchBatchForScope(deps, targets, opts);
+}
+
+/**
+ * Append a provider pull for an explicit host/client/cache scope. The scope is
+ * captured at call time and never mutates the app-shell default binding. A
+ * `null` scope is the same readiness no-op as an unconfigured default queue.
+ */
+export function enqueueRateLimitFetchForScope(
+  scope: RateLimitQueueConfig | null,
+  providerId: RateLimitProviderId,
+  accountContext: AccountContext,
+  opts: { readonly force: boolean; readonly profileId: string | null },
+): Promise<unknown> {
+  return enqueueRateLimitFetchBatchForScope(
+    scope,
+    [{ providerId, accountContext, profileId: opts.profileId }],
+    { force: opts.force },
+  );
+}
+
+function enqueueRateLimitFetchBatchForScope(
+  scope: RateLimitQueueConfig | null,
+  targets: ReadonlyArray<RateLimitQueueBatchTarget>,
+  opts: { readonly force: boolean },
+): Promise<unknown> {
+  if (scope === null) return chain;
+  const { hostId, queryClient, request } = scope;
+  const fetches = targets
+    .map((target): RateLimitQueueFetch | null => {
+      const params: RateLimitUsageParams = {
+        accountContext: target.accountContext,
+        providerId: target.providerId,
+        profileId: target.profileId,
+      };
+      const queryKey = queryKeys.hostMethod<
+        HostRpcRegistry,
+        "host.getRateLimitUsage"
+      >(hostId, "host.getRateLimitUsage", params);
+
+      function isFresh(): boolean {
+        const updatedAt =
+          queryClient.getQueryState(queryKey)?.dataUpdatedAt ?? 0;
+        return Date.now() - updatedAt < PROVIDER_RATE_LIMITS_STALE_TIME_MS;
+      }
+      function shouldSkipAutomatic(): boolean {
+        return (
+          !opts.force &&
+          (isFresh() ||
+            isInCooldown(hostId, target.providerId, target.profileId))
+        );
+      }
+      if (shouldSkipAutomatic()) return null;
+
+      // Named request fn (not an inline closure in `queryFn`) so the host-scoped
+      // key stays the sole cache identity - `request` is stable module state, not
+      // a key input, and inlining it would trip the query plugin's exhaustive-deps
+      // check (mirrors `resolve-artifact-by-path.ts`). Boundary-wrapped: this
+      // writes the same cache slot the `HostRpcError`-typed provider observers
+      // read, so mapper/cool-down throws must not leak a foreign error shape.
+      function queryFn(): Promise<ProviderRateLimitEnvelope> {
+        return withHostQueryErrorBoundary(
+          "host.getRateLimitUsage",
+          async () => {
+            const response = await request(
+              hostId,
+              "host.getRateLimitUsage",
+              params,
+            );
+            const envelope = mapResponseToProviderRateLimitEnvelope({
+              response,
+              queryClient,
+              queryKey,
+            });
+            applyCooldownPolicy(
+              hostId,
+              target.providerId,
+              target.profileId,
+              envelope,
+            );
+            return envelope;
+          },
+        );
+      }
+
+      function runFetch(): Promise<ProviderRateLimitEnvelope | undefined> {
+        // Re-checked when this batch reaches the front of the lane: an earlier
+        // item may have refreshed this exact profile (or entered it into
+        // cool-down) while this item waited.
+        if (shouldSkipAutomatic()) return Promise.resolve(undefined);
+        // `staleTime: 0` is load-bearing: `fetchQuery` inherits the app
+        // QueryClient's GLOBAL `staleTime` default (60s in `query-client.ts`)
+        // and otherwise serves still-fresh cache without fetching at all.
+        return queryClient.fetchQuery({
+          queryKey,
+          queryFn,
+          // This observer-free writer shares a host query key with builder
+          // observers. Preserve their latched identity rather than allowing
+          // fetchQuery to replace its meta with an unstamped option set.
+          meta: stampHostRpcMethod(undefined, "host.getRateLimitUsage"),
+          staleTime: 0,
+          // Some managed-profile entries are filled by the app-level queue
+          // before any surface observes them, so the observer-level Infinity
+          // in `providerRateLimitQueryOptions` cannot protect those entries.
+          // Keep them until a later fetch replaces them with verified state.
+          gcTime: Infinity,
+        });
+      }
+
+      return runFetch;
+    })
+    .filter((fetch): fetch is RateLimitQueueFetch => fetch !== null);
+  if (fetches.length === 0) return chain;
+
+  inFlightCount += 1;
+  notifyDraining();
+  chain = chain
+    .then(() =>
+      Promise.all(fetches.map((fetch) => fetch().catch(() => undefined))),
+    )
+    // One profile's failure must not block a later queue item or reject the
+    // shared chain (which every future enqueue builds on).
+    .catch(() => undefined)
+    .finally(() => {
+      inFlightCount -= 1;
+      notifyDraining();
+    });
+  return chain;
+}
+
+/**
+ * Test-only reset of the module-global lane state so each test starts from a
+ * clean queue (no bound host, empty chain, zero in-flight, no listeners, no
+ * standing cool-downs).
+ */
+export function __resetRateLimitQueueForTests(): void {
+  deps = null;
+  chain = Promise.resolve();
+  inFlightCount = 0;
+  drainingListeners.clear();
+  cooldownUntil.clear();
+}

@@ -1,0 +1,903 @@
+import "../../../../__tests__/test-browser-apis";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+  type Mock,
+  type MockInstance,
+} from "vitest";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type {
+  HostControllerStatus,
+  IHostManagement,
+  IRunnerHost,
+} from "@traycer-clients/shared/platform/runner-host";
+import { MenuCommandListener } from "@/components/layout/bridges/menu-command-listener";
+import { RunnerHostProvider } from "@/providers/runner-host-provider";
+import { useDesktopDialogStore } from "@/stores/dialogs/desktop-dialog-store";
+import {
+  setEpicCanvasDesktopProjectionBridge,
+  useEpicCanvasStore,
+} from "@/stores/epics/canvas/store";
+import { useFindInPageStore } from "@/stores/find-in-page/find-in-page-store";
+import {
+  emptyLandingDraftWorkspaceSnapshot,
+  setLandingDraftDesktopProjectionBridge,
+  useLandingDraftStore,
+} from "@/stores/home/landing-draft-store";
+import {
+  createUnavailableTileFindAdapter,
+  useTileFindStore,
+  type TileFindAdapter,
+  type TileFindCapability,
+  type TileFindStateSnapshot,
+} from "@/stores/tile-find";
+import { useTabsStore } from "@/stores/tabs/store";
+import { tabItemId } from "@/stores/tabs/layout";
+import { __getOpenEpicRegistryForTests } from "@/lib/registries/epic-session-registry";
+import type { DesktopMenuCommandPayload } from "@/lib/windows/types";
+import type { OpenEpicStoreHandle } from "@/stores/epics/open-epic/store";
+import { __resetTabNavigationControllerForTesting } from "@/lib/tab-navigation";
+
+interface CapturedNavigate {
+  readonly to: string;
+  readonly params: unknown;
+  readonly replace: boolean;
+  readonly search: unknown;
+  readonly state: unknown;
+}
+
+const navigateMock = vi.hoisted(() =>
+  vi.fn<(options: CapturedNavigate) => void>(),
+);
+const routerState = vi.hoisted(() => ({ pathname: "/" }));
+const authMock = vi.hoisted(() => ({
+  signIn: vi.fn(() => Promise.resolve()),
+  signOut: vi.fn(() => Promise.resolve()),
+}));
+
+function latestNavigation(): CapturedNavigate {
+  const call = navigateMock.mock.calls.at(-1);
+  if (call === undefined) throw new Error("expected navigation");
+  return call[0];
+}
+
+vi.mock("@tanstack/react-router", () => ({
+  useNavigate: () => navigateMock,
+  useRouter: () => ({
+    state: {
+      location: {
+        get pathname() {
+          return routerState.pathname;
+        },
+      },
+    },
+  }),
+  useRouterState: (options: {
+    readonly select: (state: {
+      readonly location: { readonly pathname: string };
+    }) => unknown;
+  }) => options.select({ location: { pathname: routerState.pathname } }),
+}));
+
+vi.mock("@/lib/host", () => ({
+  useHostBinding: () => null,
+  useAuthService: () => authMock,
+}));
+
+interface FakeDesktopMenu {
+  handler: ((payload: DesktopMenuCommandPayload) => void) | null;
+  onCommand(handler: (payload: DesktopMenuCommandPayload) => void): {
+    dispose(): void;
+  };
+  emit(command: DesktopMenuCommandPayload["command"]): void;
+}
+
+interface FakeDesktopWindows {
+  readonly requestNew: MockInstance<
+    (initialRoute: string | null) => Promise<void>
+  >;
+  readonly requestClose: MockInstance<(windowId: string) => Promise<void>>;
+}
+
+interface FakeRunnerHost extends IRunnerHost {
+  readonly windows: FakeDesktopWindows;
+  readonly hostPickerRequestOpen: Mock<() => void>;
+}
+
+function makeQueryClient(): QueryClient {
+  return new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+}
+
+function createMenu(): FakeDesktopMenu {
+  return {
+    handler: null,
+    onCommand(handler) {
+      this.handler = handler;
+      return {
+        dispose: () => {
+          this.handler = null;
+        },
+      };
+    },
+    emit(command) {
+      this.handler?.({ command, windowId: "window-1" });
+    },
+  };
+}
+
+function createRunnerHost(menu: FakeDesktopMenu): FakeRunnerHost {
+  const windows: FakeDesktopWindows = {
+    requestNew: vi.fn<(_initialRoute: string | null) => Promise<void>>(
+      (_initialRoute) => Promise.resolve(),
+    ),
+    requestClose: vi.fn<(_windowId: string) => Promise<void>>((_windowId) =>
+      Promise.resolve(),
+    ),
+  };
+  const hostPickerRequestOpen: Mock<() => void> = vi.fn();
+  return Object.assign(
+    {
+      signInUrl: "https://auth.example.invalid/sign-in",
+      authnBaseUrl: "https://auth.example.invalid",
+      hasLocalHost: true,
+      validateAuthTokenIdentity: () =>
+        Promise.resolve({ kind: "rejected" as const }),
+      listUserSessions: () =>
+        Promise.resolve({ kind: "network-error" as const }),
+      revokeUserSession: () =>
+        Promise.resolve({ kind: "network-error" as const }),
+      revokeAllSessions: () =>
+        Promise.resolve({ kind: "network-error" as const }),
+      mintHostCredential: () =>
+        Promise.resolve({ kind: "network-error" as const }),
+      requestStepUpChallenge: () =>
+        Promise.resolve({ kind: "network-error" as const }),
+      verifyStepUpChallenge: () =>
+        Promise.resolve({ kind: "network-error" as const }),
+      openExternalLink: () => Promise.resolve(),
+      getRegisteredUrlSchemes: () => Promise.resolve([]),
+      requestMicrophoneAccess: () => Promise.resolve("granted" as const),
+      openMicrophoneSettings: () => Promise.resolve(),
+      beginAuthAttempt: () => undefined,
+      onAuthCallback: () => ({ dispose: () => undefined }),
+      deviceFlow: { start: () => Promise.resolve(null) },
+      secureStorage: {
+        get: () => Promise.resolve(null),
+        set: () => Promise.resolve(),
+        delete: () => Promise.resolve(),
+      },
+      notifications: {
+        show: () => Promise.resolve(),
+        onForegroundDisplay: () => ({ dispose: () => undefined }),
+        onClick: () => ({ dispose: () => undefined }),
+      },
+      tray: {
+        setEpics: () => Promise.resolve(),
+        setIndicator: () => Promise.resolve(),
+        onEpicSelected: () => ({ dispose: () => undefined }),
+      },
+      hostPicker: {
+        get isOpen() {
+          return false;
+        },
+        requestOpen: hostPickerRequestOpen,
+        requestClose: vi.fn(),
+        onChange: () => ({ dispose: () => undefined }),
+      },
+      workspaceFolders: {
+        pickFolders: () => Promise.resolve([]),
+      },
+      fileDrops: {
+        resolveDroppedFilePaths: () => Promise.resolve([]),
+        copyDroppedFilePaths: (paths) => Promise.resolve(paths),
+        readNativeClipboardFilePaths: () => Promise.resolve([]),
+      },
+      tokenStore: {
+        get: () => Promise.resolve(null),
+        signIn: () => Promise.resolve(),
+        rotate: () =>
+          Promise.resolve({ outcome: "deleted" as const, pair: null }),
+        delete: () => Promise.resolve(),
+        subscribe: () => ({ dispose: () => undefined }),
+        migrateLegacyCredentials: () =>
+          Promise.resolve("identity-unknown" as const),
+      },
+      onLocalHostChange: () => ({ dispose: () => undefined }),
+      onSystemResumed: () => ({ dispose: () => undefined }),
+      requestHostRespawn: vi.fn(() =>
+        Promise.resolve({ kind: "restarted" as const }),
+      ),
+      service: null,
+      traycerCli: null,
+      migration: null,
+      hostManagement: null,
+      hostTray: null,
+      zoom: null,
+    } satisfies IRunnerHost,
+    {
+      menu,
+      windows,
+      hostPickerRequestOpen,
+    },
+  );
+}
+
+interface EpicTab {
+  readonly id: string;
+  readonly name: string;
+  readonly draft: boolean;
+}
+
+const EPIC_A: EpicTab = { id: "e-a", name: "A", draft: false };
+
+function openEpicFixture(tab: EpicTab): string {
+  const tabId = useEpicCanvasStore.getState().openEpicTab(tab.id, tab.name);
+  useTabsStore.setState((state) => ({
+    ...state,
+    version: 2,
+    items: useEpicCanvasStore.getState().openTabOrder.map((id) => ({
+      kind: "tab" as const,
+      id: tabItemId({ kind: "epic", id }),
+      ref: { kind: "epic" as const, id },
+    })),
+    activeItemId: tabItemId({ kind: "epic", id: tabId }),
+    stripOrder: useEpicCanvasStore
+      .getState()
+      .openTabOrder.map((id) => ({ kind: "epic" as const, id })),
+  }));
+  return tabId;
+}
+
+function resetStores(): void {
+  __resetTabNavigationControllerForTesting();
+  setEpicCanvasDesktopProjectionBridge(null);
+  setLandingDraftDesktopProjectionBridge(null);
+  useEpicCanvasStore.setState(useEpicCanvasStore.getInitialState(), true);
+  useLandingDraftStore.setState({ drafts: [], activeDraftId: null });
+  useTabsStore.setState({
+    version: 2,
+    items: [],
+    activeItemId: null,
+    stripOrder: [],
+    systemTabs: { history: null, settings: null },
+  });
+  useFindInPageStore.setState(useFindInPageStore.getInitialState(), true);
+  useTileFindStore.getState().resetForTests();
+  __getOpenEpicRegistryForTests().disposeAll();
+}
+
+function buildDirtyHandle(epicId: string): OpenEpicStoreHandle {
+  const state = {
+    isDirty: true,
+    unsyncedQueueSize: 1,
+    snapshotMeta: null,
+    discardUnsyncedEdits: () => undefined,
+  };
+  const storeCallable = (_selector: unknown): unknown => state;
+  const storeBase: unknown = Object.assign(storeCallable, {
+    getState: () => state as never,
+    subscribe: () => () => undefined,
+  });
+  return {
+    epicId,
+    userId: null,
+    doc: {} as never,
+    awareness: {} as never,
+    store: storeBase as OpenEpicStoreHandle["store"],
+    dispose: () => undefined,
+    requestFreshSnapshot: () => undefined,
+    isClean: () => false,
+  };
+}
+
+const FIND_CAPABILITY = new Set<TileFindCapability>(["find"]);
+
+interface MenuFindAdapter extends TileFindAdapter {
+  readonly nextMock: Mock<() => void>;
+  readonly previousMock: Mock<() => void>;
+}
+
+function createTileFindSnapshot(tileInstanceId: string): TileFindStateSnapshot {
+  return {
+    requestId: 0,
+    status: "idle",
+    capabilities: FIND_CAPABILITY,
+    query: "",
+    matchCase: false,
+    replaceText: "",
+    current: 0,
+    total: 0,
+    coverageMessage: null,
+    errorMessage: null,
+    activeUnitId: tileInstanceId,
+    exactHighlight: "none",
+  };
+}
+
+function createMenuFindAdapter(
+  tileInstanceId: string,
+  tileKind: TileFindAdapter["tileKind"],
+): MenuFindAdapter {
+  const nextMock = vi.fn();
+  const previousMock = vi.fn();
+  return {
+    tileInstanceId,
+    tileKind,
+    getSnapshot: () => createTileFindSnapshot(tileInstanceId),
+    subscribe: () => () => undefined,
+    search: vi.fn(),
+    next: nextMock,
+    previous: previousMock,
+    clear: vi.fn(),
+    replace: null,
+    nextMock,
+    previousMock,
+  };
+}
+
+function registerMenuFindTarget(
+  adapter: TileFindAdapter,
+  isEligible: boolean,
+): void {
+  useTileFindStore.getState().registerTarget({
+    tileInstanceId: adapter.tileInstanceId,
+    contentId: `${adapter.tileInstanceId}-content`,
+    viewTabId: "view-1",
+    tileId: `${adapter.tileInstanceId}-pane`,
+    epicId: "epic-1",
+    tileKind: adapter.tileKind,
+    isEligible,
+    adapter,
+  });
+}
+
+function renderMenuCommandListener(menu: FakeDesktopMenu): void {
+  render(
+    <QueryClientProvider client={makeQueryClient()}>
+      <RunnerHostProvider runnerHost={createRunnerHost(menu)}>
+        <MenuCommandListener />
+      </RunnerHostProvider>
+    </QueryClientProvider>,
+  );
+}
+
+describe("<MenuCommandListener />", () => {
+  beforeEach(() => {
+    navigateMock.mockClear();
+    authMock.signIn.mockClear();
+    authMock.signOut.mockClear();
+    routerState.pathname = "/";
+    resetStores();
+    useDesktopDialogStore.getState().close();
+    useDesktopDialogStore.setState({ reportIssueAvailable: false });
+  });
+
+  afterEach(() => {
+    cleanup();
+    resetStores();
+    useDesktopDialogStore.getState().close();
+    useDesktopDialogStore.setState({ reportIssueAvailable: false });
+  });
+
+  it("dispatches native menu commands to renderer-owned actions", () => {
+    const menu = createMenu();
+    const runnerHost = createRunnerHost(menu);
+
+    render(
+      <QueryClientProvider client={makeQueryClient()}>
+        <RunnerHostProvider runnerHost={runnerHost}>
+          <MenuCommandListener />
+        </RunnerHostProvider>
+      </QueryClientProvider>,
+    );
+
+    act(() => {
+      menu.emit("app.openSettings");
+      menu.emit("app.signIn");
+      menu.emit("app.openLogs");
+      menu.emit("app.aboutDetails");
+      menu.emit("epic.openInNewWindow");
+      menu.emit("epic.newWindow");
+    });
+
+    const navigation = latestNavigation();
+    expect(navigation.to).toBe("/settings/general");
+    expect(navigation.replace).toBe(false);
+    expect(navigation.state).toEqual(expect.any(Function));
+    expect(authMock.signIn).toHaveBeenCalledTimes(1);
+    expect(useDesktopDialogStore.getState().activeDialog).toBe(
+      "open-epic-in-new-window",
+    );
+    expect(runnerHost.windows.requestNew).toHaveBeenCalledWith(null);
+    expect(runnerHost.hostPickerRequestOpen).not.toHaveBeenCalled();
+  });
+
+  it("gates the native report command on current support capability", () => {
+    const menu = createMenu();
+    renderMenuCommandListener(menu);
+
+    act(() => {
+      menu.emit("app.reportIssue");
+    });
+    expect(useDesktopDialogStore.getState().activeDialog).toBeNull();
+
+    useDesktopDialogStore.setState({ reportIssueAvailable: true });
+    act(() => {
+      menu.emit("app.reportIssue");
+    });
+    expect(useDesktopDialogStore.getState().activeDialog).toBe("report-issue");
+  });
+
+  it("requests close for the sender window from the native close-window command", () => {
+    const menu = createMenu();
+    const runnerHost = createRunnerHost(menu);
+
+    render(
+      <QueryClientProvider client={makeQueryClient()}>
+        <RunnerHostProvider runnerHost={runnerHost}>
+          <MenuCommandListener />
+        </RunnerHostProvider>
+      </QueryClientProvider>,
+    );
+
+    act(() => {
+      menu.emit("window.closeWindow");
+    });
+
+    expect(runnerHost.windows.requestClose).toHaveBeenCalledWith("window-1");
+  });
+
+  it("routes find commands to the active tile-find owner", () => {
+    const menu = createMenu();
+    const activeAdapter = createMenuFindAdapter("active-tile", "ticket");
+    const hiddenAdapter = createMenuFindAdapter("hidden-tile", "chat");
+    registerMenuFindTarget(activeAdapter, true);
+    registerMenuFindTarget(hiddenAdapter, false);
+
+    renderMenuCommandListener(menu);
+
+    act(() => {
+      menu.emit("view.findInPage");
+      menu.emit("view.findNext");
+      menu.emit("view.findPrevious");
+    });
+
+    expect(
+      useTileFindStore.getState().uiByTileInstanceId["active-tile"]?.isOpen,
+    ).toBe(true);
+    expect(
+      useTileFindStore.getState().uiByTileInstanceId["hidden-tile"]?.isOpen,
+    ).toBe(false);
+    expect(activeAdapter.nextMock.mock.calls).toHaveLength(1);
+    expect(activeAdapter.previousMock.mock.calls).toHaveLength(1);
+    expect(hiddenAdapter.nextMock.mock.calls).toHaveLength(0);
+    expect(hiddenAdapter.previousMock.mock.calls).toHaveLength(0);
+    expect(useFindInPageStore.getState().isOpen).toBe(false);
+    expect(useFindInPageStore.getState().advanceForwardNonce).toBe(0);
+    expect(useFindInPageStore.getState().advanceBackwardNonce).toBe(0);
+  });
+
+  it("opens an unavailable tile-local bar without touching global find state", () => {
+    const menu = createMenu();
+    const unavailableAdapter = createUnavailableTileFindAdapter({
+      tileInstanceId: "blank-tile",
+      tileKind: "blank",
+      message: null,
+    });
+    registerMenuFindTarget(unavailableAdapter, true);
+
+    renderMenuCommandListener(menu);
+
+    act(() => {
+      menu.emit("view.findInPage");
+    });
+
+    const blankUi =
+      useTileFindStore.getState().uiByTileInstanceId["blank-tile"];
+    expect(blankUi?.isOpen).toBe(true);
+    expect(blankUi?.lastSnapshot.status).toBe("unavailable");
+    expect(blankUi?.lastSnapshot.coverageMessage).toBe(
+      "Open a tile before using find.",
+    );
+    expect(useFindInPageStore.getState().isOpen).toBe(false);
+  });
+
+  it("respects owner blockers and does not fall back to legacy find", () => {
+    const menu = createMenu();
+    const activeAdapter = createMenuFindAdapter("blocked-tile", "spec");
+    registerMenuFindTarget(activeAdapter, true);
+    useTileFindStore.getState().setOwnerBlocker({
+      reason: "app-dialog",
+      ownerId: "app-dialog",
+    });
+
+    renderMenuCommandListener(menu);
+
+    act(() => {
+      menu.emit("view.findInPage");
+      menu.emit("view.findNext");
+    });
+
+    expect(
+      useTileFindStore.getState().uiByTileInstanceId["blocked-tile"]?.isOpen,
+    ).toBe(false);
+    expect(activeAdapter.nextMock.mock.calls).toHaveLength(0);
+    expect(useFindInPageStore.getState().isOpen).toBe(false);
+    expect(useFindInPageStore.getState().advanceForwardNonce).toBe(0);
+  });
+
+  it("closes a clean active Epic tab from the native menu command", () => {
+    const tabId = openEpicFixture(EPIC_A);
+    routerState.pathname = `/epics/e-a/${tabId}`;
+    const menu = createMenu();
+
+    render(
+      <QueryClientProvider client={makeQueryClient()}>
+        <RunnerHostProvider runnerHost={createRunnerHost(menu)}>
+          <MenuCommandListener />
+        </RunnerHostProvider>
+      </QueryClientProvider>,
+    );
+
+    act(() => {
+      menu.emit("epic.closeTab");
+    });
+
+    expect(useEpicCanvasStore.getState().openTabOrder).toEqual([]);
+    expect(navigateMock).toHaveBeenCalledWith({ to: "/" });
+  });
+
+  it("uses the unsynced wait/discard guard for dirty Epic close commands", async () => {
+    const tabId = openEpicFixture(EPIC_A);
+    routerState.pathname = `/epics/e-a/${tabId}`;
+    __getOpenEpicRegistryForTests().acquire(EPIC_A.id, () =>
+      buildDirtyHandle(EPIC_A.id),
+    );
+    const menu = createMenu();
+
+    render(
+      <QueryClientProvider client={makeQueryClient()}>
+        <RunnerHostProvider runnerHost={createRunnerHost(menu)}>
+          <MenuCommandListener />
+        </RunnerHostProvider>
+      </QueryClientProvider>,
+    );
+
+    act(() => {
+      menu.emit("epic.closeTab");
+    });
+
+    expect(
+      await screen.findByTestId("epic-tab-unsynced-dialog"),
+    ).not.toBeNull();
+    expect(useEpicCanvasStore.getState().openTabOrder).toEqual([tabId]);
+
+    fireEvent.click(screen.getByTestId("epic-tab-unsynced-discard"));
+
+    expect(useEpicCanvasStore.getState().openTabOrder).toEqual([]);
+    expect(navigateMock).toHaveBeenCalledWith({ to: "/" });
+  });
+
+  function makeHostManagementFixture(
+    status: HostControllerStatus,
+  ): IHostManagement {
+    return {
+      getHostControllerStatus: vi.fn(() => Promise.resolve(status)),
+      convergeReady: vi.fn(() =>
+        Promise.resolve({
+          kind: "ok" as const,
+          value: { running: true, version: status.installedVersion },
+        }),
+      ),
+      applyStaged: vi.fn(() =>
+        Promise.resolve({
+          kind: "ok" as const,
+          value: { appliedVersion: "1.2.3", runningActivated: true },
+        }),
+      ),
+      activateInstalled: vi.fn(() =>
+        Promise.resolve({ kind: "ok" as const, value: { activated: true } }),
+      ),
+      installVersion: vi.fn(() => Promise.reject(new Error("not used"))),
+      uninstallHost: vi.fn(() => Promise.reject(new Error("not used"))),
+      restartHost: vi.fn(() => Promise.resolve({ kind: "restarted" as const })),
+      uninstallTraycer: vi.fn(() => Promise.reject(new Error("not used"))),
+      getRemovalState: vi.fn(() => Promise.resolve({ removedByUser: false })),
+      clearRemoval: vi.fn(() => Promise.resolve()),
+      getHostLogs: vi.fn(() => Promise.reject(new Error("not used"))),
+      runDoctor: vi.fn(() => Promise.reject(new Error("not used"))),
+      availableVersions: vi.fn(() => Promise.reject(new Error("not used"))),
+      installedRecord: vi.fn(() => Promise.resolve(null)),
+      registerService: vi.fn(() =>
+        Promise.resolve({ kind: "ok" as const, value: { registered: true } }),
+      ),
+      deregisterService: vi.fn(() => Promise.resolve()),
+      registryCheck: vi.fn(() => Promise.reject(new Error("not used"))),
+      freePortAndRestart: vi.fn(() => Promise.reject(new Error("not used"))),
+      cliManifest: vi.fn(() => Promise.resolve(null)),
+      getHostName: vi.fn(() =>
+        Promise.resolve({
+          systemName: "test-host",
+          customName: null,
+          effectiveName: "test-host",
+        }),
+      ),
+      setHostName: vi.fn((input: { readonly customName: string | null }) =>
+        Promise.resolve({
+          systemName: "test-host",
+          customName: input.customName,
+          effectiveName: input.customName ?? "test-host",
+        }),
+      ),
+    };
+  }
+
+  it("submits applyStaged when host.installUpdate is dispatched and a stage is updateReady", async () => {
+    const menu = createMenu();
+    const status: HostControllerStatus = {
+      download: null,
+      mutation: null,
+      installedVersion: "1.1.0",
+      latestVersion: "1.2.3",
+      stagedVersion: "1.2.3",
+      installedRuntimeVersion: null,
+      runningRuntimeVersion: null,
+      updateReady: true,
+      activation: "activated",
+      reachable: true,
+      removedByUser: false,
+      checkedAt: "2026-05-15T00:00:00Z",
+    };
+    const management = makeHostManagementFixture(status);
+    const baseHost = createRunnerHost(menu);
+    const runnerHost: FakeRunnerHost = Object.assign(baseHost, {
+      hostManagement: management,
+    });
+
+    render(
+      <QueryClientProvider client={makeQueryClient()}>
+        <RunnerHostProvider runnerHost={runnerHost}>
+          <MenuCommandListener />
+        </RunnerHostProvider>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => {
+      expect(management.getHostControllerStatus).toHaveBeenCalled();
+    });
+    // Being *called* only proves the query fired - the component reads
+    // `status` from the query's *result*, so the resolved promise and its
+    // resulting re-render must also land before dispatching, or the command
+    // is evaluated against the still-`undefined` initial status.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    act(() => {
+      menu.emit("host.installUpdate");
+    });
+
+    await waitFor(() => {
+      expect(management.applyStaged).toHaveBeenCalledWith("manual", false);
+    });
+    expect(management.activateInstalled).not.toHaveBeenCalled();
+  });
+
+  it("submits activateInstalled when host.installUpdate is dispatched with only activation debt", async () => {
+    const menu = createMenu();
+    const status: HostControllerStatus = {
+      download: null,
+      mutation: null,
+      installedVersion: "1.1.0",
+      latestVersion: "1.1.0",
+      stagedVersion: null,
+      installedRuntimeVersion: null,
+      runningRuntimeVersion: null,
+      updateReady: false,
+      activation: "activationUnknown",
+      reachable: true,
+      removedByUser: false,
+      checkedAt: "2026-05-15T00:00:00Z",
+    };
+    const management = makeHostManagementFixture(status);
+    const baseHost = createRunnerHost(menu);
+    const runnerHost: FakeRunnerHost = Object.assign(baseHost, {
+      hostManagement: management,
+    });
+
+    render(
+      <QueryClientProvider client={makeQueryClient()}>
+        <RunnerHostProvider runnerHost={runnerHost}>
+          <MenuCommandListener />
+        </RunnerHostProvider>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => {
+      expect(management.getHostControllerStatus).toHaveBeenCalled();
+    });
+    // Being *called* only proves the query fired - the component reads
+    // `status` from the query's *result*, so the resolved promise and its
+    // resulting re-render must also land before dispatching, or the command
+    // is evaluated against the still-`undefined` initial status.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    act(() => {
+      menu.emit("host.installUpdate");
+    });
+
+    await waitFor(() => {
+      expect(management.activateInstalled).toHaveBeenCalledWith(false);
+    });
+    expect(management.applyStaged).not.toHaveBeenCalled();
+  });
+
+  it("does not treat an unavailable host as activation debt", async () => {
+    const menu = createMenu();
+    const status: HostControllerStatus = {
+      download: null,
+      mutation: null,
+      installedVersion: null,
+      latestVersion: null,
+      stagedVersion: null,
+      installedRuntimeVersion: null,
+      runningRuntimeVersion: null,
+      updateReady: false,
+      activation: "unavailable",
+      reachable: false,
+      removedByUser: false,
+      checkedAt: "2026-05-15T00:00:00Z",
+    };
+    const management = makeHostManagementFixture(status);
+    const runnerHost: FakeRunnerHost = Object.assign(createRunnerHost(menu), {
+      hostManagement: management,
+    });
+    render(
+      <QueryClientProvider client={makeQueryClient()}>
+        <RunnerHostProvider runnerHost={runnerHost}>
+          <MenuCommandListener />
+        </RunnerHostProvider>
+      </QueryClientProvider>,
+    );
+    await waitFor(() =>
+      expect(management.getHostControllerStatus).toHaveBeenCalled(),
+    );
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    act(() => menu.emit("host.installUpdate"));
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(management.applyStaged).not.toHaveBeenCalled();
+    expect(management.activateInstalled).not.toHaveBeenCalled();
+  });
+
+  it("opens a confirmation dialog for host.restart and only respawns after confirm", async () => {
+    const menu = createMenu();
+    const requestHostRespawn = vi.fn(() =>
+      Promise.resolve({ kind: "restarted" as const }),
+    );
+    const runnerHost = Object.assign(createRunnerHost(menu), {
+      requestHostRespawn,
+    });
+
+    render(
+      <QueryClientProvider client={makeQueryClient()}>
+        <RunnerHostProvider runnerHost={runnerHost}>
+          <MenuCommandListener />
+        </RunnerHostProvider>
+      </QueryClientProvider>,
+    );
+
+    act(() => {
+      menu.emit("host.restart");
+    });
+
+    const dialog = await screen.findByTestId("confirm-destructive-dialog");
+    expect(dialog.textContent).toContain("Restarting will stop");
+    expect(requestHostRespawn).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId("confirm-action"));
+
+    await waitFor(() => {
+      expect(requestHostRespawn).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("closes the landing draft from the native menu command", () => {
+    routerState.pathname = "/draft/draft-a";
+    const tabId = openEpicFixture(EPIC_A);
+    useLandingDraftStore.setState({
+      drafts: [
+        {
+          id: "draft-a",
+          content: {
+            type: "doc",
+            content: [
+              {
+                type: "paragraph",
+                content: [{ type: "text", text: "Continue" }],
+              },
+            ],
+          },
+          selection: null,
+          lastTouchedAt: 0,
+          settings: null,
+          composerMode: "chat",
+          workspace: emptyLandingDraftWorkspaceSnapshot(),
+        },
+      ],
+      activeDraftId: "draft-a",
+    });
+    useTabsStore.setState((state) => ({
+      ...state,
+      items: [
+        ...state.items,
+        {
+          kind: "tab",
+          id: tabItemId({ kind: "draft", id: "draft-a" }),
+          ref: { kind: "draft", id: "draft-a" },
+        },
+      ],
+      activeItemId: tabItemId({ kind: "draft", id: "draft-a" }),
+      stripOrder: [
+        ...state.stripOrder,
+        { kind: "draft" as const, id: "draft-a" },
+      ],
+    }));
+    const menu = createMenu();
+
+    render(
+      <QueryClientProvider client={makeQueryClient()}>
+        <RunnerHostProvider runnerHost={createRunnerHost(menu)}>
+          <MenuCommandListener />
+        </RunnerHostProvider>
+      </QueryClientProvider>,
+    );
+
+    act(() => {
+      menu.emit("epic.closeTab");
+    });
+
+    expect(useLandingDraftStore.getState().drafts).toEqual([]);
+    expect(useEpicCanvasStore.getState().openTabOrder).toEqual([tabId]);
+    const navigation = latestNavigation();
+    expect(navigation.to).toBe("/epics/$epicId/$tabId");
+    expect(navigation.params).toEqual({ epicId: "e-a", tabId });
+    // T10: closing the draft now routes through
+    // `tabCommandCoordinator.closeRefAfterConfirmed`, which synchronously
+    // promotes the epic tab to `activeItemId` as part of the close itself
+    // (survivor-at-group-position). By the time the navigation controller
+    // runs, the epic is already the coordinator's active item, so it
+    // correctly resolves this as a replace (syncing the URL to already-
+    // settled layout state) rather than a push.
+    expect(navigation.replace).toBe(true);
+    expect(navigation.state).toEqual(expect.any(Function));
+    expect(navigation.search).toMatchObject({
+      focusedAt: undefined,
+      focusArtifactId: undefined,
+      focusThreadId: undefined,
+      migrationSource: undefined,
+    });
+  });
+});

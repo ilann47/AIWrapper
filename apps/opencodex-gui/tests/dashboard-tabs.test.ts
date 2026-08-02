@@ -42,12 +42,13 @@ test("registering Dashboard tabs does not disturb the Logs or Providers contract
   expect(hashBelongsToPage("logs/debug", "dashboard")).toBe(false);
 });
 
-test("Codex Auth sits directly after Dashboard in the sidebar", async () => {
+test("Codex Auth remains in the grouped System navigation", async () => {
   const app = await Bun.file(new URL("../src/App.tsx", import.meta.url)).text();
   const nav = app.slice(app.indexOf("const NAV"), app.indexOf("];", app.indexOf("const NAV")));
   const order = [...nav.matchAll(/id: "([a-z-]+)"/g)].map((m) => m[1]);
-  expect(order[0]).toBe("dashboard");
-  expect(order[1]).toBe("codex-auth");
+  expect(order).toContain("dashboard");
+  expect(order).toContain("codex-auth");
+  expect(nav).toContain('label: "nav.section.system"');
   // Order only — no divider markup was introduced (Q3).
   expect(app).not.toContain("nav-divider");
 });

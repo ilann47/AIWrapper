@@ -1,0 +1,274 @@
+/**
+ * Projected slices owned by `OpenEpicStore` and produced by
+ * `epic-projector.ts` from the per-Epic Y.Doc.
+ *
+ * Identity contract:
+ *   - Every entry under a `byId` table only changes its `===` reference
+ *     when one of its projected fields changes. Rewriting an unrelated
+ *     entry leaves siblings untouched, so `useEpicStore(s => s.x.byId[id])`
+ *     skips the render when nothing changed for that id.
+ *   - `allIds` / `idsByChatId` / `childrenByParent[parent]` arrays only
+ *     change reference when set membership or order changes. Title /
+ *     status / content edits that don't move a node leave the array
+ *     reference identical.
+ *
+ * The projector is the only writer into these slices. Components MUST
+ * NOT reach into the Y.Doc directly except through
+ * `OpenEpicState.getArtifactFragment(id)` - the editor escape hatch.
+ */
+import type { EpicArtifactKind } from "@traycer/protocol/common/registry";
+import type {
+  AgentMode,
+  ChatRunSettings,
+  TuiHarnessId,
+} from "@traycer/protocol/persistence/epic/schemas";
+import type { WorktreeBindingWorkspaceMode } from "@traycer/protocol/host/worktree-schemas";
+import type { RoleClaim } from "@traycer/protocol/persistence/epic/role-claims";
+
+export type EpicTreeNodeType = "chat" | "terminal-agent" | EpicArtifactKind;
+
+export interface ArtifactProjection {
+  readonly id: string;
+  readonly kind: EpicArtifactKind;
+  readonly title: string;
+  /**
+   * On-disk folder name for this artifact's `index.md` (its own directory
+   * under `epics/<epicId>/artifacts/...`, distinct from `title`, which the
+   * user can rename freely afterward). Empty string for a legacy/malformed
+   * entry that predates the field. Root-to-leaf folder names walked via
+   * `parentId` reconstruct an artifact-shaped path for a relative markdown
+   * link authored inside this artifact - see `artifact-folder-chain.ts`.
+   */
+  readonly folderName: string;
+  readonly parentId: string | null;
+  readonly artifactRoomId: string | null;
+  readonly createdAt: number;
+  readonly updatedAt: number;
+  /** Status numeric code (0=Todo, 1=InProgress, 2=Done). Null for spec/review. */
+  readonly status: number | null;
+  /**
+   * True for artifacts the user created by hand (host `epic.createArtifact`
+   * RPC or a file authored directly on disk), false for agent-created ones.
+   * Gates hand-authoring affordances like the doc-title → artifact-title
+   * follow in the collab editor.
+   */
+  readonly createdManually: boolean;
+}
+
+export interface ArtifactsSlice {
+  readonly byId: Readonly<Record<string, ArtifactProjection>>;
+  readonly allIds: readonly string[];
+}
+
+/**
+ * A deleted-artifact tombstone, projected from `epic.deletedArtifacts`. The
+ * host writes one of these when an artifact is removed; it retains the kind,
+ * title, and (for ticket/story) last status so the chat's `artifact_operation`
+ * delete card can render a strikethrough label + deletion info after the live
+ * artifact entry is gone. `deletedAt` is the ISO timestamp the host stamped.
+ */
+export interface DeletedArtifactProjection {
+  readonly id: string;
+  readonly kind: EpicArtifactKind;
+  readonly title: string;
+  readonly deletedAt: string;
+  /** Last known status (0=Todo, 1=InProgress, 2=Done). Null for spec/review. */
+  readonly status: number | null;
+}
+
+export interface DeletedArtifactsSlice {
+  readonly byId: Readonly<Record<string, DeletedArtifactProjection>>;
+  readonly allIds: readonly string[];
+}
+
+export interface ChatProjection {
+  readonly id: string;
+  readonly title: string;
+  readonly parentId: string | null;
+  readonly createdAt: number;
+  readonly updatedAt: number;
+  readonly userId: string | null;
+  /**
+   * Host hosting this chat. `null` for legacy chats that predate the
+   * field and for the optimistic overlay (where the active host is the
+   * implied host). Real projections carry the persisted `Chat.hostId`.
+   */
+  readonly hostId: string | null;
+  readonly isTitleEditedByUser: boolean;
+  /** Persisted run settings (harness/model/permission). `null` until set. */
+  readonly settings: ChatRunSettings | null;
+  /**
+   * Host-backed archive flag (`epic.setChatArchived`). `null` = active. The
+   * sidebar hides a node whose ancestor-or-self carries a timestamp unless
+   * "Show archived" is on. Records written before the field existed project as
+   * `null`, so pre-archive chats read as active.
+   */
+  readonly archivedAt: number | null;
+}
+
+export interface ChatsSlice {
+  readonly byId: Readonly<Record<string, ChatProjection>>;
+  readonly allIds: readonly string[];
+}
+
+/**
+ * Projected representation of an `epic.tuiAgents[id]` Y.Map entry.
+ * Mirrors `TuiAgent` from the persistence registry but keeps the fields
+ * the renderer needs to surface a tile + cascade them into the tree slice.
+ */
+export interface TuiAgentProjection {
+  readonly id: string;
+  readonly harnessId: TuiHarnessId;
+  readonly title: string;
+  readonly parentId: string | null;
+  readonly createdAt: number;
+  readonly updatedAt: number;
+  readonly userId: string | null;
+  readonly hostId: string;
+  readonly workspaceFolders: readonly string[];
+  readonly workspaceMode: WorktreeBindingWorkspaceMode | undefined;
+  readonly model: string | null;
+  readonly reasoningEffort: string | null;
+  readonly agentMode: AgentMode;
+  /**
+   * Host-backed archive flag, the terminal-agent twin of
+   * {@link ChatProjection.archivedAt} - one `epic.setChatArchived` RPC keyed by
+   * id covers both record kinds, so the sidebar treats them identically.
+   */
+  readonly archivedAt: number | null;
+  /**
+   * Which of the harness's logged-in profiles (subscriptions) this agent runs
+   * on. `null` = the ambient/host login, so agents persisted before profiles
+   * existed still project cleanly. See the multi-profile decision log.
+   */
+  readonly profileId: string | null;
+  /**
+   * Upstream harness's CLI-resumable id. Always non-null for Claude/OpenCode;
+   * `null` for Codex until `thread/started` back-fills the saved-session id.
+   */
+  readonly harnessSessionId: string | null;
+  /**
+   * Raw durable per-agent CLI args override (source of truth for relaunch).
+   * `null` for legacy/absent records and untouched Settings-prefilled values
+   * ("resolve provider Settings default"); `""` is an explicit "no extra
+   * args" override; a non-empty string is a durable override. Distinct from
+   * the computed `terminalShellArgs` below, which is cached launch output.
+   */
+  readonly terminalAgentArgs: string | null;
+  readonly terminalShellCommand: string | null;
+  readonly terminalShellArgs: readonly string[] | null;
+}
+
+export interface TerminalAgentsSlice {
+  readonly byId: Readonly<Record<string, TuiAgentProjection>>;
+  readonly allIds: readonly string[];
+}
+
+export interface AgentRolesSlice {
+  readonly byAgentId: Readonly<Record<string, readonly RoleClaim[]>>;
+}
+
+export interface TreeNode {
+  readonly id: string;
+  readonly parentId: string | null;
+  readonly title: string;
+  readonly type: EpicTreeNodeType;
+  readonly status: number | null;
+  readonly createdAt: number;
+  readonly updatedAt: number;
+}
+
+export interface TreeSlice {
+  readonly rootIds: readonly string[];
+  readonly childrenByParent: Readonly<Record<string, readonly string[]>>;
+  readonly nodeById: Readonly<Record<string, TreeNode>>;
+}
+
+export interface EpicHeader {
+  readonly title: string;
+  readonly updatedAt: number;
+  readonly isTitleEditedByUser: boolean;
+}
+
+/**
+ * Per-artifact-room availability mirrored from the host's artifact-room manager via
+ * `epic.subscribe@1.0` `artifactRoomState` frames. The GUI uses this to render
+ * affected artifact bodies as unavailable/retrying without losing root
+ * metadata. ArtifactRooms not present in this record are implicitly `unavailable`.
+ */
+export type EpicArtifactRoomAvailability = "ready" | "unavailable" | "retrying";
+
+export interface ArtifactRoomsSlice {
+  readonly stateByArtifactRoomId: Readonly<
+    Record<string, EpicArtifactRoomAvailability>
+  >;
+}
+
+/**
+ * Single projected snapshot of the entire Epic Y.Doc. Returned by
+ * `projectFullState` on attach and on every `onSnapshot` so the store
+ * can apply it as one atomic `setState` (no per-slice flicker).
+ */
+export interface EpicProjectedSlices {
+  readonly epic: EpicHeader;
+  readonly artifacts: ArtifactsSlice;
+  readonly deletedArtifacts: DeletedArtifactsSlice;
+  readonly chats: ChatsSlice;
+  readonly tuiAgents: TerminalAgentsSlice;
+  readonly agentRoles: AgentRolesSlice;
+  readonly tree: TreeSlice;
+  readonly contentRevByArtifactId: Readonly<Record<string, number>>;
+}
+
+export const EMPTY_ARRAY: readonly string[] = Object.freeze([]);
+
+export const EMPTY_ARTIFACT_ROOMS_SLICE: ArtifactRoomsSlice = Object.freeze({
+  stateByArtifactRoomId: Object.freeze(
+    {} as Record<string, EpicArtifactRoomAvailability>,
+  ),
+});
+
+/**
+ * Starting value for the per-artifact-room host-dirty mirror. Empty means
+ * "nothing known to be dirty", which is also the correct RESET value on every
+ * re-subscribe: the host tracks what it has emitted per subscription, so a
+ * fresh subscription re-emits `artifactRoomDirty` for whatever is still dirty
+ * and never re-states what is clean.
+ */
+export const EMPTY_ARTIFACT_ROOM_DIRTY: Readonly<Record<string, boolean>> =
+  Object.freeze({} as Record<string, boolean>);
+
+export const EMPTY_AGENT_ROLES_SLICE: AgentRolesSlice = Object.freeze({
+  byAgentId: Object.freeze({} as Record<string, readonly RoleClaim[]>),
+});
+
+export const EMPTY_PROJECTED_SLICES: EpicProjectedSlices = Object.freeze({
+  epic: Object.freeze({
+    title: "",
+    updatedAt: 0,
+    isTitleEditedByUser: false,
+  }),
+  artifacts: Object.freeze({
+    byId: Object.freeze({} as Record<string, ArtifactProjection>),
+    allIds: EMPTY_ARRAY,
+  }),
+  deletedArtifacts: Object.freeze({
+    byId: Object.freeze({} as Record<string, DeletedArtifactProjection>),
+    allIds: EMPTY_ARRAY,
+  }),
+  chats: Object.freeze({
+    byId: Object.freeze({} as Record<string, ChatProjection>),
+    allIds: EMPTY_ARRAY,
+  }),
+  tuiAgents: Object.freeze({
+    byId: Object.freeze({} as Record<string, TuiAgentProjection>),
+    allIds: EMPTY_ARRAY,
+  }),
+  agentRoles: EMPTY_AGENT_ROLES_SLICE,
+  tree: Object.freeze({
+    rootIds: EMPTY_ARRAY,
+    childrenByParent: Object.freeze({} as Record<string, readonly string[]>),
+    nodeById: Object.freeze({} as Record<string, TreeNode>),
+  }),
+  contentRevByArtifactId: Object.freeze({} as Record<string, number>),
+});

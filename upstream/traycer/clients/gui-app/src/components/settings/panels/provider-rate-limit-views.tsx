@@ -1,0 +1,1303 @@
+/**
+ * Bespoke per-provider rate-limit views for the Settings > Providers card
+ * (`provider-rate-limit-section.tsx`). Kept host/query-free - the card owns
+ * its own host-scoped query + refresh wiring and hands this module plain
+ * data, so the data-to-UI mapping lives in exactly one place.
+ */
+import type { ReactNode } from "react";
+import type {
+  ProviderRateLimits,
+  ProviderRateLimitWindow,
+  RateLimitUnavailableReason,
+} from "@traycer/protocol/host";
+import { classifyProviderRateLimitWindow } from "@traycer/protocol/host/rate-limit";
+import type { ProviderRateLimitEnvelope } from "@/lib/rate-limits/rate-limit-envelope";
+import { Badge } from "@/components/ui/badge";
+import {
+  AgentSpinningDots,
+  MutedAgentSpinner,
+} from "@/components/ui/agent-spinning-dots";
+import { ReportIssueAction } from "@/components/report-issue/report-issue-action";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { createReportIssueContext } from "@/lib/report-issue-context";
+import { MeterRow } from "@/components/settings/panels/traycer-subscription-views";
+import { contextUsageTone } from "@/components/chat/context-usage";
+import { creditUsageSeverity } from "@/lib/rate-limits/window-severity";
+import {
+  formatUnavailableReason,
+  resolveProviderRateLimitViewState,
+  titleCaseFromToken,
+} from "@/lib/provider-rate-limit-content";
+import {
+  formatResetFullDateTime,
+  useIsFarReset,
+  useRelativeTimestamp,
+  useResetCountdown,
+  useSampledNow,
+} from "@/lib/relative-time";
+import { cn } from "@/lib/utils";
+import {
+  selectEarliestExpiringCodexResetCredit,
+  visibleCodexResetCredits,
+  type CodexResetCredit,
+  type CodexResetCreditActionRenderer,
+  type CodexResetCredits,
+} from "@/components/settings/panels/codex-reset-credit-model";
+
+/**
+ * Which surface a provider's detail is rendered on. Every window/bar draws
+ * identically across all three - the Settings › Providers card and both
+ * popover surfaces share one row renderer (`RateLimitWindowRow`), so they can
+ * never visually drift (feedback: "different UX looks weird"). What this enum
+ * drives is how much detail is shown, and how densely:
+ *
+ * - `"settings"` / `"popover-detail"`: the provider's full detail (every
+ *   window, credits, spend, reset credits, badges). They differ in one place:
+ *   Settings lists the manual-reset credits under the count, while the popover
+ *   - a narrow column where those lines dwarfed the usage bars - collapses them
+ *   behind a hover on the count (`CodexResetCreditsRow`).
+ * - `"popover-overview"`: the header popover's Overview tab - condensed to
+ *   only the primary/secondary (5h/Weekly) windows plus credit/balance
+ *   figures, dropping per-model `extraWindows`, reset credits, the
+ *   rate-limit-reached badge, and per-provider spend controls, which stay in
+ *   the single-provider tab.
+ */
+export type RateLimitViewVariant =
+  "settings" | "popover-detail" | "popover-overview";
+
+/**
+ * The condensed Overview surface. Fields the single-provider detail keeps but
+ * Overview drops are gated on `!isOverviewVariant(variant)`.
+ */
+function isOverviewVariant(variant: RateLimitViewVariant): boolean {
+  return variant === "popover-overview";
+}
+
+/**
+ * Shared read of a provider rate-limit query, independent of host scope. The
+ * query's cached `data` is the `host.getRateLimitUsage` provider-pull
+ * envelope (`ProviderRateLimitEnvelope`) - `undefined` before a first fetch
+ * has ever landed for this observer, matching TanStack's own `data`
+ * semantics. View-state resolution (retention through a transient failure,
+ * replacement on an authoritative one) lives in
+ * `resolveProviderRateLimitViewState` / `resolvePopoverProviderRateLimitState`
+ * (`provider-rate-limit-content.ts`), not here.
+ */
+export interface ProviderRateLimitQueryState {
+  readonly isPending: boolean;
+  readonly isFetching: boolean;
+  readonly isError: boolean;
+  readonly envelope: ProviderRateLimitEnvelope | null | undefined;
+}
+
+type AvailableProviderRateLimits = Extract<
+  ProviderRateLimits,
+  { available: true }
+>;
+type CodexRateLimits = Extract<ProviderRateLimits, { provider: "codex" }>;
+type ClaudeRateLimits = Extract<
+  ProviderRateLimits,
+  { provider: "claude-code" }
+>;
+type OpenRouterRateLimits = Extract<
+  ProviderRateLimits,
+  { provider: "openrouter" }
+>;
+type KiloCodeRateLimits = Extract<ProviderRateLimits, { provider: "kilocode" }>;
+type GrokRateLimits = Extract<ProviderRateLimits, { provider: "grok" }>;
+
+const MINUTES_PER_HOUR = 60;
+// A manual reset expiring inside this window is tinted `text-destructive` in the
+// Settings list - use it or lose it.
+const RESET_CREDIT_WARNING_MS = 48 * 60 * 60 * 1000;
+const MINUTES_PER_DAY = MINUTES_PER_HOUR * 24;
+const MINUTES_PER_WEEK = MINUTES_PER_DAY * 7;
+const MINUTES_PER_SESSION = MINUTES_PER_HOUR * 5;
+const RESET_TIMESTAMP_PLAUSIBLE_WINDOW_MS = 365 * 24 * 60 * 60 * 1000;
+
+/**
+ * A window's label from its real duration, not a hardcoded "5-hour"/"Weekly"
+ * (Core Flows: "if the provider tells us the window is 6 hours, that's what's
+ * shown"). Every `ProviderRateLimitWindow` now carries `durationMinutes`, so
+ * Codex's primary/secondary, Claude's fixed buckets, and Codex's per-model
+ * `extraWindows` all label from the same formatter. `10080` (a 7-day window)
+ * reads as "Weekly" rather than "7d" since that's the product's own wording;
+ * the well-known 5-hour rolling window both Codex and Claude use reads as
+ * "Current session" - a provider-reported 6-hour window still falls back to
+ * the generic "6h" form, since that isn't the same known quota.
+ */
+function formatWindowDuration(minutes: number | null): string {
+  if (minutes === null || minutes <= 0) return "Usage";
+  if (minutes === MINUTES_PER_WEEK) return "Weekly";
+  if (minutes === MINUTES_PER_SESSION) return "Current session";
+  if (minutes % MINUTES_PER_DAY === 0) return `${minutes / MINUTES_PER_DAY}d`;
+  if (minutes % MINUTES_PER_HOUR === 0) return `${minutes / MINUTES_PER_HOUR}h`;
+  return `${minutes}m`;
+}
+
+/** $-denominated value (credits, balance, spend). */
+function formatProviderCurrency(value: number): string {
+  return `$${value.toFixed(2)}`;
+}
+
+/** Claude Code reports extra-usage spend/limit values in cents. */
+function formatClaudeExtraUsageCents(value: number): string {
+  return formatProviderCurrency(value / 100);
+}
+
+/** Relative countdown ("Resets in 4h 7m") - ticks on the shared 60s clock. */
+function RelativeResetLine({
+  resetsAt,
+  tone,
+}: {
+  readonly resetsAt: number;
+  readonly tone: string;
+}): ReactNode {
+  const countdown = useResetCountdown(resetsAt);
+  if (countdown === null) return null;
+  return <span className={cn("text-ui-xs", tone)}>Resets in {countdown}</span>;
+}
+
+/**
+ * Exact calendar date/time ("Resets Sat, Jul 18, 2026, 3:35 AM") - for weekly-scale windows,
+ * where a relative countdown ("Resets in 3d") is too coarse to act on. Pure,
+ * no clock subscription.
+ */
+function ExactResetLine({
+  resetsAt,
+  tone,
+}: {
+  readonly resetsAt: number;
+  readonly tone: string;
+}): ReactNode {
+  return (
+    <span className={cn("text-ui-xs", tone)}>
+      Resets {formatResetFullDateTime(resetsAt)}
+    </span>
+  );
+}
+
+/**
+ * Dispatches to `RelativeResetLine` or `ExactResetLine` by whether `resetsAt`
+ * is far enough away (`useIsFarReset` - the real time remaining, not a
+ * window's nominal duration, since not every window carries one; see that
+ * function's own doc). Calling the hook unconditionally here, then choosing
+ * which leaf to render, keeps both leaves' own hook calls (or lack thereof)
+ * unconditional per render.
+ */
+function ResetLine({
+  resetsAt,
+  tone,
+}: {
+  readonly resetsAt: number | null;
+  readonly tone: string;
+}): ReactNode {
+  const now = useSampledNow();
+  const displayResetsAt =
+    resetsAt !== null && plausibleResetTimestamp(resetsAt, now)
+      ? resetsAt
+      : null;
+  const isFar = useIsFarReset(displayResetsAt);
+  if (displayResetsAt === null) return null;
+  return isFar ? (
+    <ExactResetLine resetsAt={displayResetsAt} tone={tone} />
+  ) : (
+    <RelativeResetLine resetsAt={displayResetsAt} tone={tone} />
+  );
+}
+
+function plausibleResetTimestamp(resetsAt: number, now: number): boolean {
+  return (
+    resetsAt >= now - RESET_TIMESTAMP_PLAUSIBLE_WINDOW_MS &&
+    resetsAt <= now + RESET_TIMESTAMP_PLAUSIBLE_WINDOW_MS
+  );
+}
+
+/**
+ * The right-hand `detail` slot for a window row: "{percent}% used" followed
+ * by the reset line (a relative countdown for a near window - "Resets in 4h
+ * 7m" - or an absolute calendar date/time for a far one,
+ * since "Resets in 3d" is too coarse to act on), separated by a middle dot -
+ * dropped entirely when there's no reset to show. `tone` is left to
+ * `MeterRow`'s own wrapping span (this slot never overrides it), unlike
+ * `CodexSpendControlRow`'s reset line, which needs its own severity-driven
+ * tone outside a `MeterRow`.
+ */
+function WindowMeterDetail({
+  resetsAt,
+  usedPercent,
+}: {
+  readonly resetsAt: number | null;
+  readonly usedPercent: number;
+}): ReactNode {
+  const percent = Math.round(Math.min(100, Math.max(0, usedPercent)));
+  return (
+    <span className="flex items-center gap-1">
+      <span>{percent}% used</span>
+      {resetsAt !== null ? (
+        <>
+          <span aria-hidden="true">·</span>
+          <ResetLine resetsAt={resetsAt} tone="" />
+        </>
+      ) : null}
+    </span>
+  );
+}
+
+/**
+ * A single window row, shared identically by the Settings card and both
+ * popover surfaces so they can never visually drift - delegates to the
+ * shared `MeterRow` shell (`traycer-subscription-views.tsx`), passing
+ * `WindowMeterDetail` as its `detail` slot. Renders nothing for a `null`
+ * window so call sites can pass optional windows directly.
+ */
+function RateLimitWindowRow({
+  label,
+  window,
+}: {
+  readonly label: string;
+  readonly window: ProviderRateLimitWindow | null;
+}): ReactNode {
+  if (window === null) return null;
+  return (
+    <MeterRow
+      label={label}
+      usedPercent={window.usedPercent}
+      severity={classifyProviderRateLimitWindow(window)}
+      detail={
+        <WindowMeterDetail
+          resetsAt={window.resetsAt}
+          usedPercent={window.usedPercent}
+        />
+      }
+    />
+  );
+}
+
+/**
+ * A window row whose label is composed from the window's real duration
+ * (`formatWindowDuration`) plus, where a provider distinguishes otherwise
+ * same-duration windows, a name prefix (Codex's per-model limit name) or a
+ * trailing qualifier (Claude's "(Opus)"/"(Sonnet)"). Renders nothing for a
+ * `null` window so call sites can pass optional windows directly.
+ */
+// The label's base: a named window with a known duration reads "Name · 5h", a
+// named window with no duration falls back to just the name, and an unnamed
+// window is the bare duration. Split out to keep `ProviderWindowRow` free of a
+// nested ternary.
+function windowBaseLabel(
+  namePrefix: string | null,
+  durationMinutes: number | null,
+  duration: string,
+): string {
+  if (namePrefix === null) return duration;
+  if (durationMinutes === null) return namePrefix;
+  return `${namePrefix} · ${duration}`;
+}
+
+function ProviderWindowRow({
+  window,
+  namePrefix,
+  qualifier,
+}: {
+  readonly window: ProviderRateLimitWindow | null;
+  readonly namePrefix: string | null;
+  readonly qualifier: string | null;
+}): ReactNode {
+  if (window === null) return null;
+  const duration = formatWindowDuration(window.durationMinutes);
+  const base = windowBaseLabel(namePrefix, window.durationMinutes, duration);
+  const label = qualifier !== null ? `${base} (${qualifier})` : base;
+  return <RateLimitWindowRow label={label} window={window} />;
+}
+
+/**
+ * A neutral labeled number (no bar, no severity color) - for values with no
+ * computable "% of limit" (Core Flows: "Windows without a percentage"), e.g.
+ * OpenRouter's spend/credits and Kilo Code's balance. Renders nothing when the
+ * provider didn't report the value.
+ */
+function ProviderNumberRow({
+  label,
+  value,
+  format,
+}: {
+  readonly label: string;
+  readonly value: number | null;
+  readonly format: (value: number) => string;
+}): ReactNode {
+  if (value === null) return null;
+  return (
+    <div className="flex items-center justify-between text-ui-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-mono text-ui-xs text-foreground">
+        {format(value)}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * The string analogue of `ProviderNumberRow`: a neutral labeled value (no bar,
+ * no severity color) for provider fields that are already display strings - a
+ * plan tier, a formatted date range. Renders nothing when the provider didn't
+ * report the value.
+ */
+function ProviderTextRow({
+  label,
+  value,
+}: {
+  readonly label: string;
+  readonly value: string | null;
+}): ReactNode {
+  if (value === null) return null;
+  return (
+    <div className="flex items-center justify-between gap-3 text-ui-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="min-w-0 truncate font-mono text-ui-xs text-foreground">
+        {value}
+      </span>
+    </div>
+  );
+}
+
+// Codex's `RateLimitReachedType` enum (host `harnesses/codex/protocol`) -
+// lowercase tokens on the wire, so the badge needs a display map rather than
+// showing the raw value. Falls back to `titleCaseFromToken` for any value
+// not listed here (forward-compat with a new value before this map updates).
+const CODEX_RATE_LIMIT_REACHED_LABELS: Record<string, string> = {
+  rate_limit_reached: "Usage limit reached",
+  workspace_owner_credits_depleted: "Workspace credits depleted",
+  workspace_member_credits_depleted: "Workspace credits depleted",
+  workspace_owner_usage_limit_reached: "Workspace usage limit reached",
+  workspace_member_usage_limit_reached: "Workspace usage limit reached",
+};
+
+function formatRateLimitReachedType(value: string): string {
+  return CODEX_RATE_LIMIT_REACHED_LABELS[value] ?? titleCaseFromToken(value);
+}
+
+/**
+ * Stacks a detail view's content groups vertically with a hairline divider
+ * between consecutive groups that actually render (feedback: "show separator
+ * between global limits, Spark limits, credits and manual resets" - it looked
+ * cluttered without them). `null` groups are dropped before dividers are
+ * placed, so a divider never renders before the first visible group or after
+ * the last. Shared by `CodexRateLimitView` and `ClaudeRateLimitView` so the
+ * divider rules can't drift between providers.
+ */
+function RateLimitGroupStack({
+  groups,
+}: {
+  readonly groups: ReadonlyArray<{
+    readonly key: string;
+    readonly node: ReactNode;
+  }>;
+}): ReactNode {
+  const rendered = groups.filter((group) => group.node !== null);
+  return (
+    <div className="flex flex-col gap-3">
+      {rendered.map((group, index) => (
+        <div key={group.key} className="flex flex-col gap-3">
+          {index > 0 ? <div aria-hidden className="h-px bg-border/70" /> : null}
+          {group.node}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function CodexRateLimitView({
+  data,
+  variant,
+}: {
+  readonly data: CodexRateLimits;
+  readonly variant: RateLimitViewVariant;
+}): ReactNode {
+  return (
+    <CodexRateLimitViewContent
+      data={data}
+      variant={variant}
+      resetAction={null}
+    />
+  );
+}
+
+function CodexRateLimitViewContent({
+  data,
+  variant,
+  resetAction,
+}: {
+  readonly data: CodexRateLimits;
+  readonly variant: RateLimitViewVariant;
+  readonly resetAction: CodexResetCreditActionRenderer | null;
+}): ReactNode {
+  // Overview keeps only the primary/secondary (5h/Weekly) windows; the badge,
+  // credits, per-model extraWindows, spend control, and reset credits are
+  // single-provider-tab detail (`!isOverviewVariant`). The plan/tier label
+  // isn't part of this body at all - the header popover renders it as a chip
+  // next to the provider name (`resolveProviderPlanLabel`).
+  const overview = isOverviewVariant(variant);
+
+  const globalLimits: ReactNode = (
+    <div className="flex flex-col gap-3">
+      <ProviderWindowRow
+        window={data.primary}
+        namePrefix={null}
+        qualifier={null}
+      />
+      <ProviderWindowRow
+        window={data.secondary}
+        namePrefix={null}
+        qualifier={null}
+      />
+    </div>
+  );
+
+  // Each per-model sub-limit becomes its own labeled window row (Core Flows:
+  // "no separate UI concept needed"), named by its `limitName`.
+  const perModelLimits: ReactNode =
+    !overview && data.extraWindows.length > 0 ? (
+      <div className="flex flex-col gap-3">
+        {data.extraWindows.map((extraWindow) => (
+          <div key={extraWindow.limitId} className="flex flex-col gap-3">
+            <ProviderWindowRow
+              window={extraWindow.primary}
+              namePrefix={extraWindow.limitName ?? extraWindow.limitId}
+              qualifier={null}
+            />
+            <ProviderWindowRow
+              window={extraWindow.secondary}
+              namePrefix={extraWindow.limitName ?? extraWindow.limitId}
+              qualifier={null}
+            />
+          </div>
+        ))}
+      </div>
+    ) : null;
+
+  const credits: ReactNode =
+    !overview && (data.credits !== null || data.individualLimit !== null) ? (
+      <div className="flex flex-col gap-3">
+        {data.credits !== null ? (
+          <CodexCreditsRow credits={data.credits} />
+        ) : null}
+        {data.individualLimit !== null ? (
+          <CodexSpendControlRow limit={data.individualLimit} />
+        ) : null}
+      </div>
+    ) : null;
+
+  const manualResets: ReactNode =
+    !overview && data.resetCredits !== null ? (
+      <CodexResetCreditsRow
+        resetCredits={data.resetCredits}
+        resetAction={resetAction}
+        variant={variant}
+      />
+    ) : null;
+
+  // Overview never gets here with more than `globalLimits`; the divider
+  // placement rules live on `RateLimitGroupStack`.
+  return (
+    <div className="flex flex-col gap-3">
+      {!overview && data.rateLimitReachedType !== null ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="destructive">
+            {formatRateLimitReachedType(data.rateLimitReachedType)}
+          </Badge>
+        </div>
+      ) : null}
+      <RateLimitGroupStack
+        groups={[
+          { key: "global", node: globalLimits },
+          { key: "per-model", node: perModelLimits },
+          { key: "credits", node: credits },
+          { key: "manual-resets", node: manualResets },
+        ]}
+      />
+    </div>
+  );
+}
+
+/**
+ * Which surface a credit line paints on. The tooltip inverts the palette
+ * (`bg-foreground` / `text-background`), so the panel's semantic tokens -
+ * `text-muted-foreground`, `text-foreground`, and the near-expiry
+ * `text-destructive` tint - are all unreadable there and are dropped in favour
+ * of the tooltip's own inherited colour.
+ */
+type CodexResetCreditTone = "panel" | "tooltip";
+
+function CodexResetCreditExpiry({
+  credit,
+  tone,
+}: {
+  readonly credit: CodexResetCredit;
+  readonly tone: CodexResetCreditTone;
+}): ReactNode {
+  const now = useSampledNow();
+  const countdown = useResetCountdown(credit.expiresAt);
+  const farExpiry = useIsFarReset(credit.expiresAt);
+  if (credit.expiresAt === null) return <span>No expiry</span>;
+  if (!plausibleResetTimestamp(credit.expiresAt, now)) {
+    return <span>Expiry unavailable</span>;
+  }
+  if (credit.expiresAt <= now) return <span>Expired</span>;
+  const warning =
+    tone === "panel" && credit.expiresAt - now <= RESET_CREDIT_WARNING_MS;
+  return (
+    <span className={cn(warning && "text-destructive")}>
+      {farExpiry
+        ? `Expires ${formatResetFullDateTime(credit.expiresAt)}`
+        : `Expires in ${countdown ?? "less than a minute"}`}
+    </span>
+  );
+}
+
+function CodexResetCreditDetail({
+  credit,
+  tone,
+}: {
+  readonly credit: CodexResetCredit;
+  readonly tone: CodexResetCreditTone;
+}): ReactNode {
+  if (credit.status === "redeeming") {
+    return (
+      <span
+        className={cn(
+          "flex items-center gap-1",
+          tone === "panel" && "text-muted-foreground",
+        )}
+      >
+        <AgentSpinningDots
+          className={undefined}
+          testId={undefined}
+          variant={undefined}
+        />
+        Redeeming
+      </span>
+    );
+  }
+  return <CodexResetCreditExpiry credit={credit} tone={tone} />;
+}
+
+/**
+ * One "Full reset - Expires Sat, Aug 1, 2026, 1:17 AM" line per credit, plus the
+ * capped-remainder disclosure. Shared by both surfaces so their wording and
+ * ordering can't drift; only the palette differs, since the tooltip paints on an
+ * inverted surface (`bg-foreground`) where the panel's muted/foreground tokens
+ * would be unreadable.
+ */
+function CodexResetCreditLines({
+  credits,
+  omittedCount,
+  tone,
+}: {
+  readonly credits: ReadonlyArray<CodexResetCredit>;
+  readonly omittedCount: number;
+  readonly tone: CodexResetCreditTone;
+}): ReactNode {
+  const panel = tone === "panel";
+  return (
+    <div className={cn("flex flex-col text-ui-xs", panel ? "gap-2" : "gap-1")}>
+      {credits.map((credit) => (
+        <div
+          key={credit.id}
+          className="flex items-center justify-between gap-3"
+        >
+          <span
+            className={cn("min-w-0 truncate", panel && "text-muted-foreground")}
+          >
+            {credit.title ?? "Manual reset"}
+          </span>
+          <span
+            className={cn("shrink-0 font-mono", panel && "text-foreground")}
+          >
+            <CodexResetCreditDetail credit={credit} tone={tone} />
+          </span>
+        </div>
+      ))}
+      {omittedCount > 0 ? (
+        <span className={cn(panel && "text-muted-foreground")}>
+          +{omittedCount} more not shown
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Settings lays the credits out as a list under the count; the header popover
+ * collapses them behind a hover on the count. Same data, different budgets: the
+ * popover is a narrow, glanceable column where a stack of full-date expiry lines
+ * dwarfed the usage bars above it, while the Settings card has the room to show
+ * them outright and no reason to hide them behind a hover.
+ */
+function CodexResetCreditsRow({
+  resetCredits,
+  resetAction,
+  variant,
+}: {
+  readonly resetCredits: CodexResetCredits;
+  readonly resetAction: CodexResetCreditActionRenderer | null;
+  readonly variant: RateLimitViewVariant;
+}): ReactNode {
+  const now = useSampledNow();
+  const credits = resetCredits.credits;
+  const visibleCredits =
+    credits === null ? [] : visibleCodexResetCredits(credits);
+  const selectedCredit =
+    credits === null
+      ? null
+      : selectEarliestExpiringCodexResetCredit(credits, now);
+  const omittedCount =
+    credits !== null && credits.length > 0
+      ? Math.max(0, resetCredits.availableCount - credits.length)
+      : 0;
+  const action =
+    resetCredits.availableCount > 0 && resetAction !== null
+      ? resetAction({
+          selectedCredit,
+          availableCount: resetCredits.availableCount,
+        })
+      : null;
+  // A count-only response (older hosts send no `credits` array) has nothing to
+  // list or reveal, so neither surface offers an affordance for it.
+  const hasDetail = visibleCredits.length > 0;
+  const listed = variant === "settings" && hasDetail;
+  const hoverable = !listed && hasDetail;
+  const countText = `${resetCredits.availableCount} available`;
+  return (
+    <div className="flex flex-col gap-2 text-ui-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-muted-foreground">Manual resets</span>
+        <span className="flex items-center gap-2">
+          {hoverable ? (
+            <Tooltip>
+              {/*
+               * A real `<button>`, not a `span` + `tabIndex`: a `tabIndex` on a
+               * non-interactive element without an ARIA role is invalid a11y
+               * (jsx-a11y/no-noninteractive-tabindex), and Radix's
+               * `TooltipTrigger` opens on focus as well as hover - but only if
+               * the trigger element can natively receive focus.
+               */}
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="appearance-none bg-transparent p-0 font-mono text-ui-xs text-foreground cursor-help"
+                >
+                  {countText}
+                </button>
+              </TooltipTrigger>
+              {/*
+               * `max-w-sm`, not the shadcn default `max-w-xs`: a title plus a
+               * mono full-date expiry ("Full reset - Expires Sat, Aug 1, 2026,
+               * 1:17 AM") overruns 20rem, and the title's `truncate` would eat
+               * the overflow rather than the tooltip growing to fit.
+               */}
+              <TooltipContent
+                side="top"
+                align="end"
+                sideOffset={6}
+                className="max-w-sm"
+              >
+                <CodexResetCreditLines
+                  credits={visibleCredits}
+                  omittedCount={omittedCount}
+                  tone="tooltip"
+                />
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <span className="font-mono text-ui-xs text-foreground">
+              {countText}
+            </span>
+          )}
+          {action}
+        </span>
+      </div>
+      {listed ? (
+        <div className="pl-3">
+          <CodexResetCreditLines
+            credits={visibleCredits}
+            omittedCount={omittedCount}
+            tone="panel"
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function CodexCreditsRow({
+  credits,
+}: {
+  readonly credits: NonNullable<CodexRateLimits["credits"]>;
+}): ReactNode {
+  const label = credits.unlimited
+    ? "Unlimited"
+    : (credits.balance ?? (credits.hasCredits ? "Available" : "None"));
+  return (
+    <div className="flex items-center justify-between text-ui-sm">
+      <span className="text-muted-foreground">Credits</span>
+      <span className="font-mono text-ui-xs text-foreground">{label}</span>
+    </div>
+  );
+}
+
+function CodexSpendControlRow({
+  limit,
+}: {
+  readonly limit: NonNullable<CodexRateLimits["individualLimit"]>;
+}): ReactNode {
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between text-ui-sm">
+        <span className="text-muted-foreground">Spend limit</span>
+        <span className="font-mono text-ui-xs text-foreground">
+          {limit.used} / {limit.limit}
+        </span>
+      </div>
+      <div className="flex justify-end">
+        <ResetLine
+          resetsAt={limit.resetsAt}
+          tone={contextUsageTone(limit.remainingPercent)}
+        />
+      </div>
+    </div>
+  );
+}
+
+export function ClaudeRateLimitView({
+  data,
+  variant,
+}: {
+  readonly data: ClaudeRateLimits;
+  readonly variant: RateLimitViewVariant;
+}): ReactNode {
+  // Overview keeps only the 5h (`fiveHour`) and Weekly (`sevenDay`) windows; the
+  // Opus/Sonnet weekly buckets, per-model rows, and extra-usage bar are
+  // single-provider-tab detail.
+  const overview = isOverviewVariant(variant);
+
+  const globalLimits: ReactNode = (
+    <div className="flex flex-col gap-3">
+      <ProviderWindowRow
+        window={data.fiveHour}
+        namePrefix={null}
+        qualifier={null}
+      />
+      <ProviderWindowRow
+        window={data.sevenDay}
+        namePrefix={null}
+        qualifier={null}
+      />
+      {!overview ? (
+        <ProviderWindowRow
+          window={data.sevenDayOpus}
+          namePrefix={null}
+          qualifier="Opus"
+        />
+      ) : null}
+      {!overview ? (
+        <ProviderWindowRow
+          window={data.sevenDaySonnet}
+          namePrefix={null}
+          qualifier="Sonnet"
+        />
+      ) : null}
+    </div>
+  );
+
+  // Each model-scoped window is its own labeled row - no "Per-model" heading;
+  // the rows' display names already say which model each is, and the group is
+  // set off by a divider instead, the same header-less treatment
+  // `CodexRateLimitView` gives its per-model (Spark) `extraWindows`.
+  const perModelLimits: ReactNode =
+    !overview && data.modelScoped.length > 0 ? (
+      <div className="flex flex-col gap-3">
+        {data.modelScoped.map((entry) => (
+          // `displayName` alone isn't guaranteed unique across entries -
+          // fold in `resetsAt` (an array index would defeat reconciliation
+          // on reorder/filter, and ESLint's `no-array-index-key` disallows
+          // it outright).
+          <RateLimitWindowRow
+            key={`${entry.displayName}-${entry.resetsAt}`}
+            label={entry.displayName}
+            window={entry}
+          />
+        ))}
+      </div>
+    ) : null;
+
+  const extraUsage: ReactNode =
+    !overview && data.extraUsage !== null && data.extraUsage.isEnabled ? (
+      <ClaudeExtraUsageRow extraUsage={data.extraUsage} />
+    ) : null;
+
+  // Overview never gets here with more than `globalLimits`; the divider
+  // placement rules live on `RateLimitGroupStack`.
+  return (
+    <RateLimitGroupStack
+      groups={[
+        { key: "global", node: globalLimits },
+        { key: "per-model", node: perModelLimits },
+        { key: "extra-usage", node: extraUsage },
+      ]}
+    />
+  );
+}
+
+function ClaudeExtraUsageRow({
+  extraUsage,
+}: {
+  readonly extraUsage: NonNullable<ClaudeRateLimits["extraUsage"]>;
+}): ReactNode {
+  // `monthlyLimit`/`usedCredits` give a ratio-based bar without depending on
+  // the ambiguous 0-1-vs-0-100 scale of `utilization` (open item on the wire
+  // contract - see the tech plan). `utilization` is only ever shown as raw
+  // supplementary text.
+  if (extraUsage.monthlyLimit !== null && extraUsage.usedCredits !== null) {
+    const usedPercent =
+      extraUsage.monthlyLimit > 0
+        ? (extraUsage.usedCredits / extraUsage.monthlyLimit) * 100
+        : 0;
+    return (
+      <MeterRow
+        label="Extra usage"
+        usedPercent={usedPercent}
+        severity={creditUsageSeverity(usedPercent)}
+        detail={`${formatClaudeExtraUsageCents(extraUsage.usedCredits)} / ${formatClaudeExtraUsageCents(extraUsage.monthlyLimit)}`}
+      />
+    );
+  }
+  if (extraUsage.utilization !== null) {
+    return (
+      <div className="flex items-center justify-between text-ui-sm">
+        <span className="text-muted-foreground">Extra usage</span>
+        <span className="font-mono text-ui-xs text-foreground">
+          {extraUsage.utilization}
+        </span>
+      </div>
+    );
+  }
+  return null;
+}
+
+/**
+ * OpenRouter's usage detail: a request/credit bar when a hard `limit` exists,
+ * plus its uncapped spend/credit/balance figures as plain neutral rows (Core
+ * Flows: "Windows without a percentage" - no fabricated percentage, no severity
+ * color). All figures are $-denominated OpenRouter credits.
+ */
+export function OpenRouterRateLimitView({
+  data,
+  variant,
+}: {
+  readonly data: OpenRouterRateLimits;
+  readonly variant: RateLimitViewVariant;
+}): ReactNode {
+  // Overview keeps only the Credits bar and Balance; the total-credit/usage and
+  // per-period spend figures are single-provider-tab detail.
+  const overview = isOverviewVariant(variant);
+  return (
+    <div className="flex flex-col gap-3">
+      <OpenRouterCreditBar
+        limit={data.limit}
+        limitRemaining={data.limitRemaining}
+      />
+      <ProviderNumberRow
+        label="Balance"
+        value={data.balance}
+        format={formatProviderCurrency}
+      />
+      {!overview ? (
+        <>
+          <ProviderNumberRow
+            label="Total credits"
+            value={data.totalCredits}
+            format={formatProviderCurrency}
+          />
+          <ProviderNumberRow
+            label="Total usage"
+            value={data.totalUsage}
+            format={formatProviderCurrency}
+          />
+          <ProviderNumberRow
+            label="Spent today"
+            value={data.dailySpend}
+            format={formatProviderCurrency}
+          />
+          <ProviderNumberRow
+            label="Spent this week"
+            value={data.weeklySpend}
+            format={formatProviderCurrency}
+          />
+          <ProviderNumberRow
+            label="Spent this month"
+            value={data.monthlySpend}
+            format={formatProviderCurrency}
+          />
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+// Only OpenRouter's `limit`/`limitRemaining` pair yields a computable "% of
+// limit"; the derived percentage matches the header glyph's exact
+// `((limit - limitRemaining) / limit) * 100`, so the bar's fill/color tracks
+// the same number. Absent a hard limit, no bar renders (the spend rows stand
+// alone).
+function OpenRouterCreditBar({
+  limit,
+  limitRemaining,
+}: {
+  readonly limit: number | null;
+  readonly limitRemaining: number | null;
+}): ReactNode {
+  if (limit === null || limitRemaining === null || limit <= 0) return null;
+  const consumed = Math.max(0, limit - limitRemaining);
+  const usedPercent = (consumed / limit) * 100;
+  return (
+    <MeterRow
+      label="Credits"
+      usedPercent={usedPercent}
+      severity={creditUsageSeverity(usedPercent)}
+      detail={`${formatProviderCurrency(consumed)} / ${formatProviderCurrency(limit)}`}
+    />
+  );
+}
+
+/**
+ * Kilo Code's usage detail: a credit balance and Kilo Pass state, both as plain
+ * neutral rows. No computable percentage exists for Kilo Code, so it never
+ * renders a bar (Core Flows: "Windows without a percentage").
+ */
+export function KiloCodeRateLimitView({
+  data,
+  variant,
+}: {
+  readonly data: KiloCodeRateLimits;
+  readonly variant: RateLimitViewVariant;
+}): ReactNode {
+  // Overview keeps only the credit balance; Kilo Pass state is
+  // single-provider-tab detail.
+  const overview = isOverviewVariant(variant);
+  return (
+    <div className="flex flex-col gap-3">
+      <ProviderNumberRow
+        label="Credit balance"
+        value={data.creditBalance}
+        format={formatProviderCurrency}
+      />
+      {!overview && data.passState !== null ? (
+        <div className="flex items-center justify-between text-ui-sm">
+          <span className="text-muted-foreground">Kilo Pass</span>
+          <span className="font-mono text-ui-xs text-foreground">
+            {titleCaseFromToken(data.passState)}
+          </span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Grok's period bar label: the billing period's cadence taken from the
+ * provider's `periodType` token (e.g. `"USAGE_PERIOD_TYPE_WEEKLY"` -> "Weekly"),
+ * falling back to the synthesized window's own duration when the type token is
+ * absent. Only the last `_`-segment carries the cadence, so the leading
+ * `USAGE_PERIOD_TYPE_` scaffolding is dropped before title-casing.
+ */
+function formatGrokPeriodLabel(
+  periodType: string | null,
+  durationMinutes: number | null,
+): string {
+  if (periodType !== null) {
+    const parts = periodType.split("_").filter((part) => part.length > 0);
+    if (parts.length > 0) return titleCaseFromToken(parts[parts.length - 1]);
+  }
+  return formatWindowDuration(durationMinutes);
+}
+
+/** Compact calendar date ("Jul 22, 2026") for a grok billing-period bound. */
+function formatGrokPeriodDate(epochMs: number): string {
+  return new Date(epochMs).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+/**
+ * The billing period's start-end range ("Jul 22, 2026 - Jul 29, 2026"), shown
+ * in grok's unmeasured-period fallback where there's no usage bar to carry a
+ * reset date. `null` unless both bounds are known.
+ */
+function formatGrokPeriodRange(
+  periodStart: number | null,
+  periodEnd: number | null,
+): string | null {
+  if (periodStart === null || periodEnd === null) return null;
+  return `${formatGrokPeriodDate(periodStart)} - ${formatGrokPeriodDate(periodEnd)}`;
+}
+
+/**
+ * Grok's unmeasured-period fallback: an available subscription may report its
+ * tier and billing-period bounds without a measurable usage window. Surfacing
+ * the plan and the period dates keeps the card meaningful instead of blank.
+ * Each row drops out on its own when the field is absent.
+ *
+ * The `Plan` row is suppressed on `popover-detail`, where the popover header
+ * already renders the same tier as a chip (`resolveProviderPlanLabel`) - the
+ * same reason Codex/Claude keep the tier out of their card bodies. The Settings
+ * card and the Overview tab render no such chip, so there the `Plan` row is the
+ * only tier surface and stays. The billing-period row shows on every surface.
+ */
+function GrokPeriodFallback({
+  subscriptionTier,
+  periodStart,
+  periodEnd,
+  variant,
+}: {
+  readonly subscriptionTier: string | null;
+  readonly periodStart: number | null;
+  readonly periodEnd: number | null;
+  readonly variant: RateLimitViewVariant;
+}): ReactNode {
+  return (
+    <>
+      {variant !== "popover-detail" ? (
+        <ProviderTextRow label="Plan" value={subscriptionTier} />
+      ) : null}
+      <ProviderTextRow
+        label="Billing period"
+        value={formatGrokPeriodRange(periodStart, periodEnd)}
+      />
+    </>
+  );
+}
+
+/**
+ * Grok's usage detail. Grok reports a billing-period credit picture rather than
+ * rolling-utilization windows, so three shapes are handled:
+ *
+ * - `period` present -> the period usage bar, reusing the shared `RateLimitWindowRow`
+ *   so its "% used · Resets <date>" reads identically to codex/claude; the bar's
+ *   label is the period cadence ("Weekly").
+ * - `period` null -> the unmeasured-period fallback (`GrokPeriodFallback`): the
+ *   plan tier and the billing period's dates.
+ * - the raw credit figures (prepaid balance, monthly limit, on-demand
+ *   used/limit) render only where xAI actually reported them - it omits fields
+ *   freely by account type - as neutral `$`-denominated rows, the same
+ *   percentage-free treatment OpenRouter/Kilo Code credits get.
+ */
+export function GrokRateLimitView({
+  data,
+  variant,
+}: {
+  readonly data: GrokRateLimits;
+  readonly variant: RateLimitViewVariant;
+}): ReactNode {
+  // Overview keeps only the period usage (bar or fallback) and the prepaid
+  // balance; the monthly limit and on-demand figures are single-provider-tab
+  // detail, matching how OpenRouter/Kilo Code trim their Overview.
+  const overview = isOverviewVariant(variant);
+  return (
+    <div className="flex flex-col gap-3">
+      {data.period !== null ? (
+        <RateLimitWindowRow
+          label={formatGrokPeriodLabel(
+            data.periodType,
+            data.period.durationMinutes,
+          )}
+          window={data.period}
+        />
+      ) : (
+        <GrokPeriodFallback
+          subscriptionTier={data.subscriptionTier}
+          periodStart={data.periodStart}
+          periodEnd={data.periodEnd}
+          variant={variant}
+        />
+      )}
+      <ProviderNumberRow
+        label="Prepaid balance"
+        value={data.prepaidBalance}
+        format={formatProviderCurrency}
+      />
+      {!overview ? (
+        <>
+          <ProviderNumberRow
+            label="Monthly limit"
+            value={data.monthlyLimit}
+            format={formatProviderCurrency}
+          />
+          <ProviderNumberRow
+            label="On-demand used"
+            value={data.onDemandUsed}
+            format={formatProviderCurrency}
+          />
+          <ProviderNumberRow
+            label="On-demand limit"
+            value={data.onDemandCap}
+            format={formatProviderCurrency}
+          />
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+export function ProviderRateLimitBody(
+  props: ProviderRateLimitQueryState & {
+    readonly codexResetAction: CodexResetCreditActionRenderer | null;
+  },
+): ReactNode {
+  const state = resolveProviderRateLimitViewState(props);
+  // `isPending` alone stays `true` forever for a disabled query (e.g. a chat
+  // tab bound to an unreachable host, where `useHostQuery` never enables) -
+  // `resolveProviderRateLimitViewState` also gates on `isFetching` so that
+  // case falls through to the `empty` branch below instead of an eternal
+  // spinner.
+  if (state.kind === "loading") {
+    return (
+      <div className="flex items-center gap-2 text-ui-sm text-muted-foreground">
+        <MutedAgentSpinner /> Loading usage limits
+      </div>
+    );
+  }
+  if (state.kind === "error") {
+    return (
+      <div className="text-ui-sm text-destructive">
+        Couldn't load usage limits. Try refreshing.
+        <ReportIssueAction
+          context={createReportIssueContext({
+            title: "Couldn't load usage limits",
+            message: null,
+            code: null,
+            source: "Provider usage limits",
+          })}
+          presentation="link"
+          className="ml-1 h-auto p-0 text-current"
+        />
+      </div>
+    );
+  }
+  if (state.kind === "empty") return null;
+  const data = state.data;
+  if (!data.available) {
+    return (
+      <p className="text-ui-xs text-muted-foreground">
+        Usage limits unavailable - {formatUnavailableReason(data.reason)}
+      </p>
+    );
+  }
+  const detail = (
+    <ProviderRateLimitDetail
+      data={data}
+      variant="settings"
+      codexResetAction={props.codexResetAction}
+    />
+  );
+  // Fresh reading: render as-is. The Providers panel header already carries a
+  // "Checked Xm ago" for provider status, so a healthy usage card needs no
+  // second timestamp.
+  if (!state.degraded) return detail;
+  // Degraded: a retained last-known-good reading is being shown after the
+  // latest poll failed. Surface the ORIGINAL update time plus a failed-refresh
+  // note and dim the reading in place - the same treatment the header popover
+  // gives this state, so the stale numbers can't be mistaken for fresh.
+  return (
+    <div className="flex flex-col gap-2">
+      <StaleUsageRefreshNote
+        lastGoodAt={state.lastGoodAt}
+        degradedReason={state.degradedReason}
+      />
+      <div className="opacity-60">{detail}</div>
+    </div>
+  );
+}
+
+/**
+ * The failed-refresh / stale line the Settings usage card shows while it's
+ * displaying a retained last-known-good reading after the latest poll failed
+ * (Core Flows degraded state): the ORIGINAL `lastGoodAt` as "Updated Xm ago"
+ * (never the failed attempt's time, so it can't read as fresh) followed by a
+ * note - the specific transient reason's plain-language copy when the envelope
+ * itself is why (`degradedReason` non-null), otherwise the generic "refresh
+ * failed" for a thrown query-level exception with no specific reason. Mirrors
+ * the header popover's `UsageLimitUpdatedLabel` copy verbatim; kept a local
+ * component so neither component-only file has to import the other. Renders the
+ * note alone in the (production-unreachable) case where an available degraded
+ * reading somehow carries no timestamp, keeping the single relative-time hook
+ * call unconditional.
+ */
+function StaleUsageRefreshNote({
+  lastGoodAt,
+  degradedReason,
+}: {
+  readonly lastGoodAt: number | null;
+  readonly degradedReason: RateLimitUnavailableReason | null;
+}): ReactNode {
+  const ago = useRelativeTimestamp(lastGoodAt ?? 0);
+  const note =
+    degradedReason !== null
+      ? formatUnavailableReason(degradedReason)
+      : "refresh failed";
+  return (
+    <p className="text-ui-xs text-muted-foreground">
+      {lastGoodAt !== null ? `Updated ${ago} · ${note}` : note}
+    </p>
+  );
+}
+
+/**
+ * Renders one provider's available-arm detail. Exhaustive over every
+ * `available: true` arm (`data.provider` is now five-way, not the old binary
+ * codex/claude split), so a new provider arm added to the wire union fails the
+ * build here until it gets a view. Exported so the header popover reuses the
+ * exact same per-provider bodies the Settings card shows (Core Flows: "both
+ * read the same underlying provider usage data, so they never disagree").
+ */
+export function ProviderRateLimitDetail({
+  data,
+  variant,
+  codexResetAction,
+}: {
+  readonly data: AvailableProviderRateLimits;
+  readonly variant: RateLimitViewVariant;
+  readonly codexResetAction: CodexResetCreditActionRenderer | null;
+}): ReactNode {
+  switch (data.provider) {
+    case "codex":
+      return (
+        <CodexRateLimitViewContent
+          data={data}
+          variant={variant}
+          resetAction={codexResetAction}
+        />
+      );
+    case "claude-code":
+      return <ClaudeRateLimitView data={data} variant={variant} />;
+    // OpenRouter/Kilo Code report no usage *windows* (only credit/spend bars and
+    // plain figures), so the settings/popover window distinction doesn't apply -
+    // but `variant` still drives the Overview-vs-detail trim (Overview shows
+    // only their balance/credit fields).
+    case "openrouter":
+      return <OpenRouterRateLimitView data={data} variant={variant} />;
+    case "kilocode":
+      return <KiloCodeRateLimitView data={data} variant={variant} />;
+    // Grok reports no rolling usage *windows* either - only a synthesized
+    // billing-period bar plus credit figures - so, like OpenRouter/Kilo Code,
+    // `variant` drives just the Overview-vs-detail trim.
+    case "grok":
+      return <GrokRateLimitView data={data} variant={variant} />;
+  }
+}

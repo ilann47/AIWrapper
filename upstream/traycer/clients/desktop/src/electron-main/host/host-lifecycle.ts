@@ -1,0 +1,809 @@
+import { readFile } from "node:fs/promises";
+import { watch, type FSWatcher } from "node:fs";
+import { EventEmitter } from "node:events";
+import { createConnection } from "node:net";
+import { connect as createTlsConnection } from "node:tls";
+import { basename } from "node:path";
+import { log } from "../app/logger";
+import {
+  PRODUCTION_LABEL,
+  type HostFsLayout,
+  type ServiceLabel,
+} from "./host-paths";
+import {
+  withConfiguredHostName,
+  withDefaultHostName,
+} from "./host-display-name";
+import {
+  isProcessStartIdentity,
+  type ProcessStartIdentity,
+} from "@traycer/protocol/host/lifecycle";
+import type { DesktopLocalHostSnapshot } from "../../ipc-contracts/host-types";
+import {
+  isCurrentHostWebsocketUrl,
+  isPublishedHostEndpointReachable,
+} from "./host-endpoint-reachability";
+
+export { isCurrentHostWebsocketUrl } from "./host-endpoint-reachability";
+
+/**
+ * How long we wait for the OS-supervised host to publish its PID
+ * metadata before surfacing a Doctor-recovery startup failure to the
+ * renderer. The CLI supervisor (`traycer host start`) sources the
+ * user's shell as part of bootstrap, so this needs to absorb the user's
+ * full rc-file init cost. 60s is sized for slow oh-my-zsh setups +
+ * Prisma/native init.
+ *
+ * It is a QUIET budget, not a wall-clock one: `notifyProvisioningActivity`
+ * re-arms it, exactly the way the CLI's own inactivity guard re-arms on every
+ * NDJSON progress event. A first install downloads ~800MB and extracts a
+ * multi-gigabyte runtime tree, which on a slow or AV-scanned machine takes
+ * minutes - a flat 60s deadline declared "Could not start Traycer Host" while
+ * that install was demonstrably still progressing (traycer#862, and again in
+ * traycer#858's desktop log).
+ */
+const HOST_READY_TIMEOUT_MS = 60_000;
+/**
+ * Ceiling on the total wait regardless of progress, so an installer that
+ * emits events forever can never hold bootstrap open indefinitely. Sized well
+ * above a realistic worst-case first install (the field report that motivated
+ * the sliding budget took ~3m17s) while still bounded.
+ */
+const HOST_READY_MAX_WAIT_MS = 15 * 60_000;
+const HOST_POLL_INTERVAL_MS = 250;
+const HOST_ENDPOINT_CHECK_TIMEOUT_MS = 750;
+const CLI_START_STOP_TIMEOUT_MS = 60_000;
+/**
+ * Backoff ladder for re-probing a pid.json that is present but whose
+ * endpoint didn't answer. The pid-file watcher is edge-triggered on file
+ * WRITES while reachability is time-varying, so a single probe failure at
+ * the only watcher edge used to wedge `currentSnapshot` at null for the
+ * rest of the session (2026-07-14 incident: host reachable 7s after the
+ * ensure timeout, renderer stuck on "Bound host is offline" until an app
+ * restart). While metadata exists but the endpoint is unreachable, keep
+ * re-probing - the host is either still binding (converges in the next
+ * shot or two) or genuinely dead (the health monitor / ensure flows own
+ * that; a capped 5s loopback probe is negligible to keep running).
+ */
+const REACHABILITY_RETRY_INITIAL_MS = 250;
+const REACHABILITY_RETRY_MAX_MS = 5_000;
+
+export interface HostLifecycleEvents {
+  change: (snapshot: DesktopLocalHostSnapshot | null) => void;
+  error: (error: HostStartupError) => void;
+}
+
+/**
+ * Discriminated failure codes surfaced from the host lifecycle. Keeping a
+ * `code` on the error lets the renderer show a targeted message.
+ *
+ * Native-packaging cutover: Desktop no longer installs/upgrades the host
+ * itself - CLI is the lifecycle authority (Tech Plan Decision 1). The
+ * legacy `BUNDLED_HOST_MISSING` and `SERVICE_INSTALL_FAILED` codes are
+ * retained in the discriminant for backwards-compat with renderer error
+ * rendering, but are no longer raised by the steady-state boot path -
+ * a missing/unreachable host now surfaces as `HOST_NOT_READY` and
+ * the renderer routes into the Doctor/CLI recovery card.
+ *
+ * Host Update Layer Redesign Tech Plan (Desktop main: HostController):
+ * `SERVICE_RESTART_FAILED` joins that same retained-but-unraised set -
+ * `respawn()` (the CLI-subprocess restart it used to come from) moved to
+ * `HostController`, which reports restart failures through its own
+ * `MutationOutcome`, not this discriminant.
+ */
+export type HostStartupErrorCode =
+  | "BUNDLED_HOST_MISSING"
+  | "SERVICE_INSTALL_FAILED"
+  | "SERVICE_RESTART_FAILED"
+  | "HOST_NOT_READY"
+  | "UNKNOWN";
+
+export interface HostStartupError {
+  readonly code: HostStartupErrorCode;
+  readonly message: string;
+  readonly logTail: string | null;
+}
+
+class HostStartupException extends Error {
+  public readonly code: HostStartupErrorCode;
+  constructor(code: HostStartupErrorCode, message: string) {
+    super(message);
+    this.name = "HostStartupException";
+    this.code = code;
+  }
+}
+
+export interface HostLifecycleOptions {
+  readonly layout: HostFsLayout;
+  /**
+   * Absolute path to the host binary bundled inside the desktop app's
+   * `extraResources/host/...`, or `null` for steady-state packaged boot
+   * where the host is CLI-installed (Tech Plan Decision 1). Tests still
+   * pass a path when exercising legacy fakes; production always passes
+   * `null`.
+   */
+  readonly bundledBinaryPath: string | null;
+  /**
+   * Service registration label. Packaged Desktop passes `PRODUCTION_LABEL`
+   * and reads `~/.traycer/host/`; unpackaged Desktop (`make dev-desktop`)
+   * passes `DEV_LABEL` and the matching dev-environment layout so it
+   * reads/watches `~/.traycer/host/dev/`. The two must agree - the
+   * environment of `label` is selected at the boot seam in `main-process.ts`
+   * and threaded into both `layout` and the CLI subprocess calls.
+   */
+  readonly label: ServiceLabel;
+  /**
+   * Optional override for the PID-metadata wait timeout. Production omits
+   * this and uses the module-level `HOST_READY_TIMEOUT_MS` (60s); tests
+   * pass a short value so they can assert the missing-metadata path
+   * surfaces `HOST_NOT_READY` without blocking the suite.
+   */
+  readonly readyTimeoutMs: number | undefined;
+  /**
+   * Override for the websocket-reachability probe. Production passes
+   * `undefined` and uses the real TCP connect (`canReachHostWebsocketUrl`);
+   * tests inject a deterministic stub so reachability transitions don't depend
+   * on binding/rebinding real sockets (a CI-flaky timing dependency).
+   */
+  readonly reachabilityProbe:
+    ((websocketUrl: string) => Promise<boolean>) | undefined;
+}
+
+/**
+ * Owns the local host on behalf of the Electron shell.
+ *
+ * Native-Packaging cutover (Tech Plan Decision 1, Ticket 7c890b39):
+ *   - Steady-state boot is **metadata-first**. The lifecycle reads the
+ *     environment-scoped `pid.json`, validates the websocket URL shape and
+ *     reachability, and emits a `LocalHostSnapshot` when the host is
+ *     reachable. The Desktop service controller (SMAppService /
+ *     launchctl / systemctl / schtasks) is NOT consulted - host install
+ *     state is owned by the CLI's LaunchAgent/unit/task registration and
+ *     SMAppService state would falsely report `not-installed` against it.
+ *   - If no reachable host metadata appears within `readyTimeoutMs`,
+ *     the lifecycle surfaces a `HOST_NOT_READY` startup error so the
+ *     renderer can route the user into the Doctor recovery card
+ *     (`traycer host doctor`) - Desktop does not infer install state
+ *     from the legacy service-manager dispatch any more.
+ *   - User-invoked start / stop / restart actions delegate through CLI
+ *     subprocess (`traycer host restart` / `traycer host stop`)
+ *     instead of the platform service-manager APIs.
+ *
+ * Responsibilities:
+ *   - Read the published PID metadata file from the active environment's
+ *     host directory (prod = `~/.traycer/host/pid.json`,
+ *     dev = `~/.traycer/host/dev/pid.json`).
+ *   - Watch the metadata file for updates and re-emit `LocalHostSnapshot`
+ *     values as they change so the renderer bridge can push them through
+ *     `onLocalHostChange`.
+ *   - Surface startup diagnostics by tailing the matching `host.log`.
+ *   - Expose `respawn()` so the renderer can request a fresh host process
+ *     via IPC when the current one is unhealthy - implemented as a CLI
+ *     `traycer host restart` subprocess.
+ *
+ * The class stays transport-agnostic - it never opens the host's
+ * WebSocket endpoint. That is the renderer/`WsRpcClient`'s job per the
+ * no-bridge-proxying constraint.
+ */
+export class HostLifecycle extends EventEmitter {
+  private readonly options: HostLifecycleOptions;
+  private readonly readyTimeoutMs: number;
+  private watcher: FSWatcher | null = null;
+  private currentSnapshot: DesktopLocalHostSnapshot | null = null;
+  private reloadGeneration = 0;
+  private disposed = false;
+  private reachabilityRetryTimer: NodeJS.Timeout | null = null;
+  private reachabilityRetryDelayMs = REACHABILITY_RETRY_INITIAL_MS;
+  /**
+   * Epoch ms of the last reported host-provisioning progress event, or 0 when
+   * none has been seen. Read only by `waitForReady`, which treats it as the
+   * point its quiet budget restarts from.
+   */
+  private lastProvisioningActivityAt = 0;
+
+  constructor(options: HostLifecycleOptions) {
+    super();
+    this.options = options;
+    this.readyTimeoutMs =
+      typeof options.readyTimeoutMs === "number"
+        ? options.readyTimeoutMs
+        : HOST_READY_TIMEOUT_MS;
+  }
+
+  getSnapshot(): DesktopLocalHostSnapshot | null {
+    return this.currentSnapshot;
+  }
+
+  /**
+   * Entry point: discover the CLI-owned host via PID metadata.
+   *
+   * Metadata-first boot (Ticket 7c890b39):
+   *   - read the environment-scoped pid metadata file
+   *   - if it's well-formed and the websocket URL is reachable, emit a
+   *     `LocalHostSnapshot`
+   *   - otherwise poll for `readyTimeoutMs`; on timeout emit
+   *     `HOST_NOT_READY` so the renderer routes into Doctor/CLI recovery
+   *   - install the FS watcher unconditionally so a host that comes up
+   *     after the timeout (slow zsh init, slow Prisma/native load) is
+   *     auto-detected the moment it publishes `pid.json`
+   *
+   * The Desktop service controller is **not** consulted from this surface
+   * - `status(...)` against the legacy SMAppService-backed controller can
+   * falsely report `not-installed` against a CLI-owned LaunchAgent
+   * registration. Install / upgrade / register-service actions are all
+   * CLI-owned (Tech Plan Decision 1).
+   */
+  async bootstrap(): Promise<void> {
+    try {
+      await this.reloadSnapshot();
+      if (!this.isCompatible(this.currentSnapshot)) {
+        await this.waitForReady();
+      }
+      this.installWatcher();
+    } catch (cause) {
+      // Install the watcher even on failure so a host that comes up
+      // *after* the timeout (slow zsh probe, slow Prisma/native init)
+      // auto-heals when it eventually publishes pid.json - the renderer
+      // doesn't need to click Retry.
+      this.installWatcher();
+      const startupError = await this.buildStartupError(cause);
+      log.error("[host] startup failed", startupError);
+      this.emit("error", startupError);
+    }
+  }
+
+  /**
+   * Mark the host as "currently down" from the renderer's perspective.
+   *
+   * Used by `HostController`'s macOS host-owned-login-item activation cycle
+   * so it can drive the SMAppService re-register cycle itself while still
+   * keeping the renderer's cached snapshot consistent (cleared on respawn
+   * start, repopulated by the existing pid-file watcher when the new host
+   * publishes pid.json). `HostController`'s CLI-owned restart path
+   * (`traycer host restart`) does not call this - it shells out directly
+   * rather than through this lifecycle.
+   */
+  notifyRespawning(): void {
+    if (this.disposed) return;
+    this.currentSnapshot = null;
+    this.emit("change", null);
+  }
+
+  /**
+   * Report that host provisioning made progress just now.
+   *
+   * Wired from `HostController.onMutationProgress` at startup - the CLI emits
+   * an NDJSON progress event per download chunk / extraction stage, and the
+   * desktop already re-arms its inactivity-SIGKILL guard off that same stream.
+   * `waitForReady` re-arms its own budget here for the same reason: an install
+   * that is demonstrably still moving is not a host that failed to start.
+   *
+   * Deliberately a plain timestamp rather than a "provisioning in flight"
+   * boolean. A lane that hangs without emitting anything must still time out,
+   * and only a per-event stamp distinguishes progress from a wedged lane.
+   */
+  notifyProvisioningActivity(): void {
+    if (this.disposed) return;
+    this.lastProvisioningActivityAt = Date.now();
+  }
+
+  /**
+   * Path to the pid-metadata file this lifecycle is bound to. Exposed
+   * so the SMAppService respawn handler can drive its own
+   * `waitForHostReady` poll against the same on-disk source of truth
+   * the watcher reads from. Read-only - callers MUST NOT write through
+   * this path; pid.json writes are owned by the host process.
+   */
+  get pidMetadataFile(): string {
+    return this.options.layout.pidMetadataFile;
+  }
+
+  /**
+   * Whether this lifecycle has been torn down. Exposed so the
+   * SMAppService respawn path can short-circuit between awaits without
+   * driving real OS mutations against an already-disposed instance.
+   */
+  get isDisposed(): boolean {
+    return this.disposed;
+  }
+
+  /**
+   * Force a fresh read of pid.json and emit `change` if it differs.
+   *
+   * The fs.watch-based watcher is the steady-state mechanism for
+   * picking up host-state changes, but macOS FSEvents coalesces and
+   * can drop the create event when pid.json is replaced quickly. The
+   * SMAppService respawn handler calls this after `waitForHostReady`
+   * resolves so the renderer's snapshot is guaranteed populated on
+   * return - the original `respawn()` path got the same guarantee
+   * implicitly via its private `waitForReady` + watcher seed.
+   */
+  reloadSnapshotFromDisk(): Promise<DesktopLocalHostSnapshot | null> {
+    return this.reloadSnapshot();
+  }
+
+  /**
+   * Idempotent (re-)install of the pid-metadata watcher. Safe to call
+   * after the watcher has been silently torn down (eg. an FSEvents
+   * stream reset that the error handler logged but couldn't recover).
+   * The internal `installWatcher` short-circuits if it still believes a
+   * watcher is alive; force-resetting here lets the caller recover from
+   * the rare wedged-watcher state.
+   */
+  ensureWatcherInstalled(): void {
+    if (this.disposed) return;
+    if (this.watcher !== null) {
+      // Idempotent path: trust the existing watcher. We deliberately
+      // don't tear it down on every respawn - the steady-state cost of
+      // re-creating it on macOS is non-trivial (FSEvents subscription)
+      // and the watcher rarely actually dies.
+      return;
+    }
+    this.installWatcher();
+  }
+
+  dispose(): void {
+    if (this.disposed) {
+      return;
+    }
+    this.disposed = true;
+    if (this.reachabilityRetryTimer !== null) {
+      clearTimeout(this.reachabilityRetryTimer);
+      this.reachabilityRetryTimer = null;
+    }
+    if (this.watcher !== null) {
+      this.watcher.close();
+      this.watcher = null;
+    }
+    // Detached host policy: we do NOT stop the service here. The OS
+    // service manager owns the host's lifetime so other clients
+    // (mobile, CLI) keep their local RPC endpoint when the desktop quits.
+    // Lifecycle-level `dispose()` only tears down shell-side observers.
+  }
+
+  getRecentLogTail(maxLines: number): Promise<string | null> {
+    return safeReadLogTail(this.options.layout.logFile, maxLines);
+  }
+
+  /**
+   * Cheap predicate for the already-filtered `currentSnapshot`. Reachability,
+   * websocket URL shape, and reachability checks happen in `reloadSnapshot()`
+   * before a value is accepted into `currentSnapshot`; readiness loops always
+   * call that probe path before consulting this predicate.
+   */
+  private isCompatible(snapshot: DesktopLocalHostSnapshot | null): boolean {
+    return snapshot !== null;
+  }
+
+  private async reloadSnapshot(): Promise<DesktopLocalHostSnapshot | null> {
+    if (this.disposed) {
+      return this.currentSnapshot;
+    }
+    const generation = this.reloadGeneration + 1;
+    this.reloadGeneration = generation;
+    const readState = await readPidMetadataState(
+      this.options.layout.pidMetadataFile,
+    );
+    const raw = readState.kind === "parsed" ? readState.snapshot : null;
+    const startIdentity =
+      readState.kind === "parsed" ? readState.startIdentity : null;
+    // Filter an unreachable / wrong-shaped host out of what the renderer sees,
+    // so the host gate treats it as not-ready and fires `ensureHost`. A
+    // reachable host is surfaced regardless of its version stamp - the renderer
+    // negotiates protocol compatibility over the WS handshake and prompts for a
+    // restart only if the running host is genuinely incompatible.
+    const next = await this.toReachableSnapshot(raw, startIdentity);
+    // Superseded by a newer reload (or disposed): skip the emit so we never
+    // clobber newer state, but still RETURN what THIS read derived. A caller
+    // awaiting us - the host-busy surfacing in host-ensure-ipc - must judge
+    // off this freshly-derived value, not a `getSnapshot()` that a concurrent
+    // winning reload may not have assigned yet (which would falsely read null
+    // and route a busy host to a restart).
+    if (this.disposed || generation !== this.reloadGeneration) {
+      return next;
+    }
+    const prev = this.currentSnapshot;
+    if (!snapshotEquals(prev, next)) {
+      if (next === null && raw !== null) {
+        log.info(
+          "[host] ignoring pid metadata until the local host is reachable",
+          {
+            hostId: raw.hostId,
+            websocketUrl: raw.websocketUrl,
+            running: raw.version,
+          },
+        );
+      }
+      this.currentSnapshot = next;
+      this.emit("change", next);
+    }
+    // Retry-until-reachable: the file is PRESENT (a named-but-unreachable host,
+    // or an indeterminate read we can't yet trust) but did not resolve to a
+    // reachable snapshot. The watcher won't fire again until the FILE changes,
+    // so without a timer this state is terminal for the session. Clear the
+    // ladder only on a CONFIRMED-absent file (a deliberate stop) - never on a
+    // partial/transient read, which was the hole that let the wedge persist.
+    if (readState.kind !== "absent" && next === null) {
+      this.scheduleReachabilityRetry();
+    } else {
+      this.clearReachabilityRetry();
+    }
+    return next;
+  }
+
+  private scheduleReachabilityRetry(): void {
+    if (this.disposed || this.reachabilityRetryTimer !== null) {
+      return;
+    }
+    const delayMs = this.reachabilityRetryDelayMs;
+    if (delayMs === REACHABILITY_RETRY_INITIAL_MS) {
+      log.info(
+        "[host] pid metadata present but endpoint unreachable - retrying until it answers",
+        { delayMs },
+      );
+    }
+    this.reachabilityRetryDelayMs = Math.min(
+      delayMs * 2,
+      REACHABILITY_RETRY_MAX_MS,
+    );
+    const timer = setTimeout(() => {
+      this.reachabilityRetryTimer = null;
+      void this.reloadSnapshot().catch((error: unknown) => {
+        log.warn("[host] reachability retry reload failed", error);
+      });
+    }, delayMs);
+    // The retry ladder must never be what keeps the main process alive.
+    timer.unref();
+    this.reachabilityRetryTimer = timer;
+  }
+
+  private clearReachabilityRetry(): void {
+    this.reachabilityRetryDelayMs = REACHABILITY_RETRY_INITIAL_MS;
+    if (this.reachabilityRetryTimer !== null) {
+      clearTimeout(this.reachabilityRetryTimer);
+      this.reachabilityRetryTimer = null;
+    }
+  }
+
+  private async toReachableSnapshot(
+    raw: DesktopLocalHostSnapshot | null,
+    startIdentity: ProcessStartIdentity | null,
+  ): Promise<DesktopLocalHostSnapshot | null> {
+    if (raw === null) {
+      return null;
+    }
+    const probe = this.options.reachabilityProbe ?? canReachHostWebsocketUrl;
+    if (
+      !(await isPublishedHostEndpointReachable(
+        raw.websocketUrl,
+        raw.pid,
+        startIdentity,
+        probe,
+      ))
+    ) {
+      return null;
+    }
+    return withConfiguredHostName(this.options.layout, raw);
+  }
+
+  private installWatcher(): void {
+    if (this.watcher !== null) {
+      return;
+    }
+    const targetBasename = basename(this.options.layout.pidMetadataFile);
+    try {
+      const watcher = watch(this.options.layout.rootDir, (_event, filename) => {
+        if (filename === null) {
+          this.reloadSnapshotFromWatcher();
+          return;
+        }
+        if (typeof filename === "string" && filename === targetBasename) {
+          this.reloadSnapshotFromWatcher();
+        }
+      });
+      watcher.on("error", (err) => {
+        // Null the reference so `ensureWatcherInstalled` (called from
+        // the respawn path) can re-install. Without this, an FSEvents
+        // stream-reset error leaves `this.watcher` non-null but inert
+        // and the watcher is dead for the rest of the process lifetime.
+        log.warn("[host] pid metadata watcher error", err);
+        if (this.watcher === watcher) {
+          this.watcher = null;
+        }
+      });
+      this.watcher = watcher;
+    } catch (err) {
+      log.warn("[host] unable to install pid metadata watcher", err);
+    }
+  }
+
+  private async waitForReady(): Promise<void> {
+    const startedAt = Date.now();
+    let extendedFrom: number | null = null;
+    for (;;) {
+      if (this.disposed) {
+        return;
+      }
+      await this.reloadSnapshot();
+      if (this.isCompatible(this.currentSnapshot)) {
+        return;
+      }
+      // The budget runs from the last EVIDENCE that host provisioning is still
+      // doing work, not from bootstrap. A fresh install can legitimately hold
+      // this loop open for minutes while the CLI downloads and extracts the
+      // runtime, and reporting "did not start" over a live installer is a
+      // false failure the user cannot act on.
+      const now = Date.now();
+      const lastActivityAt = Math.max(
+        startedAt,
+        this.lastProvisioningActivityAt,
+      );
+      const quietMs = now - lastActivityAt;
+      const waitedMs = now - startedAt;
+      if (
+        quietMs >= this.readyTimeoutMs ||
+        waitedMs >= HOST_READY_MAX_WAIT_MS
+      ) {
+        throw new HostStartupException(
+          "HOST_NOT_READY",
+          `Traycer Host did not start within ${waitedMs}ms (${quietMs}ms with no installer progress) - run \`traycer host doctor\` to recover.`,
+        );
+      }
+      if (extendedFrom === null && lastActivityAt > startedAt) {
+        extendedFrom = lastActivityAt;
+        log.info(
+          "[host] extending the startup budget while host provisioning reports progress",
+          {
+            readyTimeoutMs: this.readyTimeoutMs,
+            maxWaitMs: HOST_READY_MAX_WAIT_MS,
+          },
+        );
+      }
+      await sleep(HOST_POLL_INTERVAL_MS);
+    }
+  }
+
+  private reloadSnapshotFromWatcher(): void {
+    void this.reloadSnapshot().catch((error: unknown) => {
+      log.warn(
+        "[host] failed to reload pid metadata after watcher event",
+        error,
+      );
+    });
+  }
+
+  private async buildStartupError(cause: unknown): Promise<HostStartupError> {
+    const logTail = await safeReadLogTail(this.options.layout.logFile, 50);
+    if (cause instanceof HostStartupException) {
+      return { code: cause.code, message: cause.message, logTail };
+    }
+    const message = cause instanceof Error ? cause.message : String(cause);
+    return { code: "UNKNOWN", message, logTail };
+  }
+}
+
+export function canReachHostWebsocketUrl(url: string): Promise<boolean> {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return Promise.resolve(false);
+  }
+
+  const port =
+    parsed.port === ""
+      ? parsed.protocol === "wss:"
+        ? 443
+        : 80
+      : Number(parsed.port);
+  if (!Number.isInteger(port) || port <= 0) {
+    return Promise.resolve(false);
+  }
+
+  return new Promise((resolve) => {
+    const socket =
+      parsed.protocol === "wss:"
+        ? createTlsConnection({
+            host: parsed.hostname,
+            port,
+            // The host's loopback endpoint is authenticated by the
+            // pid-record contract, not a public CA. TLS is still required
+            // here: writing an HTTP upgrade before its handshake completes
+            // would make a `wss://` host look unreachable.
+            rejectUnauthorized: false,
+          })
+        : createConnection({
+            host: parsed.hostname,
+            port,
+          });
+
+    const settle = (reachable: boolean): void => {
+      socket.removeAllListeners();
+      socket.destroy();
+      resolve(reachable);
+    };
+
+    socket.setTimeout(HOST_ENDPOINT_CHECK_TIMEOUT_MS);
+    let response = "";
+    socket.once(
+      parsed.protocol === "wss:" ? "secureConnect" : "connect",
+      () => {
+        socket.write(
+          [
+            `GET ${parsed.pathname} HTTP/1.1`,
+            `Host: ${parsed.host}`,
+            "Upgrade: websocket",
+            "Connection: Upgrade",
+            "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==",
+            "Sec-WebSocket-Version: 13",
+            "",
+            "",
+          ].join("\r\n"),
+        );
+      },
+    );
+    socket.on("data", (chunk: Buffer) => {
+      response += chunk.toString("utf8");
+      if (!response.includes("\r\n\r\n")) return;
+      const [statusLine = "", ...headerLines] = response.split("\r\n");
+      const headers = headerLines
+        .filter((line) => line.includes(":"))
+        .map((line) => {
+          const separator = line.indexOf(":");
+          return [
+            line.slice(0, separator).trim().toLowerCase(),
+            line
+              .slice(separator + 1)
+              .trim()
+              .toLowerCase(),
+          ] as const;
+        });
+      const upgrade = headers.find(([name]) => name === "upgrade")?.[1];
+      const connection = headers.find(([name]) => name === "connection")?.[1];
+      const accept = headers.find(
+        ([name]) => name === "sec-websocket-accept",
+      )?.[1];
+      settle(
+        /^HTTP\/1\.1 101(?:\s|$)/.test(statusLine) &&
+          upgrade === "websocket" &&
+          connection?.includes("upgrade") === true &&
+          typeof accept === "string" &&
+          accept.length > 0,
+      );
+    });
+    socket.once("timeout", () => settle(false));
+    socket.once("error", () => settle(false));
+  });
+}
+
+/**
+ * The outcome of reading pid.json, kept DISTINCT so the reachability ladder can
+ * tell "the host deliberately stopped" (file gone) from "I couldn't read it
+ * yet" (a partial write, or a transient EACCES/EIO). Collapsing both to `null`
+ * made a coalesced watcher edge that landed mid-write CLEAR the retry ladder,
+ * so the original session-long wedge could persist (review finding 4). The host
+ * writer documents partial reads as expected-and-retryable, so this is a real
+ * interleaving, not a theoretical one.
+ */
+type PidMetadataRead =
+  | {
+      readonly kind: "parsed";
+      readonly snapshot: DesktopLocalHostSnapshot;
+      readonly startedAt: string | null;
+      /**
+       * The publishing process's kernel-recorded creation stamp, when the
+       * host that wrote this file was new enough to publish one. `null` for
+       * every `pid.json` written before the field existed - which readers
+       * must treat as "cannot compare identity", never as a mismatch.
+       */
+      readonly startIdentity: ProcessStartIdentity | null;
+    }
+  | { readonly kind: "absent" }
+  | { readonly kind: "indeterminate" };
+
+export async function readPidMetadataState(
+  path: string,
+): Promise<PidMetadataRead> {
+  let raw: string;
+  try {
+    raw = await readFile(path, "utf8");
+  } catch (error: unknown) {
+    // ENOENT is the only signal that the host is genuinely gone; every other
+    // read error (EACCES/EIO/EMFILE) leaves the file's fate unknown.
+    if (isErrorCode(error, "ENOENT")) return { kind: "absent" };
+    return { kind: "indeterminate" };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    // A partially-written file parses as invalid JSON - present, not absent.
+    return { kind: "indeterminate" };
+  }
+
+  if (parsed === null || typeof parsed !== "object") {
+    return { kind: "indeterminate" };
+  }
+
+  const obj = parsed as Record<string, unknown>;
+  const hostId = obj.hostId;
+  const websocketUrl = obj.websocketUrl;
+  const version = obj.version;
+  const pid = obj.pid;
+  const startedAt = obj.startedAt;
+
+  if (
+    typeof hostId !== "string" ||
+    typeof websocketUrl !== "string" ||
+    typeof version !== "string" ||
+    typeof pid !== "number"
+  ) {
+    return { kind: "indeterminate" };
+  }
+
+  return {
+    kind: "parsed",
+    snapshot: withDefaultHostName({ hostId, websocketUrl, version, pid }),
+    startedAt: typeof startedAt === "string" ? startedAt : null,
+    startIdentity: isProcessStartIdentity(obj.processStartIdentity)
+      ? obj.processStartIdentity
+      : null,
+  };
+}
+
+export async function readPidMetadata(
+  path: string,
+): Promise<DesktopLocalHostSnapshot | null> {
+  const state = await readPidMetadataState(path);
+  return state.kind === "parsed" ? state.snapshot : null;
+}
+
+function isErrorCode(error: unknown, code: string): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === code
+  );
+}
+
+async function safeReadLogTail(
+  path: string,
+  maxLines: number,
+): Promise<string | null> {
+  // Read directly and let the single catch handle every failure mode — a
+  // missing file (ENOENT) and a path that's a directory (EISDIR) both land
+  // here. A prior stat()/isFile() check would only add a TOCTOU window.
+  try {
+    const raw = await readFile(path, "utf8");
+    const lines = raw.split(/\r?\n/);
+    return lines.slice(-maxLines).join("\n");
+  } catch {
+    return null;
+  }
+}
+
+function snapshotEquals(
+  a: DesktopLocalHostSnapshot | null,
+  b: DesktopLocalHostSnapshot | null,
+): boolean {
+  if (a === null || b === null) {
+    return a === b;
+  }
+  return (
+    a.hostId === b.hostId &&
+    a.websocketUrl === b.websocketUrl &&
+    a.version === b.version &&
+    a.pid === b.pid &&
+    a.systemHostName === b.systemHostName &&
+    a.displayName === b.displayName
+  );
+}
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export { PRODUCTION_LABEL };
+export type { ServiceLabel };

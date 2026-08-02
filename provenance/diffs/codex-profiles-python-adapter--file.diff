@@ -1,5 +1,5 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\codex-profiles\\bin\\codex-profile" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\profiles.py"
-index 7b0d70eb..16258d21 100644
+index 7b0d70eb1..16258d21c 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\codex-profiles\\bin\\codex-profile"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\profiles.py"	
 @@ -1,2498 +1,39 @@

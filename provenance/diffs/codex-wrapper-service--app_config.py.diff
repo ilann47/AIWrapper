@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\config.py" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\config.py"
-index 44e97b83..12e24a4c 100644
+index 44e97b833..37a9cfb8c 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\config.py"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\config.py"	
-@@ -37,6 +37,17 @@ class Settings(BaseSettings):
+@@ -37,6 +37,19 @@ class Settings(BaseSettings):
      allow_danger_full_access: bool = Field(default=False, alias="CODEX_ALLOW_DANGER_FULL_ACCESS")
      # Deprecated: ignored, but kept to avoid startup failures when legacy env remains.
      codex_model: Optional[str] = Field(default=None, alias="CODEX_MODEL")
@@ -11,6 +11,8 @@ index 44e97b83..12e24a4c 100644
 +    aiwrapper_database_path: str = Field(default=".aiwrapper/aiwrapper.db", alias="AIWRAPPER_DATABASE_PATH")
 +    aiwrapper_multi_auth_dir: str = Field(default=".aiwrapper/multi-auth", alias="AIWRAPPER_MULTI_AUTH_DIR")
 +    aiwrapper_governance_bridge: str = Field(default="../../extensions/aiwrapper-admin/src/governance-bridge.mjs", alias="AIWRAPPER_GOVERNANCE_BRIDGE")
++    aiwrapper_nine_router_bridge: str = Field(default="../../extensions/aiwrapper-runtime/src/nine-router-bridge.mjs", alias="AIWRAPPER_NINE_ROUTER_BRIDGE")
++    aiwrapper_rtk_enabled: bool = Field(default=True, alias="AIWRAPPER_RTK_ENABLED")
 +    aiwrapper_node_path: str = Field(default="node", alias="AIWRAPPER_NODE_PATH")
 +    aiwrapper_profile_script: str = Field(default="../../packages/codex-profiles/bin/codex-profile", alias="AIWRAPPER_PROFILE_SCRIPT")
 +    aiwrapper_profile_bash: str = Field(default=r"C:\Program Files\Git\bin\bash.exe", alias="AIWRAPPER_PROFILE_BASH")

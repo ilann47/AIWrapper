@@ -1,0 +1,116 @@
+import { useCallback, useMemo } from "react";
+import type { ReactNode } from "react";
+import { useDraggable } from "@dnd-kit/core";
+import type { GitChangedFile } from "@traycer/protocol/host";
+import { useEpicCanvasStore } from "@/stores/epics/canvas/store";
+import { useEpicNestedFocusNavigation } from "@/hooks/epic/use-epic-nested-focus-navigation";
+import { makeGitFileDiffTileForFile } from "@/lib/git/git-diff-tile";
+import type { GitDiffRepositoryContext } from "@/stores/epics/canvas/types";
+import { gitChangedFileTooltipContent } from "@/lib/git/panel-file-rendering";
+import type { HighlightRanges } from "@/lib/git/path-highlight";
+import { FilePathTooltip } from "@/components/file-path-tooltip";
+import {
+  GIT_DIFF_TILE_DND_TYPE,
+  getGitDiffTileDragId,
+  getPaneScopedDndId,
+  type EpicCanvasGitDiffTileDragData,
+} from "@/components/epic-canvas/dnd/dnd";
+import { GitChangedFileRow } from "./git-changed-file-row";
+
+export interface FileRowProps {
+  readonly epicId: string;
+  readonly viewTabId: string;
+  readonly hostId: string;
+  readonly runningDir: string;
+  readonly repositoryContext: GitDiffRepositoryContext | null;
+  readonly file: GitChangedFile;
+  readonly active: boolean;
+  /** Filter match ranges into `file.path`; empty when no filter is active. */
+  readonly pathRanges: HighlightRanges;
+  readonly nested: boolean;
+}
+
+export function FileRow(props: FileRowProps): ReactNode {
+  const navigateNested = useEpicNestedFocusNavigation();
+  const prepareOpenTilePreviewInTabFocusTarget = useEpicCanvasStore(
+    (s) => s.prepareOpenTilePreviewInTabFocusTarget,
+  );
+  const prepareOpenTileInTabFocusTarget = useEpicCanvasStore(
+    (s) => s.prepareOpenTileInTabFocusTarget,
+  );
+  const tile = useMemo(
+    () =>
+      makeGitFileDiffTileForFile({
+        hostId: props.hostId,
+        runningDir: props.runningDir,
+        file: props.file,
+        repositoryContext: props.repositoryContext,
+      }),
+    [props.hostId, props.file, props.repositoryContext, props.runningDir],
+  );
+
+  const onClick = useCallback(() => {
+    navigateNested(props.epicId, props.viewTabId, () =>
+      prepareOpenTilePreviewInTabFocusTarget(props.viewTabId, tile),
+    );
+  }, [
+    navigateNested,
+    prepareOpenTilePreviewInTabFocusTarget,
+    props.epicId,
+    props.viewTabId,
+    tile,
+  ]);
+
+  const onDoubleClick = useCallback(() => {
+    navigateNested(props.epicId, props.viewTabId, () =>
+      prepareOpenTileInTabFocusTarget(props.viewTabId, tile),
+    );
+  }, [
+    navigateNested,
+    prepareOpenTileInTabFocusTarget,
+    props.epicId,
+    props.viewTabId,
+    tile,
+  ]);
+
+  const dragData = useMemo<EpicCanvasGitDiffTileDragData>(
+    () => ({
+      kind: GIT_DIFF_TILE_DND_TYPE,
+      epicId: props.epicId,
+      viewTabId: props.viewTabId,
+      tile,
+    }),
+    [props.epicId, props.viewTabId, tile],
+  );
+  const { listeners, setNodeRef: dragRef } = useDraggable({
+    id: getPaneScopedDndId(props.viewTabId, getGitDiffTileDragId(tile.id)),
+    data: dragData,
+  });
+
+  return (
+    <FilePathTooltip
+      content={gitChangedFileTooltipContent(props.file)}
+      side="right"
+    >
+      <div
+        ref={dragRef}
+        {...listeners}
+        data-testid={`file-row-${props.file.path}`}
+      >
+        <GitChangedFileRow
+          file={props.file}
+          density="panel"
+          active={props.active}
+          leading={null}
+          trailing={null}
+          pathRanges={props.pathRanges}
+          onClick={onClick}
+          onDoubleClick={onDoubleClick}
+          ariaExpanded={undefined}
+          nested={props.nested}
+          className={undefined}
+        />
+      </div>
+    </FilePathTooltip>
+  );
+}

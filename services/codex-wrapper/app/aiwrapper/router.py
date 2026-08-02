@@ -2,6 +2,7 @@ import re
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import JSONResponse, PlainTextResponse
 
 from .governance import governance
 from .profiles import ensure_profile
@@ -37,6 +38,8 @@ async def my_usage(request: Request):
     now_ms = int(__import__("time").time() * 1000)
     summary_5h = await governance("summary", {"userId": user["id"], "since": now_ms - 5 * 60 * 60 * 1000})
     summary_7d = await governance("summary", {"userId": user["id"], "since": now_ms - 7 * 24 * 60 * 60 * 1000})
+    summary_days = await governance("summary", {"userId": user["id"], "since": now_ms - 7 * 24 * 60 * 60 * 1000, "by": "day"})
+    summary_outcomes = await governance("summary", {"userId": user["id"], "since": now_ms - 7 * 24 * 60 * 60 * 1000, "by": "outcome"})
     used_5h, used_7d = summary_5h["totals"]["totalTokens"], summary_7d["totals"]["totalTokens"]
     return {
         "weighted_units": used_7d,
@@ -47,6 +50,10 @@ async def my_usage(request: Request):
             "5h": {"used": used_5h, "limit": user["quota_5h"]},
             "7d": {"used": used_7d, "limit": user["quota_7d"]},
         },
+        "tokens": summary_7d["totals"],
+        "models": summary_7d["buckets"],
+        "days": summary_days["buckets"],
+        "outcomes": summary_outcomes["buckets"],
     }
 
 
@@ -133,7 +140,9 @@ async def create_organization(request: Request):
 @router.get("/v1/sessions")
 async def sessions(request: Request):
     user = principal(request)
-    return {"data": store.list_sessions(user["id"])}
+    query = request.query_params.get("q", "")
+    favorites_only = request.query_params.get("favorite", "").lower() in {"1", "true", "yes"}
+    return {"data": store.list_sessions(user["id"], query, favorites_only)}
 
 
 @router.get("/v1/sessions/{session_id}")
@@ -149,6 +158,31 @@ async def get_session(session_id: str, request: Request):
 async def archive_session(session_id: str, request: Request):
     user = principal(request)
     store.archive_session(user["id"], session_id)
+
+
+@router.patch("/v1/sessions/{session_id}")
+async def update_session(session_id: str, request: Request):
+    user = principal(request)
+    result = store.update_session(user["id"], session_id, await request.json())
+    if not result:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return result
+
+
+@router.get("/v1/sessions/{session_id}/export")
+async def export_session(session_id: str, request: Request):
+    user = principal(request)
+    result = store.get_session(user["id"], session_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if request.query_params.get("format", "markdown") == "json":
+        return JSONResponse(result)
+    lines = [f"# {result['session']['title']}", ""]
+    for message in store.session_messages(session_id):
+        lines.extend([f"## {'You' if message['role'] == 'user' else 'Codex'}", "", message["content"], ""])
+    return PlainTextResponse("\n".join(lines), media_type="text/markdown", headers={
+        "Content-Disposition": f"attachment; filename=aiwrapper-{session_id}.md"
+    })
 
 
 @router.get("/v1/shares")

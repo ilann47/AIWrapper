@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\api.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\client.ts"
-index ec154655..e491d2fb 100644
+index ec1546551..8a6665017 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\api.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\client.ts"	
-@@ -1,213 +1,101 @@
+@@ -1,213 +1,112 @@
 -let installed = false;
 -/** Shared 401 refresh gate — concurrent waiters join one prompt / token resolution. */
 -let resolutionInFlight: Promise<string | null> | null = null;
@@ -62,6 +62,7 @@ index ec154655..e491d2fb 100644
 +  model: string;
 +  threadId?: string;
 +  status: string;
++  favorite?: boolean;
 +  createdAt: string;
 +  updatedAt: string;
  }
@@ -241,7 +242,7 @@ index ec154655..e491d2fb 100644
 -      clearTokenIfCurrent(refreshed);
 -    } else {
 -      clearTokenIfCurrent(token);
-+  async streamChat(body: unknown, onDelta: (text: string) => void): Promise<void> {
++  async streamChat(body: unknown, onDelta: (text: string) => void, signal?: AbortSignal): Promise<{ rtkSavedBytes: number }> {
 +    const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
 +      method: "POST",
 +      headers: {
@@ -249,6 +250,7 @@ index ec154655..e491d2fb 100644
 +        "Content-Type": "application/json",
 +      },
 +      body: JSON.stringify(body),
++      signal,
 +    });
 +    if (!response.ok) throw new Error(await response.text());
 +    if (!response.body) throw new Error("SSE response has no body");
@@ -277,7 +279,9 @@ index ec154655..e491d2fb 100644
 +      }
 +      if (done) break;
      }
--
++    return { rtkSavedBytes: Number(response.headers.get("X-AIWrapper-RTK-Saved-Bytes") ?? 0) || 0 };
++  }
+ 
 -    const nextToken = await resolveTokenAfter401(token);
 -    if (!nextToken) return response;
 -
@@ -297,5 +301,11 @@ index ec154655..e491d2fb 100644
 -  resolutionInFlight = null;
 -  rawFetch = null;
 -  promptCancelled = false;
++  async download(path: string): Promise<Blob> {
++    const response = await fetch(`${this.baseUrl}${path}`, {
++      headers: { Authorization: `Bearer ${this.token}` },
++    });
++    if (!response.ok) throw new Error(await response.text());
++    return response.blob();
 +  }
  }

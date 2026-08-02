@@ -30,6 +30,7 @@ from .schemas import (
     ResponsesOutputText,
 )
 from .aiwrapper.governance import evaluate_user_quota, record_usage
+from .aiwrapper.nine_router import compress_request
 from .aiwrapper.router import router as aiwrapper_router
 from .aiwrapper.store import store as aiwrapper_store
 
@@ -40,6 +41,7 @@ app.add_middleware(
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-AIWrapper-RTK-Saved-Bytes"],
 )
 
 if settings.aiwrapper_enabled:
@@ -84,6 +86,8 @@ async def chat_completions(req: ChatCompletionRequest, request: Request):
         )
 
     message_payload = [m.dict() for m in req.messages]
+    compressed_payload, rtk_stats = await compress_request({"messages": message_payload})
+    message_payload = compressed_payload.get("messages", message_payload)
     prompt, image_urls = build_prompt_and_images(message_payload)
     if aiwrapper_user:
         raw_content = req.messages[-1].content if req.messages else ""
@@ -159,7 +163,12 @@ async def chat_completions(req: ChatCompletionRequest, request: Request):
                             inputTokens=max(1, len(prompt) // 4), outputTokens=max(0, len(final_text) // 4),
                         )
 
-            return StreamingResponse(event_gen(), media_type="text/event-stream")
+            rtk_saved = 0 if not rtk_stats else max(0, int(rtk_stats.get("bytesBefore", 0)) - int(rtk_stats.get("bytesAfter", 0)))
+            return StreamingResponse(
+                event_gen(),
+                media_type="text/event-stream",
+                headers={"X-AIWrapper-RTK-Saved-Bytes": str(rtk_saved)},
+            )
         else:
             final = await run_codex_last_message(prompt, overrides, image_paths, model=model_name)
             if aiwrapper_user:

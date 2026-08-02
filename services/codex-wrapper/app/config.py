@@ -42,6 +42,8 @@ class Settings(BaseSettings):
     aiwrapper_database_path: str = Field(default=".aiwrapper/aiwrapper.db", alias="AIWRAPPER_DATABASE_PATH")
     aiwrapper_multi_auth_dir: str = Field(default=".aiwrapper/multi-auth", alias="AIWRAPPER_MULTI_AUTH_DIR")
     aiwrapper_governance_bridge: str = Field(default="../../extensions/aiwrapper-admin/src/governance-bridge.mjs", alias="AIWRAPPER_GOVERNANCE_BRIDGE")
+    aiwrapper_nine_router_bridge: str = Field(default="../../extensions/aiwrapper-runtime/src/nine-router-bridge.mjs", alias="AIWRAPPER_NINE_ROUTER_BRIDGE")
+    aiwrapper_rtk_enabled: bool = Field(default=True, alias="AIWRAPPER_RTK_ENABLED")
     aiwrapper_node_path: str = Field(default="node", alias="AIWRAPPER_NODE_PATH")
     aiwrapper_profile_script: str = Field(default="../../packages/codex-profiles/bin/codex-profile", alias="AIWRAPPER_PROFILE_SCRIPT")
     aiwrapper_profile_bash: str = Field(default=r"C:\Program Files\Git\bin\bash.exe", alias="AIWRAPPER_PROFILE_BASH")

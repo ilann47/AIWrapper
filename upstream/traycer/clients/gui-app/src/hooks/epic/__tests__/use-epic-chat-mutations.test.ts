@@ -1,0 +1,266 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ReactNode } from "react";
+import { createElement } from "react";
+
+vi.mock("sonner", () => ({
+  toast: { error: vi.fn(), success: vi.fn() },
+}));
+
+vi.mock("@/lib/host/runtime", async () => {
+  const { HostRpcError } =
+    await import("@traycer-clients/shared/host-transport/host-messenger");
+  return {
+    useHostClient: () => ({
+      request: () =>
+        Promise.reject(
+          new HostRpcError({
+            code: "RPC_ERROR",
+            message: "test",
+            requestId: "test",
+            method: "test",
+            fatalDetails: null,
+          }),
+        ),
+    }),
+  };
+});
+
+vi.mock("@/hooks/host/use-reactive-active-host-id", () => ({
+  useReactiveActiveHostId: () => "host-test",
+}));
+
+const { forceReleaseChatSession } = vi.hoisted(() => ({
+  forceReleaseChatSession: vi.fn(),
+}));
+vi.mock("@/lib/registries/chat-session-registry", () => ({
+  getChatSessionRegistry: () => ({
+    forceRelease: forceReleaseChatSession,
+  }),
+}));
+
+import type { CreateChatRequest } from "@traycer/protocol/host/epic/unary-schemas";
+import type {
+  CreateChatMutationInput,
+  DeleteChatMutationOptions,
+} from "@/hooks/epic/use-epic-chat-mutations";
+
+interface CapturedMutationArgs {
+  readonly method: string;
+  readonly options: unknown;
+  readonly mapVariables: ((variables: never) => unknown) | undefined;
+}
+
+const capturedMutations: Partial<Record<string, CapturedMutationArgs>> = {};
+vi.mock("@/hooks/host/use-host-query", () => ({
+  useHostMutation: (args: CapturedMutationArgs) => {
+    capturedMutations[args.method] = args;
+    return { mutate: vi.fn(), isPending: false };
+  },
+}));
+
+import { toast } from "sonner";
+import { renderHook } from "@testing-library/react";
+import {
+  QueryClient,
+  QueryClientProvider,
+  type MutationFunctionContext,
+} from "@tanstack/react-query";
+import {
+  useEpicArchiveChat,
+  useEpicCreateChat,
+  useEpicRenameChat,
+  useEpicDeleteChat,
+} from "@/hooks/epic/use-epic-chat-mutations";
+import { HostRpcError } from "@traycer-clients/shared/host-transport/host-messenger";
+import type { RpcErrorCode } from "@traycer/protocol/framework/index";
+import type { SetChatArchivedResponse } from "@traycer/protocol/host/epic/unary-schemas";
+
+function makeError(code: RpcErrorCode): HostRpcError {
+  return new HostRpcError({
+    code,
+    message: "test",
+    requestId: "test",
+    method: "test",
+    fatalDetails: null,
+  });
+}
+
+function makeWrapper(): ({ children }: { children: ReactNode }) => ReactNode {
+  const queryClient = new QueryClient({
+    defaultOptions: { mutations: { retry: false } },
+  });
+  return ({ children }) =>
+    createElement(QueryClientProvider, { client: queryClient }, children);
+}
+
+function getCapturedMutation(method: string): CapturedMutationArgs {
+  const mutation = capturedMutations[method];
+  if (mutation === undefined) {
+    throw new Error(`expected ${method} mutation capture`);
+  }
+  return mutation;
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  for (const method of Object.keys(capturedMutations)) {
+    delete capturedMutations[method];
+  }
+});
+
+describe("useEpicCreateChat", () => {
+  it("stamps the active host id before delegating to useHostMutation", () => {
+    renderHook(() => useEpicCreateChat(), { wrapper: makeWrapper() });
+
+    const mutation = getCapturedMutation("epic.createChat");
+    if (mutation.mapVariables === undefined) {
+      throw new Error("expected createChat mutation capture");
+    }
+
+    const mapVariables = mutation.mapVariables as (
+      variables: CreateChatMutationInput,
+    ) => CreateChatRequest;
+    const params = mapVariables({
+      epicId: "e",
+      chatId: "c",
+      parentId: null,
+      title: "t",
+    });
+
+    expect(params).toEqual({
+      hostId: "host-test",
+      epicId: "e",
+      chatId: "c",
+      parentId: null,
+      title: "t",
+    } satisfies CreateChatRequest);
+  });
+
+  it("shows fallback on error", () => {
+    renderHook(() => useEpicCreateChat(), { wrapper: makeWrapper() });
+    const opts = getCapturedMutation("epic.createChat").options as {
+      onError: (e: HostRpcError) => void;
+    };
+    opts.onError(makeError("RPC_ERROR"));
+    expect(toast.error).toHaveBeenCalledWith("Couldn't create agent.");
+  });
+});
+
+describe("useEpicRenameChat", () => {
+  it("shows fallback on error", () => {
+    renderHook(() => useEpicRenameChat());
+    const opts = getCapturedMutation("epic.renameChat").options as {
+      onError: (e: HostRpcError) => void;
+    };
+    opts.onError(makeError("RPC_ERROR"));
+    expect(toast.error).toHaveBeenCalledWith("Couldn't rename agent.");
+  });
+});
+
+describe("useEpicDeleteChat", () => {
+  it("force-releases the deleted chat session on success", () => {
+    renderHook(() => useEpicDeleteChat());
+    const opts = getCapturedMutation("epic.deleteChat")
+      .options as DeleteChatMutationOptions;
+    if (opts.onSuccess === undefined) {
+      throw new Error("expected deleteChat success handler");
+    }
+    const mutationContext: MutationFunctionContext = {
+      client: new QueryClient(),
+      meta: undefined,
+    };
+
+    opts.onSuccess(
+      { deleted: true },
+      { epicId: "epic-1", chatId: "chat-1" },
+      undefined,
+      mutationContext,
+    );
+
+    expect(forceReleaseChatSession).toHaveBeenCalledWith("epic-1", "chat-1");
+  });
+
+  it("shows fallback on error", () => {
+    renderHook(() => useEpicDeleteChat());
+    const opts = getCapturedMutation("epic.deleteChat").options as {
+      onError: (e: HostRpcError) => void;
+    };
+    opts.onError(makeError("RPC_ERROR"));
+    expect(toast.error).toHaveBeenCalledWith("Couldn't delete agent.");
+  });
+});
+
+describe("useEpicArchiveChat", () => {
+  it("registers epic.setChatArchived with no optimistic cache write (B9)", () => {
+    renderHook(() => useEpicArchiveChat());
+
+    const mutation = getCapturedMutation("epic.setChatArchived");
+    expect(mutation.method).toBe("epic.setChatArchived");
+    // mapVariables is identity - chats and terminal-agents share one RPC keyed
+    // by record id; there is no separate TUI method.
+    if (mutation.mapVariables === undefined) {
+      throw new Error("expected setChatArchived mapVariables");
+    }
+    const variables = {
+      epicId: "epic-1",
+      chatId: "agent-or-chat-id",
+      archived: true,
+    };
+    const mapVariables = mutation.mapVariables as (
+      vars: typeof variables,
+    ) => typeof variables;
+    expect(mapVariables(variables)).toEqual(variables);
+
+    const opts = mutation.options as {
+      onSuccess: ((data: SetChatArchivedResponse) => void) | undefined;
+      onMutate: (() => void) | undefined;
+      onError: (e: HostRpcError) => void;
+    };
+    // No onMutate optimistic write; no onSuccess that would toast or release a tab.
+    expect(opts.onMutate).toBeUndefined();
+    expect(opts.onSuccess).toBeUndefined();
+  });
+
+  it("treats { updated: false } as success and does not toast (B9)", () => {
+    renderHook(() => useEpicArchiveChat());
+    const opts = getCapturedMutation("epic.setChatArchived").options as {
+      onSuccess: ((data: SetChatArchivedResponse) => void) | undefined;
+      onError: (e: HostRpcError) => void;
+    };
+    // Idempotent "already in requested state" is a success response. With no
+    // onSuccess handler and no onError path taken, nothing toasts.
+    expect(opts.onSuccess).toBeUndefined();
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it("toasts a generic fallback on a real failure (B9)", () => {
+    renderHook(() => useEpicArchiveChat());
+    const opts = getCapturedMutation("epic.setChatArchived").options as {
+      onError: (e: HostRpcError) => void;
+    };
+    opts.onError(makeError("RPC_ERROR"));
+    expect(toast.error).toHaveBeenCalledWith("Couldn't archive agent.");
+    // One generic toast only - do not assert on status codes or parse messages.
+    expect(toast.error).toHaveBeenCalledTimes(1);
+  });
+
+  it("surfaces E_HOST_UNSUPPORTED with the host-upgrade toast", () => {
+    renderHook(() => useEpicArchiveChat());
+    const opts = getCapturedMutation("epic.setChatArchived").options as {
+      onError: (e: HostRpcError) => void;
+    };
+    opts.onError(makeError("E_HOST_UNSUPPORTED"));
+    // Archive is user-initiated, so it follows the FOREGROUND convention:
+    // `toastFromHostError` reports the failure rather than swallowing it (only
+    // the background helper swallows capability gaps, since nobody asked for
+    // that work). Silence here would read as a broken button. The capability
+    // gate keeps this path cold - reaching it means the host changed under a
+    // live session. `toastFromHostError` maps E_HOST_UNSUPPORTED to a specific
+    // host-upgrade message (a version gap, not a failed archive), which is the
+    // right actionable copy for this exact case, so the fallback never shows.
+    expect(toast.error).toHaveBeenCalledWith(
+      "This needs a newer Traycer host. Update the host to continue.",
+    );
+  });
+});

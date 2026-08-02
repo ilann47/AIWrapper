@@ -1,0 +1,194 @@
+import { useStore } from "zustand";
+import type { ReactNode, RefObject } from "react";
+import type { JsonContent } from "@traycer/protocol/common/registry";
+
+import {
+  ComposerPromptEditor,
+  type ComposerPromptEditorHandle,
+} from "@/components/chat/composer/composer-prompt-editor";
+import type {
+  PastedComposerImage,
+  PastedComposerImageOutcome,
+} from "@/components/chat/composer/editor/extensions/chat-paste-handler";
+import type { ComposerPickerStore } from "@/components/chat/composer/picker/composer-picker-store";
+import type { UseComposerPasteResult } from "@/hooks/composer/use-composer-paste";
+import type { ComposerDictationControl } from "@/components/home/toolbar/composer-mic-button";
+import type { DictationPreparingStatus } from "@/hooks/composer/use-dictation-availability";
+import { ComposerShell } from "@/components/home/composer/composer-shell";
+import { ComposerWorkspaceRow } from "@/components/home/composer/composer-workspace-mode-row";
+import { SurfaceActivityProvider } from "@/components/home/composer/surface-activity-context";
+import { TerminalLaunchPanel } from "@/components/home/composer/terminal-launch-panel";
+import type { ComposerMode } from "@/components/home/data/landing-options";
+import type { TerminalAgentLaunch } from "@/components/home/hooks/use-landing-composer-actions";
+import { ComposerToolbar } from "@/components/home/toolbar/composer-toolbar";
+import type { ComposerToolbarStore } from "@/stores/composer/composer-toolbar-store";
+import { cn } from "@/lib/utils";
+
+const COMPOSER_PLACEHOLDER = "Ask Traycer anything. @ mention for context";
+
+export interface ComposerBodyProps {
+  readonly pickerStore: ComposerPickerStore;
+  readonly editorRef: RefObject<ComposerPromptEditorHandle | null>;
+  readonly toolbarStore: ComposerToolbarStore;
+  readonly composerMode: ComposerMode;
+  readonly chatEditorIsActive: boolean;
+  readonly editorClassName: string;
+  readonly initialContent: JsonContent;
+  readonly initialSelection: {
+    readonly from: number;
+    readonly to: number;
+  } | null;
+  readonly canSubmit: boolean;
+  readonly isSubmitting: boolean;
+  readonly attachmentPending: boolean;
+  readonly workspaceDisabledHint: string | null;
+  readonly header: ReactNode;
+  /**
+   * Rendered between `header` and the composer card (`ComposerShell`) - the
+   * decision-log-mandated slot for a banner that must sit flush above the
+   * card itself, below any mode-switch header. `null` for callers with
+   * nothing to show there (the chat composer routes its own rate-limit
+   * banner through a separate portal and never uses this slot).
+   */
+  readonly topBanner: ReactNode | null;
+  readonly attachmentsStrip: ReactNode;
+  readonly workspaceControls: ReactNode;
+  readonly dictationControl: ComposerDictationControl | null;
+  readonly dictationPreparing: DictationPreparingStatus | null;
+  readonly paste: UseComposerPasteResult;
+  readonly hasPastedImageBytes: ((hash: string) => boolean) | null;
+  readonly ingestPastedComposerImages:
+    | ((
+        images: ReadonlyArray<PastedComposerImage>,
+      ) => ReadonlyArray<PastedComposerImageOutcome>)
+    | null;
+  /**
+   * Forwarded to the chat `ComposerPromptEditor`'s `onEditorReady` (fired once
+   * when its async editor is created). Landing passes a callback that re-ingests
+   * a restored draft's still-pending b64 image nodes; `null` where the editor
+   * has nothing to resume (chat / new-conversation).
+   */
+  readonly onEditorReady: (() => void) | null;
+  readonly onSubmit: () => void;
+  readonly onStartTerminal: (launch: TerminalAgentLaunch) => void;
+  readonly onSnapshot: (
+    content: JsonContent,
+    selection: { from: number; to: number },
+  ) => void;
+}
+
+export function ComposerBody({
+  pickerStore,
+  editorRef,
+  toolbarStore,
+  composerMode,
+  chatEditorIsActive,
+  editorClassName,
+  initialContent,
+  initialSelection,
+  canSubmit,
+  isSubmitting,
+  attachmentPending,
+  workspaceDisabledHint,
+  header,
+  topBanner,
+  attachmentsStrip,
+  workspaceControls,
+  dictationControl,
+  dictationPreparing,
+  paste,
+  hasPastedImageBytes,
+  ingestPastedComposerImages,
+  onEditorReady,
+  onSubmit,
+  onStartTerminal,
+  onSnapshot,
+}: ComposerBodyProps) {
+  const harnessId = useStore(toolbarStore, (s) => s.selection.harnessId);
+  const chatPasteActive = composerMode === "chat";
+  const hiddenInTerminal = cn(composerMode !== "chat" && "hidden");
+  const hiddenInChat = cn(composerMode !== "terminal" && "hidden");
+
+  return (
+    <div className="flex flex-col gap-3">
+      {header}
+      {topBanner}
+      <ComposerShell
+        pickerStore={pickerStore}
+        onDragOver={chatPasteActive ? paste.onDragOver : NOOP}
+        onDrop={chatPasteActive ? paste.onDrop : NOOP}
+        onDragEnter={chatPasteActive ? paste.onDragEnter : NOOP}
+        onDragLeave={chatPasteActive ? paste.onDragLeave : NOOP}
+        dragOverlayVariant={chatPasteActive ? paste.dragOverlayVariant : null}
+        attachmentsStrip={composerMode === "chat" ? attachmentsStrip : null}
+        editor={
+          <>
+            <div className={hiddenInTerminal}>
+              <ComposerPromptEditor
+                ref={editorRef}
+                pickerStore={pickerStore}
+                initialContent={initialContent}
+                initialSelection={initialSelection}
+                slashProviderId={harnessId}
+                hasPastedImageBytes={hasPastedImageBytes}
+                ingestPastedComposerImages={ingestPastedComposerImages}
+                isActive={chatEditorIsActive}
+                disabled={isSubmitting}
+                placeholder={COMPOSER_PLACEHOLDER}
+                editorClassName={editorClassName}
+                stabilizeImageAttachmentCaret
+                onSnapshot={onSnapshot}
+                onSubmit={onSubmit}
+                onPaste={chatPasteActive ? paste.onPaste : NOOP}
+                onDragOver={chatPasteActive ? paste.onDragOver : NOOP}
+                onDrop={chatPasteActive ? paste.onDrop : NOOP}
+                onKeyDown={undefined}
+                onFocus={NOOP}
+                onBlur={NOOP}
+                onEditorReady={onEditorReady}
+              />
+            </div>
+            <div className={hiddenInChat}>
+              <SurfaceActivityProvider active={composerMode === "terminal"}>
+                <TerminalLaunchPanel
+                  store={toolbarStore}
+                  pending={isSubmitting}
+                  disabledHint={workspaceDisabledHint}
+                  onStart={onStartTerminal}
+                />
+              </SurfaceActivityProvider>
+            </div>
+          </>
+        }
+        toolbar={
+          <div className={hiddenInTerminal}>
+            <SurfaceActivityProvider active={composerMode === "chat"}>
+              <ComposerToolbar
+                store={toolbarStore}
+                onAttachImages={paste.attachImageFiles}
+                showNextTurnPermissionNote={false}
+                canSubmit={canSubmit}
+                attachmentPending={attachmentPending}
+                onSubmit={onSubmit}
+                activeTurnStatus={null}
+                stopDisabled
+                onStopTurn={null}
+                composerDisabledHint={workspaceDisabledHint}
+                dictation={dictationControl}
+                dictationPreparing={dictationPreparing}
+                settingsLocked={isSubmitting}
+                // The landing composer has no tab yet - the app-wide default
+                // host applies.
+                createProfileHostId={null}
+                runTargetHostId={null}
+              />
+            </SurfaceActivityProvider>
+          </div>
+        }
+      />
+      <ComposerWorkspaceRow workspaceControls={workspaceControls} />
+    </div>
+  );
+}
+
+const NOOP = (): void => undefined;

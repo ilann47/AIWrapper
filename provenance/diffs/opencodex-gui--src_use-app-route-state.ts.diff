@@ -1,1 +1,17 @@
-# Files are identical.
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\use-app-route-state.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\use-app-route-state.ts"
+index 6965d16d4..279f54a08 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\use-app-route-state.ts"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\use-app-route-state.ts"	
+@@ -52,10 +52,10 @@ export function useAppRouteState() {
+     setPageState(action.page);
+   }, []);
+ 
+-  const navigateToPage = (id: Page) => {
++  const navigateToPage = useCallback((id: Page) => {
+     navigateHash(id);
+     setPageState(id);
+-  };
++  }, []);
+ 
+   useEffect(() => {
+     const onRouteHash = () => {

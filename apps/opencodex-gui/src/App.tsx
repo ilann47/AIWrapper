@@ -22,7 +22,7 @@ import { readJsonIfOk } from "./fetch-json";
 import { type Page } from "./app-routing";
 import { useAppRouteState } from "./use-app-route-state";
 import { requestProxyStop } from "./stop-proxy";
-import { AIWrapperProvider } from "../../../extensions/aiwrapper-admin/src/auth";
+import { AIWrapperProvider, useAIWrapper } from "../../../extensions/aiwrapper-admin/src/auth";
 import ChatPage from "../../../extensions/aiwrapper-chat/src/ChatPage";
 import SessionsPage from "../../../extensions/aiwrapper-chat/src/SessionsPage";
 import UsersPage from "../../../extensions/aiwrapper-users/src/UsersPage";
@@ -61,28 +61,41 @@ const PAGE_TKEY: Record<Page, TKey> = {
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 const THEME_KEY = "ocx-theme";
 
-const NAV: { id: Page; tkey: TKey; Icon: typeof IconGrid }[] = [
-  { id: "dashboard", tkey: "nav.dashboard", Icon: IconGrid },
-  { id: "codex-auth", tkey: "nav.codexAuth", Icon: IconKey },
+type NavEntry = { id: Page; tkey: TKey; Icon: typeof IconGrid };
+const NAV_GROUPS: { label: TKey; adminOnly?: boolean; items: NavEntry[] }[] = [
+ { label: "nav.section.chat", items: [
   { id: "aiwrapper-chat", tkey: "nav.aiwrapperChat", Icon: IconTerminal },
   { id: "aiwrapper-sessions", tkey: "nav.aiwrapperSessions", Icon: IconList },
-  { id: "aiwrapper-users", tkey: "nav.aiwrapperUsers", Icon: IconBot },
-  { id: "aiwrapper-organizations", tkey: "nav.aiwrapperOrganizations", Icon: IconBoxes },
   { id: "aiwrapper-sharing", tkey: "nav.aiwrapperSharing", Icon: IconLink },
   { id: "aiwrapper-billing", tkey: "nav.aiwrapperBilling", Icon: IconActivity },
+ ]},
+ { label: "nav.section.admin", adminOnly: true, items: [
+  { id: "aiwrapper-users", tkey: "nav.aiwrapperUsers", Icon: IconBot },
+  { id: "aiwrapper-organizations", tkey: "nav.aiwrapperOrganizations", Icon: IconBoxes },
+ ]},
+ { label: "nav.section.monitoring", adminOnly: true, items: [
+  { id: "dashboard", tkey: "nav.dashboard", Icon: IconGrid },
+  { id: "usage", tkey: "nav.usage", Icon: IconActivity },
+  { id: "logs", tkey: "nav.logs", Icon: IconList },
+ ]},
+ { label: "nav.section.system", adminOnly: true, items: [
+  { id: "codex-auth", tkey: "nav.codexAuth", Icon: IconKey },
   { id: "providers", tkey: "nav.providers", Icon: IconServer },
   { id: "models", tkey: "nav.models", Icon: IconBoxes },
+  { id: "combos", tkey: "nav.combos", Icon: IconBoxes },
   { id: "subagents", tkey: "nav.subagents", Icon: IconBot },
-  { id: "logs", tkey: "nav.logs", Icon: IconList },
-  { id: "usage", tkey: "nav.usage", Icon: IconActivity },
   { id: "storage", tkey: "nav.storage", Icon: IconHardDrive },
+ ]},
+ { label: "nav.section.configuration", adminOnly: true, items: [
   { id: "api", tkey: "nav.api", Icon: IconGlobe },
   { id: "claude", tkey: "nav.claude", Icon: IconSparkle },
   { id: "grok", tkey: "nav.grok", Icon: IconBoxes },
+ ]},
 ];
 
 const THEME_ICON = { light: IconSun, dark: IconMoon, system: IconMonitor } as const;
 const THEME_TKEY: Record<Theme, TKey> = { light: "theme.light", dark: "theme.dark", system: "theme.system" };
+const USER_PAGES = new Set<Page>(["aiwrapper-chat", "aiwrapper-sessions", "aiwrapper-sharing", "aiwrapper-billing"]);
 
 function readRuntimeVersion(data: unknown): string | null {
   if (!data || typeof data !== "object" || !("version" in data)) return null;
@@ -95,11 +108,19 @@ function readStoredTheme(): Theme {
   return t === "light" || t === "dark" ? t : "system";
 }
 
-export default function App() {
+function AppContent() {
   const { page, navigateToPage } = useAppRouteState();
   const [theme, setTheme] = useState<Theme>(readStoredTheme);
   const { locale, setLocale } = useI18n();
   const t = useT();
+  const { principal } = useAIWrapper();
+  // Keep the imported OpenCodex controls available while the AIWrapper identity
+  // is unresolved/disconnected; once a user is authenticated, enforce its role.
+  const isAdministrator = !principal || principal.role === "admin" || principal.role === "owner";
+
+  useEffect(() => {
+    if (!isAdministrator && !USER_PAGES.has(page)) navigateToPage("aiwrapper-chat");
+  }, [isAdministrator, navigateToPage, page]);
 
   // Narrow screens: the sidebar becomes an off-canvas drawer behind a hamburger toggle.
   const [navOpen, setNavOpen] = useState(false);
@@ -228,7 +249,6 @@ export default function App() {
   );
 
   return (
-    <AIWrapperProvider>
     <div className="app">
       {/* inert while the drawer is open: keeps focus and assistive tech inside the drawer */}
       <header className="mobile-topbar" inert={navOpen}>
@@ -259,7 +279,9 @@ export default function App() {
             account pool. It is now promoted to the second slot instead: there is only
             one layout, so that filter would have hidden the page permanently.
           */}
-          {NAV.map(({ id, tkey, Icon }) => (
+          {NAV_GROUPS.filter(group => !group.adminOnly || isAdministrator).map(group => <div className="nav-group" key={group.label}>
+            <span className="nav-group-label">{t(group.label)}</span>
+            {group.items.map(({ id, tkey, Icon }) => (
             <div key={id} className={`nav-entry${id === "claude" ? ` nav-entry-claude${page === id ? " active" : ""}` : ""}`}>
               <button type="button" className={`nav-item${page === id ? " active" : ""}`} data-page={id}
                 onClick={() => {
@@ -279,7 +301,8 @@ export default function App() {
                 />
               )}
             </div>
-          ))}
+            ))}
+          </div>)}
         </nav>
         <div className="sidebar-foot">
           <div className="lang-toggle">
@@ -341,6 +364,9 @@ export default function App() {
         </div>
       </main>
     </div>
-    </AIWrapperProvider>
   );
+}
+
+export default function App() {
+  return <AIWrapperProvider><AppContent /></AIWrapperProvider>;
 }

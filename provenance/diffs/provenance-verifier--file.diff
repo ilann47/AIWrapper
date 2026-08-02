@@ -1,5 +1,5 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\codex-multi-auth\\scripts\\verify-vendor-provenance.mjs" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\scripts\\provenance\\verify.mjs"
-index dfb44b7d..9a9b2edd 100644
+index dfb44b7db..9a9b2edd8 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\codex-multi-auth\\scripts\\verify-vendor-provenance.mjs"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\scripts\\provenance\\verify.mjs"	
 @@ -1,117 +1,40 @@

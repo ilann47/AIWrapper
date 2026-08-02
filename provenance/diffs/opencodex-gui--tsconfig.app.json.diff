@@ -1,1 +1,14 @@
-# Files are identical.
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\tsconfig.app.json" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\tsconfig.app.json"
+index 7f42e5f7c..931c32ab9 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\tsconfig.app.json"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\tsconfig.app.json"	
+@@ -9,6 +9,9 @@
+ 
+     /* Bundler mode */
+     "moduleResolution": "bundler",
++    "paths": {
++      "@traycer/protocol/*": ["../../upstream/traycer/protocol/src/*"]
++    },
+     "allowImportingTsExtensions": true,
+     "verbatimModuleSyntax": true,
+     "moduleDetection": "force",

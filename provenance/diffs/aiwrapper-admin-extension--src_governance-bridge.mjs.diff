@@ -1,5 +1,5 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\api.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\governance-bridge.mjs"
-index ec154655..254f5882 100644
+index ec1546551..d6867c2a9 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\api.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\governance-bridge.mjs"	
 @@ -1,213 +1,66 @@
@@ -62,11 +62,11 @@ index ec154655..254f5882 100644
 +  process.stdin.on("error", reject);
 +}));
 +
-+async function userSummary({ userId, since, until }) {
++async function userSummary({ userId, since, until, by = "model" }) {
 +  const accountHash = hashUsageIdentifier(userId);
 +  const rows = (await readUsageLedgerRows({ since, until, includeArchives: true }))
 +    .filter(row => row.account?.accountHash === accountHash);
-+  return summarizeUsageRows(rows, { since, until, by: "model" });
++  return summarizeUsageRows(rows, { since, until, by });
  }
  
 -function storeToken(token: string): void {

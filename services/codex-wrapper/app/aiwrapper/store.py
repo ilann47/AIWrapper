@@ -57,7 +57,8 @@ class AIWrapperStore:
                 CREATE TABLE IF NOT EXISTS sessions (
                     id TEXT PRIMARY KEY, user_id TEXT NOT NULL, title TEXT NOT NULL,
                     model TEXT NOT NULL, status TEXT NOT NULL,
-                    created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+                    created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+                    favorite INTEGER NOT NULL DEFAULT 0
                 );
                 CREATE TABLE IF NOT EXISTS messages (
                     id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT NOT NULL,
@@ -69,6 +70,11 @@ class AIWrapperStore:
                     expires_at TEXT, revoked_at TEXT
                 );
             """)
+            session_columns = {
+                row["name"] for row in self._connection.execute("PRAGMA table_info(sessions)").fetchall()
+            }
+            if "favorite" not in session_columns:
+                self._connection.execute("ALTER TABLE sessions ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0")
 
     def _bootstrap_owner(self) -> None:
         row = self._connection.execute("SELECT id FROM users WHERE role = 'owner' LIMIT 1").fetchone()
@@ -145,7 +151,10 @@ class AIWrapperStore:
             if row is None:
                 session_id = str(uuid.uuid4())
                 title = " ".join(prompt.strip().split())[:72] or "New conversation"
-                self._connection.execute("INSERT INTO sessions VALUES (?, ?, ?, ?, 'active', ?, ?)", (session_id, user_id, title, model, now, now))
+                self._connection.execute(
+                    "INSERT INTO sessions (id, user_id, title, model, status, created_at, updated_at, favorite) VALUES (?, ?, ?, ?, 'active', ?, ?, 0)",
+                    (session_id, user_id, title, model, now, now),
+                )
             else:
                 self._connection.execute("UPDATE sessions SET model = ?, updated_at = ? WHERE id = ?", (model, now, session_id))
             self._connection.execute("INSERT INTO messages (session_id, role, content, created_at) VALUES (?, 'user', ?, ?)", (session_id, prompt, now))
@@ -160,12 +169,22 @@ class AIWrapperStore:
 
     def session_messages(self, session_id: str) -> list[dict[str, Any]]:
         with self._lock:
-            rows = self._connection.execute("SELECT role, content, created_at FROM messages WHERE session_id = ? ORDER BY id", (session_id,)).fetchall()
+            rows = self._connection.execute("SELECT id, role, content, created_at FROM messages WHERE session_id = ? ORDER BY id", (session_id,)).fetchall()
         return [dict(row) for row in rows]
 
-    def list_sessions(self, user_id: str) -> list[dict[str, Any]]:
+    def list_sessions(self, user_id: str, query: str = "", favorites_only: bool = False) -> list[dict[str, Any]]:
+        clauses = ["user_id = ?", "status = 'active'"]
+        parameters: list[Any] = [user_id]
+        if query.strip():
+            clauses.append("title LIKE ?")
+            parameters.append(f"%{query.strip()}%")
+        if favorites_only:
+            clauses.append("favorite = 1")
         with self._lock:
-            rows = self._connection.execute("SELECT * FROM sessions WHERE user_id = ? AND status = 'active' ORDER BY updated_at DESC", (user_id,)).fetchall()
+            rows = self._connection.execute(
+                f"SELECT * FROM sessions WHERE {' AND '.join(clauses)} ORDER BY favorite DESC, updated_at DESC",
+                parameters,
+            ).fetchall()
         return [self._session_json(dict(row)) for row in rows]
 
     def get_session(self, user_id: str, session_id: str) -> Optional[dict[str, Any]]:
@@ -177,19 +196,42 @@ class AIWrapperStore:
         turns = []
         for message in self.session_messages(session_id):
             if message["role"] == "user":
-                item = {"type": "userMessage", "content": [{"type": "text", "text": message["content"]}]}
+                item = {"id": message["id"], "type": "userMessage", "createdAt": message["created_at"], "content": [{"type": "text", "text": message["content"]}]}
             else:
-                item = {"type": "agentMessage", "text": message["content"]}
+                item = {"id": message["id"], "type": "agentMessage", "createdAt": message["created_at"], "text": message["content"]}
             turns.append({"items": [item]})
         return {"session": session, "thread": {"id": session_id, "turns": turns}}
 
     @staticmethod
     def _session_json(row: dict[str, Any]) -> dict[str, Any]:
-        return {"id": row["id"], "title": row["title"], "model": row["model"], "threadId": row["id"], "status": row["status"], "createdAt": row["created_at"], "updatedAt": row["updated_at"]}
+        return {"id": row["id"], "title": row["title"], "model": row["model"], "threadId": row["id"], "status": row["status"], "favorite": bool(row.get("favorite", 0)), "createdAt": row["created_at"], "updatedAt": row["updated_at"]}
 
     def archive_session(self, user_id: str, session_id: str) -> None:
         with self._lock, self._connection:
             self._connection.execute("UPDATE sessions SET status = 'archived', updated_at = ? WHERE id = ? AND user_id = ?", (_now(), session_id, user_id))
+
+    def update_session(self, user_id: str, session_id: str, values: dict[str, Any]) -> Optional[dict[str, Any]]:
+        updates: list[tuple[str, Any]] = []
+        if "title" in values:
+            title = " ".join(str(values["title"]).strip().split())[:120]
+            if title:
+                updates.append(("title", title))
+        if "favorite" in values:
+            updates.append(("favorite", 1 if bool(values["favorite"]) else 0))
+        if updates:
+            updates.append(("updated_at", _now()))
+            sql = ", ".join(f"{key} = ?" for key, _ in updates)
+            with self._lock, self._connection:
+                self._connection.execute(
+                    f"UPDATE sessions SET {sql} WHERE id = ? AND user_id = ? AND status = 'active'",
+                    (*[value for _, value in updates], session_id, user_id),
+                )
+        with self._lock:
+            row = self._connection.execute(
+                "SELECT * FROM sessions WHERE id = ? AND user_id = ? AND status = 'active'",
+                (session_id, user_id),
+            ).fetchone()
+        return self._session_json(dict(row)) if row else None
 
     def list_organizations(self) -> list[dict[str, Any]]:
         with self._lock:

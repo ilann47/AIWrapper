@@ -7,7 +7,7 @@
   "scripts": {
     "build": "pnpm build:governance && pnpm build:web",
     "build:governance": "pnpm --dir packages/codex-multi-auth build",
-    "build:web": "pnpm --dir apps/opencodex-gui build",
+    "build:web": "pnpm --dir apps/opencodex-gui build && node scripts/sync-gui-dist.mjs",
     "typecheck": "pnpm --dir packages/codex-multi-auth typecheck && pnpm --dir apps/opencodex-gui build",
     "test": "pnpm test:backend && pnpm test:gui",
     "test:backend": "cd services/codex-wrapper && python -m pytest -q",
@@ -25,5 +25,11 @@
     "bun": "1.3.14",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
+  },
+  "dependencies": {
+    "react-markdown": "^10.1.0",
+    "recharts": "^3.10.1",
+    "remark-gfm": "^4.0.1",
+    "zod": "4.4.3"
   }
 }

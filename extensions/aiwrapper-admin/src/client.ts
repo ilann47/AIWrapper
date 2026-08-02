@@ -20,6 +20,7 @@ export interface SessionRecord {
   model: string;
   threadId?: string;
   status: string;
+  favorite?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -61,7 +62,7 @@ export class AIWrapperClient {
     });
   }
 
-  async streamChat(body: unknown, onDelta: (text: string) => void): Promise<void> {
+  async streamChat(body: unknown, onDelta: (text: string) => void, signal?: AbortSignal): Promise<{ rtkSavedBytes: number }> {
     const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
       method: "POST",
       headers: {
@@ -69,6 +70,7 @@ export class AIWrapperClient {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
+      signal,
     });
     if (!response.ok) throw new Error(await response.text());
     if (!response.body) throw new Error("SSE response has no body");
@@ -97,5 +99,14 @@ export class AIWrapperClient {
       }
       if (done) break;
     }
+    return { rtkSavedBytes: Number(response.headers.get("X-AIWrapper-RTK-Saved-Bytes") ?? 0) || 0 };
+  }
+
+  async download(path: string): Promise<Blob> {
+    const response = await fetch(`${this.baseUrl}${path}`, {
+      headers: { Authorization: `Bearer ${this.token}` },
+    });
+    if (!response.ok) throw new Error(await response.text());
+    return response.blob();
   }
 }

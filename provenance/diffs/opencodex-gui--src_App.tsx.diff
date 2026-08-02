@@ -1,5 +1,5 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\App.tsx" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\App.tsx"
-index d60e839b..8ec27f4e 100644
+index d60e839b8..504292dc4 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\App.tsx"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\App.tsx"	
 @@ -14,7 +14,7 @@ import Claude from "./pages/Claude";
@@ -15,7 +15,7 @@ index d60e839b..8ec27f4e 100644
  import { type Page } from "./app-routing";
  import { useAppRouteState } from "./use-app-route-state";
  import { requestProxyStop } from "./stop-proxy";
-+import { AIWrapperProvider } from "../../../extensions/aiwrapper-admin/src/auth";
++import { AIWrapperProvider, useAIWrapper } from "../../../extensions/aiwrapper-admin/src/auth";
 +import ChatPage from "../../../extensions/aiwrapper-chat/src/ChatPage";
 +import SessionsPage from "../../../extensions/aiwrapper-chat/src/SessionsPage";
 +import UsersPage from "../../../extensions/aiwrapper-users/src/UsersPage";
@@ -27,7 +27,7 @@ index d60e839b..8ec27f4e 100644
  
  installApiAuthFetch();
  
-@@ -41,6 +50,12 @@ const PAGE_TKEY: Record<Page, TKey> = {
+@@ -41,27 +50,52 @@ const PAGE_TKEY: Record<Page, TKey> = {
    api: "nav.api",
    claude: "nav.claude",
    grok: "nav.grok",
@@ -40,28 +40,92 @@ index d60e839b..8ec27f4e 100644
  };
  
  const API_BASE = import.meta.env.VITE_API_BASE || "";
-@@ -49,6 +64,12 @@ const THEME_KEY = "ocx-theme";
- const NAV: { id: Page; tkey: TKey; Icon: typeof IconGrid }[] = [
-   { id: "dashboard", tkey: "nav.dashboard", Icon: IconGrid },
-   { id: "codex-auth", tkey: "nav.codexAuth", Icon: IconKey },
+ const THEME_KEY = "ocx-theme";
+ 
+-const NAV: { id: Page; tkey: TKey; Icon: typeof IconGrid }[] = [
++type NavEntry = { id: Page; tkey: TKey; Icon: typeof IconGrid };
++const NAV_GROUPS: { label: TKey; adminOnly?: boolean; items: NavEntry[] }[] = [
++ { label: "nav.section.chat", items: [
 +  { id: "aiwrapper-chat", tkey: "nav.aiwrapperChat", Icon: IconTerminal },
 +  { id: "aiwrapper-sessions", tkey: "nav.aiwrapperSessions", Icon: IconList },
-+  { id: "aiwrapper-users", tkey: "nav.aiwrapperUsers", Icon: IconBot },
-+  { id: "aiwrapper-organizations", tkey: "nav.aiwrapperOrganizations", Icon: IconBoxes },
 +  { id: "aiwrapper-sharing", tkey: "nav.aiwrapperSharing", Icon: IconLink },
 +  { id: "aiwrapper-billing", tkey: "nav.aiwrapperBilling", Icon: IconActivity },
++ ]},
++ { label: "nav.section.admin", adminOnly: true, items: [
++  { id: "aiwrapper-users", tkey: "nav.aiwrapperUsers", Icon: IconBot },
++  { id: "aiwrapper-organizations", tkey: "nav.aiwrapperOrganizations", Icon: IconBoxes },
++ ]},
++ { label: "nav.section.monitoring", adminOnly: true, items: [
+   { id: "dashboard", tkey: "nav.dashboard", Icon: IconGrid },
++  { id: "usage", tkey: "nav.usage", Icon: IconActivity },
++  { id: "logs", tkey: "nav.logs", Icon: IconList },
++ ]},
++ { label: "nav.section.system", adminOnly: true, items: [
+   { id: "codex-auth", tkey: "nav.codexAuth", Icon: IconKey },
    { id: "providers", tkey: "nav.providers", Icon: IconServer },
    { id: "models", tkey: "nav.models", Icon: IconBoxes },
++  { id: "combos", tkey: "nav.combos", Icon: IconBoxes },
    { id: "subagents", tkey: "nav.subagents", Icon: IconBot },
-@@ -207,6 +228,7 @@ export default function App() {
-   );
+-  { id: "logs", tkey: "nav.logs", Icon: IconList },
+-  { id: "usage", tkey: "nav.usage", Icon: IconActivity },
+   { id: "storage", tkey: "nav.storage", Icon: IconHardDrive },
++ ]},
++ { label: "nav.section.configuration", adminOnly: true, items: [
+   { id: "api", tkey: "nav.api", Icon: IconGlobe },
+   { id: "claude", tkey: "nav.claude", Icon: IconSparkle },
+   { id: "grok", tkey: "nav.grok", Icon: IconBoxes },
++ ]},
+ ];
  
-   return (
-+    <AIWrapperProvider>
-     <div className="app">
-       {/* inert while the drawer is open: keeps focus and assistive tech inside the drawer */}
-       <header className="mobile-topbar" inert={navOpen}>
-@@ -309,9 +331,16 @@ export default function App() {
+ const THEME_ICON = { light: IconSun, dark: IconMoon, system: IconMonitor } as const;
+ const THEME_TKEY: Record<Theme, TKey> = { light: "theme.light", dark: "theme.dark", system: "theme.system" };
++const USER_PAGES = new Set<Page>(["aiwrapper-chat", "aiwrapper-sessions", "aiwrapper-sharing", "aiwrapper-billing"]);
+ 
+ function readRuntimeVersion(data: unknown): string | null {
+   if (!data || typeof data !== "object" || !("version" in data)) return null;
+@@ -74,11 +108,19 @@ function readStoredTheme(): Theme {
+   return t === "light" || t === "dark" ? t : "system";
+ }
+ 
+-export default function App() {
++function AppContent() {
+   const { page, navigateToPage } = useAppRouteState();
+   const [theme, setTheme] = useState<Theme>(readStoredTheme);
+   const { locale, setLocale } = useI18n();
+   const t = useT();
++  const { principal } = useAIWrapper();
++  // Keep the imported OpenCodex controls available while the AIWrapper identity
++  // is unresolved/disconnected; once a user is authenticated, enforce its role.
++  const isAdministrator = !principal || principal.role === "admin" || principal.role === "owner";
++
++  useEffect(() => {
++    if (!isAdministrator && !USER_PAGES.has(page)) navigateToPage("aiwrapper-chat");
++  }, [isAdministrator, navigateToPage, page]);
+ 
+   // Narrow screens: the sidebar becomes an off-canvas drawer behind a hamburger toggle.
+   const [navOpen, setNavOpen] = useState(false);
+@@ -237,7 +279,9 @@ export default function App() {
+             account pool. It is now promoted to the second slot instead: there is only
+             one layout, so that filter would have hidden the page permanently.
+           */}
+-          {NAV.map(({ id, tkey, Icon }) => (
++          {NAV_GROUPS.filter(group => !group.adminOnly || isAdministrator).map(group => <div className="nav-group" key={group.label}>
++            <span className="nav-group-label">{t(group.label)}</span>
++            {group.items.map(({ id, tkey, Icon }) => (
+             <div key={id} className={`nav-entry${id === "claude" ? ` nav-entry-claude${page === id ? " active" : ""}` : ""}`}>
+               <button type="button" className={`nav-item${page === id ? " active" : ""}`} data-page={id}
+                 onClick={() => {
+@@ -257,7 +301,8 @@ export default function App() {
+                 />
+               )}
+             </div>
+-          ))}
++            ))}
++          </div>)}
+         </nav>
+         <div className="sidebar-foot">
+           <div className="lang-toggle">
+@@ -309,9 +354,19 @@ export default function App() {
              {page === "api" && <ApiKeys apiBase={API_BASE} />}
              {page === "claude" && <Claude apiBase={API_BASE} />}
              {page === "grok" && <Grok apiBase={API_BASE} />}
@@ -75,6 +139,9 @@ index d60e839b..8ec27f4e 100644
          </div>
        </main>
      </div>
-+    </AIWrapperProvider>
    );
  }
++
++export default function App() {
++  return <AIWrapperProvider><AppContent /></AIWrapperProvider>;
++}

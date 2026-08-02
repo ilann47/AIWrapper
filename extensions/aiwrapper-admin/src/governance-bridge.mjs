@@ -21,11 +21,11 @@ const input = JSON.parse(await new Promise((resolve, reject) => {
   process.stdin.on("error", reject);
 }));
 
-async function userSummary({ userId, since, until }) {
+async function userSummary({ userId, since, until, by = "model" }) {
   const accountHash = hashUsageIdentifier(userId);
   const rows = (await readUsageLedgerRows({ since, until, includeArchives: true }))
     .filter(row => row.account?.accountHash === accountHash);
-  return summarizeUsageRows(rows, { since, until, by: "model" });
+  return summarizeUsageRows(rows, { since, until, by });
 }
 
 let result;

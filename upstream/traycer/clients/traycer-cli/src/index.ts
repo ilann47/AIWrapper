@@ -1,0 +1,2067 @@
+#!/usr/bin/env -S bun
+// Must stay the first import: it installs the proxy dispatcher every later
+// module's outbound request depends on, Sentry's transport included.
+import "./net/install-env-proxy";
+import "./sentry";
+import * as Sentry from "@sentry/node";
+import {
+  Command,
+  CommanderError,
+  Option,
+  type Command as CommanderCommand,
+} from "commander";
+import { A2A_PERMISSION_MODE_INSTRUCTION } from "@traycer/protocol/agent/agent-selection-guide-format";
+import { AGENT_FACING_HARNESS_ID_LIST } from "@traycer/protocol/host/agent/shared";
+import { readFeatureSettingsSync } from "@traycer/protocol/config/store";
+import { config } from "./config";
+import { resolveCliVersion } from "./cli-version";
+import { cliFinalizeUpgradeCommand } from "./commands/cli-finalize-upgrade";
+import { buildCliMarkSourceCommand } from "./commands/cli-mark-source";
+import { buildCliReAnchorCommand } from "./commands/cli-re-anchor";
+import { buildCliUpgradeCommand } from "./commands/cli-upgrade";
+import { buildAgentConfigureCommand } from "./commands/agent-configure";
+import { buildAgentCreateCommand } from "./commands/agent-create";
+import { buildAgentListProfilesCommand } from "./commands/agent-list-profiles";
+import { buildAgentProfileRateLimitsCommand } from "./commands/agent-profile-rate-limits";
+import { buildAgentActivityFromHookCommand } from "./commands/agent-activity-from-hook";
+import { buildAgentListHarnessesCommand } from "./commands/agent-list-harnesses";
+import { buildAgentListHarnessModelsCommand } from "./commands/agent-list-harness-models";
+import { buildAgentListCommand } from "./commands/agent-list";
+import {
+  buildAgentRoleClaimCommand,
+  buildAgentRoleListCommand,
+  buildAgentRoleRelinquishCommand,
+} from "./commands/agent-role";
+import { buildAgentSelectionGuideCommand } from "./commands/agent-selection-guide";
+import { buildAgentSendCommand } from "./commands/agent-send";
+import { buildAgentTitleFromHookCommand } from "./commands/agent-title-from-hook";
+import { buildAgentTurnEndedFromHookCommand } from "./commands/agent-turn-ended-from-hook";
+import { buildAgentSessionObservedFromHookCommand } from "./commands/agent-session-observed-from-hook";
+import { buildAgentTranscriptCommand } from "./commands/agent-transcript";
+import { buildAgentInboxCommand } from "./commands/agent-inbox";
+import { buildWorkspaceListCommand } from "./commands/workspace-list";
+import { buildWorktreeCreateCommand } from "./commands/worktree-create";
+import { buildWorktreeListCommand } from "./commands/worktree-list";
+import { buildWorktreeDeleteCommand } from "./commands/worktree-delete";
+import {
+  buildCommentsListCommand,
+  buildCommentsSetStatusCommand,
+} from "./commands/comments";
+import { runMonitor } from "./commands/monitor";
+import { buildConfigEnvDeleteCommand } from "./commands/config-env-delete";
+import { buildConfigEnvGetCommand } from "./commands/config-env-get";
+import { buildConfigEnvListCommand } from "./commands/config-env-list";
+import { buildConfigEnvSetCommand } from "./commands/config-env-set";
+import { buildConfigEnvUnsetCommand } from "./commands/config-env-unset";
+import { buildConfigShellAddCommand } from "./commands/config-shell-add";
+import { configShellGetCommand } from "./commands/config-shell-get";
+import { configShellListCommand } from "./commands/config-shell-list";
+import { buildConfigShellRemoveCommand } from "./commands/config-shell-remove";
+import { configShellResetCommand } from "./commands/config-shell-reset";
+import { buildConfigShellRevertArgsCommand } from "./commands/config-shell-revert-args";
+import { buildConfigShellSetCommand } from "./commands/config-shell-set";
+import { buildHostApplyCommand } from "./commands/host-apply";
+import { buildHostPurgeStageCommand } from "./commands/host-purge-stage";
+import { buildHostAvailableCommand } from "./commands/host-available";
+import { buildHostDownloadCommand } from "./commands/host-download";
+import { hostDoctorCommand } from "./commands/host-doctor";
+import { buildHostEnsureCommand } from "./commands/host-ensure";
+import { buildHostFreePortCommand } from "./commands/host-free-port";
+import { buildHostFreePortAndRestartCommand } from "./commands/host-free-port-and-restart";
+import { buildHostInstallCommand } from "./commands/host-install";
+import { buildHostLogsCommand } from "./commands/host-logs";
+import { buildHostRestartCommand } from "./commands/host-restart";
+import { runHostStart, type RunHostStartOptions } from "./commands/host-start";
+import { buildHostStampRuntimeCommand } from "./commands/host-stamp-runtime";
+import { runHostCapabilities } from "./host/capabilities";
+import { hostStatusCommand } from "./commands/host-status";
+import { hostStopCommand } from "./commands/host-stop";
+import { buildHostUninstallCommand } from "./commands/host-uninstall";
+import { buildHostUpdateCommand } from "./commands/host-update";
+import { buildLoginCommand } from "./commands/login";
+import { logoutCommand } from "./commands/logout";
+import { buildServiceInstallCommand } from "./commands/service-install";
+import { serviceStatusCommand } from "./commands/service-status";
+import { serviceUninstallCommand } from "./commands/service-uninstall";
+import { whoamiCommand } from "./commands/whoami";
+import { CLI_ERROR_CODES, cliError } from "./runner/errors";
+import { createCliLogger, errorFromUnknown, type ILogger } from "./logger";
+import { addRunnerFlags, extractRunnerFlags } from "./runner/commander-flags";
+import { parsePositiveIntegerArg } from "./runner/parse-positive-integer-arg";
+import { runCommand, type CommandFn } from "./runner/runner";
+import { readonlyEnv } from "./runner/runtime";
+import { flushStdio, writeStderr, writeStdout } from "./runner/std-write";
+
+// Helper: register a runner-aware action handler. The runner owns
+// process.exit, so anything composed via `withRunner` participates in
+// the shared NDJSON envelope (--json) and global flag handling
+// (--quiet, --no-progress, --no-bootstrap).
+//
+// Commander hands action handlers `(...positionalArgs, options, command)`
+// - one entry per declared `.argument(...)` (with `undefined` for an
+// optional positional that wasn't supplied), then the local opts bag,
+// then the Command. We strip the trailing two and forward the rest as
+// the typed positional slice. Optional positionals stay as their
+// original `undefined`/string token so call sites can guard with
+// `typeof args[i] === "string"` instead of distinguishing
+// "missing" from "empty".
+export function extractActionPositionals(
+  actionArgs: ReadonlyArray<unknown>,
+): ReadonlyArray<string | undefined> {
+  if (actionArgs.length < 2) return [];
+  const positional = actionArgs.slice(0, -2);
+  return positional.flatMap((entry) => {
+    if (typeof entry === "string") return [entry];
+    if (Array.isArray(entry)) {
+      return entry.map((value) =>
+        typeof value === "string" ? value : undefined,
+      );
+    }
+    return [undefined];
+  });
+}
+
+function expectRequiredPositional(
+  value: string | undefined,
+  name: string,
+): string {
+  if (typeof value === "string") return value;
+  throw cliError({
+    code: CLI_ERROR_CODES.INVALID_ARGUMENT,
+    message: `traycer: ${name} is required.`,
+    details: null,
+    exitCode: 1,
+  });
+}
+
+function parsePortArg(value: string): number | null {
+  const parsed = parsePositiveIntegerArg(value);
+  return parsed !== null && parsed <= 65_535 ? parsed : null;
+}
+
+function withRunner(
+  cmd: CommanderCommand,
+  build: (
+    opts: Record<string, unknown>,
+    args: ReadonlyArray<string | undefined>,
+  ) => CommandFn,
+): CommanderCommand {
+  return addRunnerFlags(cmd).action(async (...actionArgs: unknown[]) => {
+    const command = actionArgs[actionArgs.length - 1] as CommanderCommand;
+    const positionals = extractActionPositionals(actionArgs);
+    const optsBag = command.optsWithGlobals() as Record<string, unknown>;
+    const fn = build(optsBag, positionals);
+    await runCommand(fn, extractRunnerFlags(optsBag));
+  });
+}
+
+/**
+ * Pure check used by the script-entry guard to decide whether the
+ * current `process.argv[1]` looks like a Traycer CLI entrypoint we
+ * should auto-invoke. Lives at module scope (and is exported) so unit
+ * tests can pin the matrix without spawning a subprocess.
+ *
+ * Matches:
+ *  - the tsx dev path → `<repo>/clients/traycer-cli/src/index.ts`
+ *  - the compiled SEA binary on POSIX → `<resourcesPath>/cli/traycer`
+ *  - the compiled SEA binary on Windows → `<resourcesPath>\cli\traycer.exe`
+ *
+ * Returns `false` for `undefined`, empty strings, and unrelated paths
+ * (so `import { buildProgram }` from a test never auto-parses argv).
+ */
+export function isTraycerCliEntrypoint(argv1: string | undefined): boolean {
+  if (typeof argv1 !== "string" || argv1.length === 0) return false;
+  return /(?:^|[\\/])(?:index\.ts|traycer(?:\.exe)?)$/i.test(argv1);
+}
+
+// Both live in the leaf `cli-version.ts` so `registry/` can read the running
+// CLI's version without importing this module (which builds the whole program
+// and would close a cycle). Re-exported here because this is where every
+// existing caller and test looks for them.
+export { LOCAL_CLI_VERSION, resolveCliVersion } from "./cli-version";
+
+export type AgentCliSurface = "full" | "readonly";
+
+export function resolveAgentCliSurface(
+  env: Readonly<Record<string, string | undefined>>,
+): AgentCliSurface {
+  return env.TRAYCER_AGENT_CLI_SURFACE === "readonly" ? "readonly" : "full";
+}
+
+// Construct the full commander program. Exported as a builder so tests
+// can assert command registration (subject of the
+// "Register native-packaging CLI commands in Traycer CLI entrypoint"
+// follow-up bug) without spawning a subprocess. The script-mode call at
+// the bottom of this file is the only place that invokes parseAsync.
+export function buildProgram(): Command {
+  return buildProgramWithAgentRoles(readFeatureSettingsSync().agentRoles);
+}
+
+export function buildProgramWithAgentRoles(
+  agentRolesEnabled: boolean,
+): Command {
+  const program = new Command();
+  program
+    .name("traycer")
+    .description("Traycer CLI - auth, host supervisor, and config surface")
+    .version(resolveCliVersion(readonlyEnv()));
+
+  // Global runner flags so `traycer --json <subcommand>` works even when
+  // the subcommand declares its own copy. Commander merges globals via
+  // `optsWithGlobals()` which is what the runner-aware action handlers
+  // rely on.
+  addRunnerFlags(program);
+  registerCommands(program, agentRolesEnabled);
+  // Route commander's own parse failures (missing required option, unknown
+  // option/command) through the runner's error contract so `--json`
+  // consumers get a structured `result/error` envelope instead of a bare
+  // stderr line. `exitOverride` makes commander throw a `CommanderError`
+  // (caught at the script entry) rather than calling `process.exit`
+  // itself; the `writeErr` override suppresses commander's free-form
+  // stderr in `--json` mode (the entry emits the NDJSON event instead), and
+  // the `writeOut` override buffers help/version text under `--json` so the
+  // entry can wrap it in a single `result/ok` envelope instead of leaking
+  // raw prose onto an NDJSON stream.
+  applyRunnerErrorRouting(program);
+  return program;
+}
+
+// Commander stdout (help/version) captured under `--json` so the entry catch
+// can emit it as a structured envelope. Empty in human mode (text streams
+// straight through). Module-scoped because the `writeOut` override and the
+// entry catch live in different scopes; this process runs one command then
+// exits.
+let commanderStdoutBuffer = "";
+
+function applyRunnerErrorRouting(root: Command): void {
+  const route = (cmd: Command): void => {
+    cmd.exitOverride();
+    cmd.configureOutput({
+      writeErr: (str) => {
+        if (!argvRequestsJson(root)) writeStderr(str);
+      },
+      writeOut: (str) => {
+        if (argvRequestsJson(root)) commanderStdoutBuffer += str;
+        else writeStdout(str);
+      },
+    });
+    for (const sub of cmd.commands) route(sub);
+  };
+  route(root);
+}
+
+// True when the user passed the global `--json` flag. We can't reuse the
+// runner's parsed flag here because this runs on a *parse failure* (or inside
+// commander's own output hooks, before the action). We replicate the one rule
+// that matters: a token that is the *value* of a value-taking option (e.g.
+// `--message --json`) is not the flag. Collecting the value-taking flags from
+// the real command tree keeps this faithful to the actual schema instead of a
+// naive `argv.includes("--json")`, which mistook such a value for the flag.
+let valueOptionFlagsCache: Set<string> | null = null;
+function argvRequestsJson(root: Command): boolean {
+  if (valueOptionFlagsCache === null) {
+    valueOptionFlagsCache = collectValueOptionFlags(root);
+  }
+  const valueFlags = valueOptionFlagsCache;
+  const args = process.argv.slice(2);
+  for (let i = 0; i < args.length; i += 1) {
+    const token = args[i];
+    if (token === "--") break;
+    if (token === "--json" || token.startsWith("--json=")) return true;
+    // Skip the value of a `--opt <value>` so a following `--json` consumed as
+    // that value is not mistaken for the flag. The `--opt=value` form is a
+    // single token, so it needs no skip.
+    if (valueFlags.has(token)) i += 1;
+  }
+  return false;
+}
+
+function collectValueOptionFlags(root: Command): Set<string> {
+  const flags = new Set<string>();
+  const visit = (cmd: Command): void => {
+    for (const opt of cmd.options) {
+      // Boolean flags (`required` and `optional` both false) take no value.
+      if (!opt.required && !opt.optional) continue;
+      if (opt.long) flags.add(opt.long);
+      if (opt.short) flags.add(opt.short);
+    }
+    for (const sub of cmd.commands) visit(sub);
+  };
+  visit(root);
+  return flags;
+}
+
+// Thin orchestrator: each child registrar owns one logical command
+// group and returns void after wiring its commands onto `program`. Keep
+// this split when adding new commands - the body of `registerCommands`
+// stays a single page of declarative registrations.
+function registerCommands(program: Command, agentRolesEnabled: boolean): void {
+  registerAuthCommands(program);
+  registerHostCommands(program);
+  registerCliCommands(program);
+  registerConfigCommands(program);
+  registerCommentsCommands(program);
+  registerWorkspaceCommands(program);
+  registerWorktreeCommands(program);
+  registerAgentCommands(program, agentRolesEnabled);
+  registerMonitorCommand(program);
+}
+
+function registerAuthCommands(program: Command): void {
+  withRunner(
+    program
+      .command("login")
+      .description("Sign in to Traycer via your browser")
+      .option(
+        "--token <token>",
+        "Internal: seed credentials from a JSON `{ token, refreshToken }` payload piped on stdin (pass '-'). Used by the desktop app after sign-in; not for interactive use.",
+      ),
+    (opts) =>
+      buildLoginCommand({
+        token: typeof opts.token === "string" ? opts.token : null,
+      }),
+  );
+
+  withRunner(
+    program.command("logout").description("Forget the stored auth token"),
+    () => logoutCommand,
+  );
+
+  withRunner(
+    program.command("whoami").description("Print the signed-in user"),
+    () => whoamiCommand,
+  );
+}
+
+function registerHostCommands(program: Command): void {
+  const host = program.command("host").description("Manage the local host");
+
+  // `host start` is the long-running supervisor invoked by service
+  // manifests (launchd / systemd-user / Windows Scheduled Task) as
+  // `traycer host start`. The deploy slot is baked into the build via
+  // `config.environment` - there is no flag to pass. It does NOT go through
+  // `withRunner`/`runCommand` - it owns its own spawn lifecycle and must
+  // not switch to the shared NDJSON runner. We still call `addRunnerFlags(...)`
+  // so commander accepts the shared globals (`--json`, `--quiet`, …) when
+  // they appear AFTER `host start`.
+  addRunnerFlags(
+    host
+      .command("start")
+      .description(
+        "Bootstrap and supervise the host (used by launchd / systemd)",
+      )
+      .option(
+        "--cwd <path>",
+        "Working directory for the host (defaults to the install directory)",
+      )
+      // Identity binding for journal-authorised reclaim probes. Existing
+      // registrations remain valid without these options; a probe requires
+      // all three and otherwise produces no correlated marker.
+      //
+      // Hidden per the house convention for `"Internal:"` options - and
+      // deliberately so: the emitted service definitions gate on
+      // `host capabilities --has service-label`, never on help text, so
+      // hiding these cannot silently disable the identity binding. Adding
+      // `.hideHelp()` here IS the regression this decoupling exists to
+      // survive; see host/capabilities.ts.
+      .addOption(
+        new Option(
+          "--service-label <label>",
+          "Internal: owning service label",
+        ).hideHelp(),
+      )
+      .addOption(
+        new Option(
+          "--transition-id <id>",
+          "Internal: lifecycle transition id",
+        ).hideHelp(),
+      )
+      .addOption(
+        new Option(
+          "--probe-nonce <nonce>",
+          "Internal: lifecycle probe nonce",
+        ).hideHelp(),
+      ),
+  ).action(async (opts) => {
+    const logger = createCliLogger(config.environment);
+    logger.info("Host supervisor command invoked", {
+      environment: config.environment,
+      hasCwdOverride: typeof opts.cwd === "string",
+    });
+    await runHostStart(
+      hostStartOptionsFromCommand({
+        environment: config.environment,
+        cwd: typeof opts.cwd === "string" ? opts.cwd : null,
+        serviceLabel:
+          typeof opts.serviceLabel === "string" ? opts.serviceLabel : null,
+        transitionId:
+          typeof opts.transitionId === "string" ? opts.transitionId : null,
+        probeNonce:
+          typeof opts.probeNonce === "string" ? opts.probeNonce : null,
+      }),
+      {},
+    );
+  });
+
+  // The capability contract emitted service definitions probe before they
+  // pass an argument their (possibly N-1) CLI slot may not understand. NOT
+  // routed through `withRunner`: the output is a machine contract read by a
+  // `/bin/sh` script and a VBScript launcher, so it must stay raw stdout +
+  // exit code rather than the NDJSON envelope. Pure and side-effect free -
+  // see host/capabilities.ts.
+  host
+    .command("capabilities")
+    .description("Print the capability tokens this CLI supports")
+    .option("--json", "Print the capability document as JSON")
+    .option(
+      "--has <capability>",
+      "Exit 0 when this CLI supports <capability>, non-zero otherwise",
+    )
+    .action((...actionArgs: unknown[]) => {
+      // `optsWithGlobals()` rather than the local opts bag: `--json` is also
+      // declared globally by `addRunnerFlags(program)`, and commander binds
+      // the token to the root option, leaving the subcommand's copy unset.
+      const command = actionArgs[actionArgs.length - 1] as CommanderCommand;
+      const opts = command.optsWithGlobals() as Record<string, unknown>;
+      const response = runHostCapabilities(
+        typeof opts.has === "string"
+          ? { kind: "has", capability: opts.has }
+          : { kind: "list", json: opts.json === true },
+      );
+      if (response.stdout.length > 0) {
+        writeStdout(response.stdout);
+      }
+      process.exitCode = response.exitCode;
+    });
+
+  withRunner(
+    host
+      .command("status")
+      .description("Show host status (pid, websocket URL, recent activity)"),
+    () => hostStatusCommand,
+  );
+
+  withRunner(
+    host
+      .command("doctor")
+      .description(
+        "Run installation + runtime diagnostics for the host and CLI",
+      ),
+    () => hostDoctorCommand,
+  );
+
+  withRunner(
+    host
+      .command("restart")
+      .description("Restart the host service")
+      // Hidden: the CLI-owned activation mode (desktop controller's
+      // idle-gated restart cycle), not a user-facing switch - see
+      // commands/host-restart.ts.
+      .addOption(
+        new Option(
+          "--if-idle",
+          "Internal: refuse with E_HOST_BUSY if the host has work in progress, probed immediately before stop",
+        ).hideHelp(),
+      ),
+    (opts) =>
+      buildHostRestartCommand({
+        ifIdle: opts.ifIdle === true,
+      }),
+  );
+
+  withRunner(
+    host.command("stop").description("Stop the host service"),
+    () => hostStopCommand,
+  );
+
+  registerServiceCommands(host);
+
+  withRunner(
+    host
+      .command("install")
+      .description(
+        "Install a host version from the registry (defaults to latest), or a local archive with --from",
+      )
+      // `--release <version>` rather than `--version <version>` because
+      // the latter collides with commander's top-level program
+      // `--version` (set via `program.version(...)`) - commander
+      // resolves the option name globally first, so a subcommand
+      // `--version` ends up printing the CLI version and exiting.
+      // `--release` conveys the same intent (which registry release
+      // to install) without the collision.
+      .option(
+        "--release <version>",
+        "Registry version to install (defaults to 'latest'). Mutually exclusive with --from.",
+      )
+      .option(
+        "--from <path>",
+        "Install from a local archive. Mutually exclusive with --release.",
+      )
+      .option(
+        "--no-linger",
+        "Linux only (ignored on macOS/Windows): skip 'loginctl enable-linger'",
+      )
+      .option(
+        "--allow-self-invocation",
+        "Dev only: register the current (non-packaged) CLI as the service command.",
+      )
+      .option(
+        "--no-service-register",
+        "Install the host without registering it as an OS service (the caller registers the service).",
+      )
+      // Hidden: the CLI-owned pin gate (Doctor's controller-driven install
+      // path), not a user-facing switch - see commands/host-install.ts.
+      .addOption(
+        new Option(
+          "--if-idle",
+          "Internal: refuse with E_HOST_BUSY if the host has work in progress, probed immediately before the service stop",
+        ).hideHelp(),
+      ),
+    (opts) => {
+      const explicitVersion =
+        typeof opts.release === "string" && opts.release.length > 0
+          ? opts.release
+          : null;
+      const fromPath = typeof opts.from === "string" ? opts.from : null;
+      // The --release/--from mutual-exclusion check must run INSIDE the
+      // returned CommandFn so the runner catches it (CliError → NDJSON
+      // error envelope). Throwing in this build callback escapes
+      // runCommand's try/catch and dumps a raw stack trace with no
+      // envelope under --json.
+      return async (ctx) => {
+        if (explicitVersion !== null && fromPath !== null) {
+          throw cliError({
+            code: CLI_ERROR_CODES.INVALID_ARGUMENT,
+            message:
+              "host install: --release and --from are mutually exclusive; pass one or the other",
+            details: { release: explicitVersion, from: fromPath },
+            exitCode: 1,
+          });
+        }
+        return buildHostInstallCommand({
+          // Registry path defaults to "latest" when neither flag is set.
+          // For --from installs the value is unused (the archive supplies
+          // the version), but the underlying command contract still wants
+          // a concrete token - pass "latest" as the safe placeholder.
+          versionRequest: explicitVersion ?? "latest",
+          fromPath,
+          // commander's `--no-linger` materialises as `linger: false`.
+          enableLinger: opts.linger !== false,
+          allowSelfInvocation: opts.allowSelfInvocation === true,
+          // commander's `--no-service-register` materialises as
+          // `serviceRegister: false`.
+          noServiceRegister: opts.serviceRegister === false,
+          ifIdle: opts.ifIdle === true,
+        })(ctx);
+      };
+    },
+  );
+
+  withRunner(
+    host
+      .command("ensure")
+      .description(
+        "Make sure the host is installed, registered as a service, and running - installing or starting it if needed. Safe to run repeatedly.",
+      )
+      // Same `--release`/`--from` shape as `install` (see the comment on
+      // `install` for why `--release` is used instead of `--version`).
+      // Unlike `install`, `ensure` defaults to the host archive packaged
+      // beside the CLI when present, falling back to the registry.
+      .option(
+        "--release <version>",
+        "Registry version to ensure (defaults to 'latest'/packaged). Mutually exclusive with --from.",
+      )
+      .option(
+        "--from <path>",
+        "Ensure from a local archive. Mutually exclusive with --release.",
+      )
+      .option(
+        "--no-linger",
+        "Linux only (ignored on macOS/Windows): skip 'loginctl enable-linger'",
+      )
+      .option(
+        "--allow-self-invocation",
+        "Dev only: register the current (non-packaged) CLI as the service command.",
+      )
+      .option(
+        "--no-service-register",
+        "Install the host without registering it as an OS service (the caller registers the service).",
+      )
+      .option(
+        "--force",
+        "Restart the host even if it has work in progress (skips the busy check).",
+      ),
+    (opts) => {
+      const explicitVersion =
+        typeof opts.release === "string" && opts.release.length > 0
+          ? opts.release
+          : null;
+      const fromPath = typeof opts.from === "string" ? opts.from : null;
+      // See `host install` above - the mutual-exclusion check runs inside
+      // the CommandFn so the runner emits a proper NDJSON error envelope.
+      return async (ctx) => {
+        if (explicitVersion !== null && fromPath !== null) {
+          throw cliError({
+            code: CLI_ERROR_CODES.INVALID_ARGUMENT,
+            message:
+              "host ensure: --release and --from are mutually exclusive; pass one or the other",
+            details: { release: explicitVersion, from: fromPath },
+            exitCode: 1,
+          });
+        }
+        return buildHostEnsureCommand({
+          versionRequest: explicitVersion,
+          fromPath,
+          enableLinger: opts.linger !== false,
+          allowSelfInvocation: opts.allowSelfInvocation === true,
+          // commander's `--no-service-register` materialises as
+          // `serviceRegister: false`.
+          noServiceRegister: opts.serviceRegister === false,
+          force: opts.force === true,
+        })(ctx);
+      };
+    },
+  );
+
+  withRunner(
+    host
+      .command("apply")
+      .description("Apply the staged host update over the current install")
+      .option(
+        "--force",
+        "Apply even if the host has work in progress (skips the busy check).",
+      )
+      .addOption(
+        new Option(
+          "--expected-stage-fingerprint <fingerprint>",
+          "Internal: expected staged archive handoff identity",
+        ).hideHelp(),
+      )
+      // Hidden: the desktop-owned packaged-macOS path, which drives its own
+      // locked SMAppService activation cycle after this non-disruptive
+      // bytes-only apply - see commands/host-apply.ts.
+      .addOption(
+        new Option(
+          "--no-service",
+          "Internal: skip the busy check and service stop/start; rejected on Windows",
+        ).hideHelp(),
+      ),
+    (opts) =>
+      buildHostApplyCommand({
+        force: opts.force === true,
+        // commander materialises `--no-service` as `service: false`.
+        noService: opts.service === false,
+        expectedStageFingerprint:
+          typeof opts.expectedStageFingerprint === "string"
+            ? opts.expectedStageFingerprint
+            : null,
+      }),
+  );
+
+  withRunner(
+    host
+      .command("purge-stage", { hidden: true })
+      .requiredOption(
+        "--expected-stage-fingerprint <fingerprint>",
+        "Internal: expected staged archive handoff identity",
+      ),
+    (opts) =>
+      buildHostPurgeStageCommand({
+        expectedStageFingerprint:
+          typeof opts.expectedStageFingerprint === "string"
+            ? opts.expectedStageFingerprint
+            : null,
+      }),
+  );
+
+  withRunner(
+    host
+      .command("stamp-runtime", { hidden: true })
+      .description(
+        "Internal: guarded compare-and-set that backfills a null-runtime install record's runtimeVersion after a controller-driven activation cycle observes readiness.",
+      )
+      .requiredOption(
+        "--expected-install-generation <fingerprint>",
+        "Attested install-generation fingerprint from the command that produced/started this generation",
+      )
+      .requiredOption(
+        "--observed-pid <pid>",
+        "PID of the fresh process observed ready",
+      )
+      .requiredOption(
+        "--observed-started-at <iso>",
+        "pid.json's startedAt for the observed fresh process",
+      )
+      .requiredOption(
+        "--observed-runtime-version <version>",
+        "pid.json's version (runtime stamp) for the observed fresh process",
+      ),
+    (opts) => {
+      return async (ctx) => {
+        const observedPid =
+          typeof opts.observedPid === "string"
+            ? parsePositiveIntegerArg(opts.observedPid)
+            : null;
+        if (observedPid === null) {
+          throw cliError({
+            code: CLI_ERROR_CODES.INVALID_ARGUMENT,
+            message:
+              "host stamp-runtime: --observed-pid must be a positive whole number",
+            details: { observedPid: opts.observedPid },
+            exitCode: 1,
+          });
+        }
+        return buildHostStampRuntimeCommand({
+          expectedInstallGeneration:
+            typeof opts.expectedInstallGeneration === "string"
+              ? opts.expectedInstallGeneration
+              : "",
+          observedPid,
+          observedStartedAt:
+            typeof opts.observedStartedAt === "string"
+              ? opts.observedStartedAt
+              : "",
+          observedRuntimeVersion:
+            typeof opts.observedRuntimeVersion === "string"
+              ? opts.observedRuntimeVersion
+              : "",
+        })(ctx);
+      };
+    },
+  );
+
+  withRunner(
+    host
+      .command("update")
+      .description("Update the installed host to the latest registry version")
+      .option(
+        "--force",
+        "Update the host even if it has work in progress (skips the busy check).",
+      ),
+    (opts) =>
+      buildHostUpdateCommand({
+        force: opts.force === true,
+      }),
+  );
+
+  withRunner(
+    host
+      .command("download")
+      .description(
+        "Stage a host version without touching the running host (defaults to latest); promotes only when strictly newer, or replaces any stage for an explicit version",
+      )
+      .argument("[version]", "Registry version to stage (defaults to 'latest')")
+      // Hidden: this is the controller's contract (desktop main's
+      // `stageLatest`), not a user-facing switch - see
+      // `commands/host-download.ts`.
+      .addOption(
+        new Option(
+          "--automatic",
+          "Internal: the controller's contract",
+        ).hideHelp(),
+      ),
+    (opts, args) => {
+      const versionArg = typeof args[0] === "string" ? args[0] : null;
+      // "latest" is not a registry version - it's the same request as
+      // omitting the positional entirely. Normalizing it here (rather
+      // than downstream) keeps `versionRequest === null` the CLI-wide
+      // contract for "resolve the manifest's latest pointer".
+      const requestedLatest = versionArg === "latest";
+      return buildHostDownloadCommand({
+        versionRequest: requestedLatest ? null : versionArg,
+        automatic: opts.automatic === true,
+      });
+    },
+  );
+
+  withRunner(
+    host
+      .command("uninstall")
+      .description("Remove the installed host and optionally the OS service")
+      .option("--all", "Also deregister the OS service"),
+    (opts) =>
+      buildHostUninstallCommand({
+        all: opts.all === true,
+      }),
+  );
+
+  withRunner(
+    host
+      .command("available")
+      .description(
+        "List host versions available in the registry for this environment",
+      )
+      .option(
+        "--include-pre-releases",
+        "Include release-candidate and other prerelease host versions",
+      ),
+    (opts) =>
+      buildHostAvailableCommand({
+        includePreReleases: opts.includePreReleases === true,
+      }),
+  );
+
+  withRunner(
+    host
+      .command("logs")
+      .description("Tail the host log file")
+      .option("--tail <lines>", "Number of trailing lines to print", "200")
+      .option(
+        "--follow",
+        "Stream new log lines as they are written (ignored with --json)",
+      ),
+    (opts) => {
+      const tailLines =
+        typeof opts.tail === "string"
+          ? parsePositiveIntegerArg(opts.tail)
+          : null;
+      if (tailLines === null) {
+        throw cliError({
+          code: CLI_ERROR_CODES.INVALID_ARGUMENT,
+          message: "host logs: --tail must be a positive whole number",
+          details: { tail: opts.tail },
+          exitCode: 1,
+        });
+      }
+      return buildHostLogsCommand({
+        follow: opts.follow === true,
+        tailLines,
+      });
+    },
+  );
+
+  withRunner(
+    host
+      .command("free-port-and-restart", { hidden: true })
+      .description(
+        "Terminate a foreign PID holding the host port and restart the service (internal - invoked by Doctor)",
+      )
+      .option("--pid <pid>", "PID of the conflicting process to terminate")
+      .option("--port <port>", "Port the foreign process is bound to"),
+    (opts) => {
+      const pid =
+        typeof opts.pid === "string" ? parsePositiveIntegerArg(opts.pid) : null;
+      if (typeof opts.pid === "string" && pid === null) {
+        throw cliError({
+          code: CLI_ERROR_CODES.INVALID_ARGUMENT,
+          message:
+            "host free-port-and-restart: --pid must be a positive whole number",
+          details: { pid: opts.pid },
+          exitCode: 1,
+        });
+      }
+      const port =
+        typeof opts.port === "string" ? parsePortArg(opts.port) : null;
+      if (typeof opts.port === "string" && port === null) {
+        throw cliError({
+          code: CLI_ERROR_CODES.INVALID_ARGUMENT,
+          message:
+            "host free-port-and-restart: --port must be a whole number from 1 to 65535",
+          details: { port: opts.port },
+          exitCode: 1,
+        });
+      }
+      return buildHostFreePortAndRestartCommand({
+        pid,
+        port,
+      });
+    },
+  );
+
+  withRunner(
+    host
+      .command("free-port", { hidden: true })
+      .description(
+        "Terminate a foreign PID holding the host port, without restarting the service (internal - invoked by Doctor)",
+      )
+      .requiredOption(
+        "--pid <pid>",
+        "PID of the conflicting process to terminate",
+      )
+      .requiredOption("--port <port>", "Port the foreign process is bound to"),
+    (opts) => {
+      return async (ctx) => {
+        const pid =
+          typeof opts.pid === "string"
+            ? parsePositiveIntegerArg(opts.pid)
+            : null;
+        const port =
+          typeof opts.port === "string" ? parsePortArg(opts.port) : null;
+        if (pid === null || port === null) {
+          throw cliError({
+            code: CLI_ERROR_CODES.INVALID_ARGUMENT,
+            message:
+              "host free-port: --pid must be a positive whole number and --port must be a whole number from 1 to 65535",
+            details: { pid: opts.pid, port: opts.port },
+            exitCode: 1,
+          });
+        }
+        return buildHostFreePortCommand({ pid, port })(ctx);
+      };
+    },
+  );
+}
+
+export function hostStartOptionsFromCommand(input: {
+  readonly environment: typeof config.environment;
+  readonly cwd: string | null;
+  readonly serviceLabel: string | null;
+  readonly transitionId: string | null;
+  readonly probeNonce: string | null;
+}): RunHostStartOptions {
+  const probeValues = [
+    input.serviceLabel,
+    input.transitionId,
+    input.probeNonce,
+  ];
+  const probeValueCount = probeValues.filter((value) => value !== null).length;
+  if (probeValueCount === 0) {
+    return { environment: input.environment, cwd: input.cwd };
+  }
+  if (
+    input.serviceLabel !== null &&
+    input.transitionId === null &&
+    input.probeNonce === null
+  ) {
+    return {
+      environment: input.environment,
+      cwd: input.cwd,
+      serviceLabel: input.serviceLabel,
+    };
+  }
+  if (
+    input.serviceLabel === null ||
+    input.transitionId === null ||
+    input.probeNonce === null
+  ) {
+    throw cliError({
+      code: CLI_ERROR_CODES.INVALID_ARGUMENT,
+      message:
+        "host start probe requires --service-label, --transition-id, and --probe-nonce together",
+      details: {
+        serviceLabelProvided: input.serviceLabel !== null,
+        transitionIdProvided: input.transitionId !== null,
+        probeNonceProvided: input.probeNonce !== null,
+      },
+      exitCode: 1,
+    });
+  }
+  return {
+    environment: input.environment,
+    cwd: input.cwd,
+    probe: {
+      serviceLabel: input.serviceLabel,
+      transitionId: input.transitionId,
+      probeNonce: input.probeNonce,
+    },
+  };
+}
+
+function registerServiceCommands(host: Command): void {
+  const service = host
+    .command("service")
+    .description(
+      "Register / deregister the OS service that supervises the host",
+    );
+
+  withRunner(
+    service
+      .command("install")
+      .description("Register the OS service for the current environment")
+      .option(
+        "--no-linger",
+        "Linux only (ignored on macOS/Windows): skip 'loginctl enable-linger'",
+      )
+      .option(
+        "--allow-self-invocation",
+        "Dev only: register the current (non-packaged) CLI as the service command.",
+      )
+      .option(
+        "--takeover",
+        "macOS only: move host management from the Traycer Desktop app to the CLI (stops the Desktop-managed host cooperatively, deregisters its agent, then registers the CLI-owned service)",
+      ),
+    (opts) =>
+      buildServiceInstallCommand({
+        enableLinger: opts.linger !== false,
+        allowSelfInvocation: opts.allowSelfInvocation === true,
+        takeover: opts.takeover === true,
+      }),
+  );
+
+  withRunner(
+    service
+      .command("status")
+      .description("Show the OS service registration + running state"),
+    () => serviceStatusCommand,
+  );
+
+  withRunner(
+    service
+      .command("uninstall")
+      .description("Deregister the OS service for the current environment"),
+    () => serviceUninstallCommand,
+  );
+}
+
+function registerCliCommands(program: Command): void {
+  const cli = program
+    .command("cli")
+    .description("Manage the installed CLI binary (upgrade, re-anchor)");
+
+  withRunner(
+    cli
+      .command("upgrade")
+      .description(
+        "Self-upgrade the CLI binary; stages a pending swap when the live binary is locked",
+      )
+      .option(
+        "--dry-run",
+        "Resolve the target version without staging or replacing",
+      )
+      .option(
+        "--target <version>",
+        "Override the target version (defaults to latest)",
+      ),
+    (opts) =>
+      buildCliUpgradeCommand({
+        dryRun: opts.dryRun === true,
+        targetVersion: typeof opts.target === "string" ? opts.target : null,
+      }),
+  );
+
+  withRunner(
+    cli
+      .command("mark-source", { hidden: true })
+      .description(
+        "Internal: record a package-manager install (called from Homebrew/npm/winget/Scoop/deb/rpm install hooks; rejects --source manual)",
+      )
+      .requiredOption(
+        "--source <source>",
+        "One of: desktop, homebrew, npm, winget, scoop, apt, rpm (use 'cli re-anchor' for manual installs)",
+      )
+      .requiredOption(
+        "--binary-path <path>",
+        "Absolute path to the installed CLI binary",
+      )
+      // NOT `--version`: that collides with the program-level `program.version()`
+      // global flag (commander resolves it first, printing the CLI version and
+      // exiting 0 before this command's action runs). See the same rename on
+      // `host install` (`--release`). Package-manager hooks must pass
+      // `--installed-version` (see scripts/native-packaging/publish-cli-package-managers.cjs).
+      .requiredOption(
+        "--installed-version <version>",
+        "Version reported by the installer",
+      ),
+    (opts) =>
+      buildCliMarkSourceCommand({
+        source: typeof opts.source === "string" ? opts.source : "",
+        binaryPath: typeof opts.binaryPath === "string" ? opts.binaryPath : "",
+        version:
+          typeof opts.installedVersion === "string"
+            ? opts.installedVersion
+            : "",
+      }),
+  );
+
+  withRunner(
+    cli
+      .command("finalize-upgrade", { hidden: true })
+      .description(
+        "Internal: complete a pending self-upgrade (binary swap + service start) under cli-lock. Invoked by the detached Windows/POSIX finalize-helper script via the staged CLI binary, never by a human.",
+      ),
+    () => cliFinalizeUpgradeCommand,
+  );
+
+  withRunner(
+    cli
+      .command("re-anchor")
+      .description(
+        "Point Traycer's upgrade tracking at a CLI binary you installed or moved by hand, so future 'cli upgrade' runs update the right file. Use after manually relocating or replacing the binary.",
+      )
+      .requiredOption(
+        "--binary-path <path>",
+        "Absolute path to the manually installed CLI binary",
+      )
+      // `--installed-version`, not `--version`: avoids the program-level
+      // `--version` collision (see `cli mark-source`).
+      .requiredOption(
+        "--installed-version <version>",
+        "Version reported by the binary",
+      ),
+    (opts) =>
+      buildCliReAnchorCommand({
+        binaryPath: typeof opts.binaryPath === "string" ? opts.binaryPath : "",
+        version:
+          typeof opts.installedVersion === "string"
+            ? opts.installedVersion
+            : "",
+      }),
+  );
+}
+
+function registerConfigCommands(program: Command): void {
+  const config = program
+    .command("config")
+    .description("Read or write Traycer's machine-local config");
+
+  const shell = config
+    .command("shell")
+    .description("Shell used for host bootstrap and terminal tabs");
+  withRunner(
+    shell
+      .command("get")
+      .description(
+        "Print the effective shell config (synthesised defaults if unset)",
+      ),
+    () => configShellGetCommand,
+  );
+  withRunner(
+    shell
+      .command("list")
+      .description(
+        "List shells detected on this machine (powers the Settings shell picker)",
+      ),
+    () => configShellListCommand,
+  );
+  // `config shell set` takes a variadic `[shellArgs...]` positional that
+  // commander passes as a single array as the first action argument.
+  // `withRunner`'s positional extractor coerces non-string entries to
+  // `undefined`, so we wire this command directly through
+  // `addRunnerFlags` + `runCommand`. The runner still owns process.exit
+  // and the NDJSON envelope.
+  addRunnerFlags(
+    shell
+      .command("set")
+      .description(
+        "Select a shell and/or set its flags. Flags attach to a program, not the panel: `--path` alone picks a shell and materialises its default flags, while flags after `--` (e.g. `traycer config shell set --path /bin/zsh -- -i -l`) are remembered for that shell. Passing flags with no --path configures the currently-selected shell, or the login shell while still following the system default. Use --clear-args to store an explicit empty list.",
+      )
+      .option("--path <path>", "Absolute path to the shell binary")
+      .option("--clear-args", "Store an explicit empty args list for the shell")
+      .argument(
+        "[shellArgs...]",
+        "Shell flags (recommended: pass after `--` so leading dashes aren't parsed as options)",
+      ),
+  ).action(async (...actionArgs: unknown[]) => {
+    const command = actionArgs[actionArgs.length - 1] as CommanderCommand;
+    const optsBag = command.optsWithGlobals() as Record<string, unknown>;
+    const variadic = actionArgs[0];
+    const positionalArgs: string[] = Array.isArray(variadic)
+      ? variadic.filter((s): s is string => typeof s === "string")
+      : [];
+    const hasPositionalArgs = positionalArgs.length > 0;
+    const clearArgs = optsBag.clearArgs === true;
+    const fn: CommandFn = async (ctx) => {
+      if (hasPositionalArgs && clearArgs) {
+        throw cliError({
+          code: CLI_ERROR_CODES.CONFIG_INVALID_VALUE,
+          message:
+            "config shell set: --clear-args is incompatible with positional args",
+          details: { clearArgs, shellArgs: positionalArgs },
+          exitCode: 1,
+        });
+      }
+      const args: readonly string[] | null = clearArgs
+        ? []
+        : hasPositionalArgs
+          ? positionalArgs
+          : null;
+      return buildConfigShellSetCommand({
+        path: typeof optsBag.path === "string" ? optsBag.path : null,
+        args,
+      })(ctx);
+    };
+    await runCommand(fn, extractRunnerFlags(optsBag));
+  });
+
+  withRunner(
+    shell
+      .command("add")
+      .description(
+        "Remember a shell (any executable) and select it. Unlike `set`, the path must exist and be executable.",
+      )
+      .requiredOption("--path <path>", "Absolute path to the program to add"),
+    (opts) =>
+      buildConfigShellAddCommand({
+        path: typeof opts.path === "string" ? opts.path : "",
+      }),
+  );
+
+  withRunner(
+    shell
+      .command("remove")
+      .description(
+        "Forget a previously-added shell; if it was selected, fall back to the OS default",
+      )
+      .requiredOption(
+        "--path <path>",
+        "Absolute path to the program to remove",
+      ),
+    (opts) =>
+      buildConfigShellRemoveCommand({
+        path: typeof opts.path === "string" ? opts.path : "",
+      }),
+  );
+
+  withRunner(
+    shell
+      .command("revert-args")
+      .description(
+        "Restore a remembered shell's flags to its family default; the shell stays remembered",
+      )
+      .requiredOption(
+        "--path <path>",
+        "Absolute path to the shell whose flags to restore",
+      ),
+    (opts) =>
+      buildConfigShellRevertArgsCommand({
+        path: typeof opts.path === "string" ? opts.path : "",
+      }),
+  );
+
+  withRunner(
+    shell
+      .command("reset")
+      .description(
+        "Clear the shell selection (return to the system default); remembered shells and their flags are kept",
+      ),
+    () => configShellResetCommand,
+  );
+
+  const env = config
+    .command("env")
+    .description("Env vars layered on top of host + terminal env");
+  withRunner(
+    env.command("list").description("List env overrides"),
+    () => async (ctx) => buildConfigEnvListCommand()(ctx),
+  );
+  withRunner(
+    env
+      .command("get")
+      .description("Get a single env override")
+      .requiredOption("--key <key>", "Env var name"),
+    (opts) => async (ctx) =>
+      buildConfigEnvGetCommand({
+        key: typeof opts.key === "string" ? opts.key : "",
+      })(ctx),
+  );
+  withRunner(
+    env
+      .command("set")
+      .description(
+        "Set or update an env override (key must match /^[A-Za-z_][A-Za-z0-9_]*$/)",
+      )
+      .requiredOption("--key <key>", "Env var name")
+      .requiredOption("--value <value>", "Env var value"),
+    (opts) => async (ctx) =>
+      buildConfigEnvSetCommand({
+        key: typeof opts.key === "string" ? opts.key : "",
+        value: typeof opts.value === "string" ? opts.value : "",
+      })(ctx),
+  );
+  withRunner(
+    env
+      .command("unset")
+      .description("Explicitly unset an inherited env var")
+      .requiredOption("--key <key>", "Env var name"),
+    (opts) => async (ctx) =>
+      buildConfigEnvUnsetCommand({
+        key: typeof opts.key === "string" ? opts.key : "",
+      })(ctx),
+  );
+  withRunner(
+    env
+      .command("delete")
+      .description("Delete an env override (errors if the key is not set)")
+      .requiredOption("--key <key>", "Env var name"),
+    (opts) => async (ctx) =>
+      buildConfigEnvDeleteCommand({
+        key: typeof opts.key === "string" ? opts.key : "",
+      })(ctx),
+  );
+}
+
+// Inter-agent communication surface. Every Traycer-launched session
+// carries `TRAYCER_AGENT_ID` / `TRAYCER_EPIC_ID` in its environment, so an
+// agent typically runs these with no flags; the host bearer comes from
+// the stored credentials (`traycer login`).
+function collectRepeatedOption(
+  value: string,
+  previous: readonly string[],
+): string[] {
+  return [...previous, value];
+}
+
+function registerWorkspaceCommands(program: Command): void {
+  const workspace = program
+    .command("workspace")
+    .description("Inspect workspace folders");
+
+  withRunner(
+    workspace
+      .command("list")
+      .description("List workspace folders and Git worktrees for an epic"),
+    () => buildWorkspaceListCommand({ epicId: null }),
+  );
+}
+
+function registerCommentsCommands(program: Command): void {
+  const comments = program
+    .command("comments")
+    .description("Inspect and update artifact comment threads");
+
+  withRunner(
+    comments
+      .command("list")
+      .description(
+        "List artifact comment threads. Read them after reading an artifact, so human-authored feedback is visible before editing or responding. A thread may quote the artifact text it refers to: anchor=present means that quote is still located in the current artifact, while anchor=missing or anchor=unavailable means the quote is context only - verify it against the artifact before acting on it.",
+      )
+      .argument("[artifactPaths...]", "Absolute artifact paths")
+      .option("--status <status>", "Thread status: all, open, or resolved"),
+    (opts, args) =>
+      buildCommentsListCommand({
+        epicId: null,
+        status: typeof opts.status === "string" ? opts.status : null,
+        artifactPaths: args.filter(
+          (value): value is string => typeof value === "string",
+        ),
+      }),
+  );
+
+  withRunner(
+    comments
+      .command("set-status")
+      .description(
+        "Set artifact comment threads to open or resolved after addressing or reopening feedback. Prefer telling the user which threads look addressed and letting them decide, unless they have already asked you to resolve threads yourself.",
+      )
+      .requiredOption("--artifact <path>", "Absolute artifact path")
+      .requiredOption("--status <status>", "Thread status: open or resolved")
+      .argument("<threadIds...>", "Thread ids to update"),
+    (opts, args) =>
+      buildCommentsSetStatusCommand({
+        epicId: null,
+        artifactPath: typeof opts.artifact === "string" ? opts.artifact : "",
+        status: typeof opts.status === "string" ? opts.status : "",
+        threadIds: args.filter(
+          (value): value is string => typeof value === "string",
+        ),
+      }),
+  );
+}
+
+function registerWorktreeCommands(program: Command): void {
+  // `worktree delete` mutates on-disk state, so it is a capability boundary in
+  // the readonly agent surface: hidden from help (like `agent create`) AND
+  // guarded at runtime, because Commander's `hidden` flag still runs the action
+  // when the subcommand is typed explicitly. `worktree list` is a read and
+  // stays available in both surfaces.
+  const readonlySurface = resolveAgentCliSurface(readonlyEnv()) === "readonly";
+  const deleteHidden = { hidden: readonlySurface };
+  const worktree = program
+    .command("worktree")
+    .description("Create, inspect, and remove Git worktree paths");
+
+  withRunner(
+    worktree
+      .command("list")
+      .description(
+        "List every Traycer-managed worktree on this host (host-wide)",
+      )
+      .option(
+        "--include-activity",
+        "Probe each worktree for last-active time and branch ahead/behind/merged status (slower)",
+      )
+      .option(
+        "--cursor <worktreePath>",
+        "Start listing strictly after this worktree path",
+      )
+      .option(
+        "--limit <n>",
+        "Fetch a single page with at most this many worktrees",
+      ),
+    (opts) =>
+      buildWorktreeListCommand({
+        includeActivity: opts.includeActivity === true,
+        cursor: typeof opts.cursor === "string" ? opts.cursor : null,
+        limit: typeof opts.limit === "string" ? opts.limit : null,
+      }),
+  );
+
+  withRunner(
+    worktree
+      .command("delete", deleteHidden)
+      .description(
+        "Remove a Traycer-managed worktree by path (runs its teardown script, streams output)",
+      )
+      .requiredOption("--path <path>", "Worktree path to remove"),
+    (opts) =>
+      buildWorktreeDeleteCommand({
+        worktreePath: typeof opts.path === "string" ? opts.path : "",
+        readonlySurface,
+      }),
+  );
+
+  withRunner(
+    worktree
+      .command("create")
+      .description("Create a Git worktree path without creating an agent")
+      .requiredOption("--workspace <path>", "Source workspace path")
+      .option(
+        "--branch <branch>",
+        "Create a new branch with this name (forks from --source-branch)",
+      )
+      .option(
+        "--existing <branch>",
+        "Check out an existing branch into a fresh worktree (no new branch)",
+      )
+      .option(
+        "--source-branch <branch>",
+        "Branch the new --branch forks from (defaults to the workspace's current branch)",
+      )
+      .option(
+        "--carry-uncommitted",
+        "Carry tracked and untracked changes from the source workspace when valid",
+      ),
+    (opts) =>
+      buildWorktreeCreateCommand({
+        workspacePath: typeof opts.workspace === "string" ? opts.workspace : "",
+        newBranch: typeof opts.branch === "string" ? opts.branch : null,
+        existingBranch:
+          typeof opts.existing === "string" ? opts.existing : null,
+        sourceBranch:
+          typeof opts.sourceBranch === "string" ? opts.sourceBranch : null,
+        carryUncommittedChanges: opts.carryUncommitted === true,
+      }),
+  );
+}
+
+function registerAgentCommands(
+  program: Command,
+  agentRolesEnabled: boolean,
+): void {
+  const cliSurface = resolveAgentCliSurface(readonlyEnv());
+  const readonlyHidden = { hidden: cliSurface === "readonly" };
+  const harnessHelp = `Harness id: ${AGENT_FACING_HARNESS_ID_LIST}`;
+  // Deliberately spells out what OMITTING the option does: omission is its own
+  // selection (the remembered last-used profile), not a synonym for 'ambient'.
+  const profileHelp =
+    "Provider profile: 'ambient' for the provider's CLI login, or a managed profile id from 'traycer agent list-profiles <harness>'. Omit to use the last-used profile.";
+  // Rate-limit reads and configuration resolve no last-used fallback - they
+  // act on the one profile the caller names - so `--profile` is required there.
+  const profileRequiredHelp =
+    "Provider profile: 'ambient' for the provider's CLI login, or a managed profile id from 'traycer agent list-profiles <harness>'.";
+  const agent = program
+    .command("agent")
+    .description("Agent inspection and communication for the calling agent");
+
+  withRunner(
+    agent
+      .command("list")
+      .description("List every agent in the epic")
+      .option(
+        "-a, --all",
+        "List all agents in the epic, not just agents belonging to this user",
+      ),
+    (opts) =>
+      buildAgentListCommand({
+        epicId: null,
+        senderAgentId: null,
+        all: opts.all === true,
+      }),
+  );
+
+  withRunner(
+    agent
+      .command("create", readonlyHidden)
+      .description(
+        "Create a child agent. When some params are omitted, they are inherited from the sender or default values used.",
+      )
+      .option("--surface <surface>", "Child surface: 'gui' or 'tui'")
+      .option("--name <name>", "Display name for the child agent")
+      .option("--harness <id>", harnessHelp)
+      .option("--model <id>", "Model id for the child agent")
+      .option(
+        "--reasoning-effort <effort>",
+        "Reasoning effort for supported models",
+      )
+      .option(
+        "--fast",
+        "Request fast mode for supported models. Only available for gui surface. May consume additional credits - set it only when the user asks for it or the agent selection guide recommends it.",
+      )
+      .option("--profile <ambient|id>", profileHelp)
+      .option(
+        "--cwd <path>",
+        "Primary working directory for the child agent. Use this with a path returned by 'traycer worktree create'.",
+      )
+      .option(
+        "--workspace-path <path>",
+        "Additional existing path the child agent may access. Repeatable.",
+        collectRepeatedOption,
+        [],
+      )
+      .option(
+        "--workspace-entry <workspace=path>",
+        "Exact workspace binding. Repeatable. Use /path alone for existing/local, or /source=/run for a worktree.",
+        collectRepeatedOption,
+        [],
+      )
+      .option(
+        "--permission-mode <mode>",
+        `GUI permission mode. ${A2A_PERMISSION_MODE_INSTRUCTION} Omit this flag to use \`full_access\`.`,
+      ),
+    (opts) =>
+      buildAgentCreateCommand({
+        epicId: null,
+        permissionMode:
+          typeof opts.permissionMode === "string" ? opts.permissionMode : null,
+        senderAgentId: null,
+        name: typeof opts.name === "string" ? opts.name : null,
+        surface: typeof opts.surface === "string" ? opts.surface : null,
+        harness: typeof opts.harness === "string" ? opts.harness : null,
+        model: typeof opts.model === "string" ? opts.model : null,
+        reasoningEffort:
+          typeof opts.reasoningEffort === "string"
+            ? opts.reasoningEffort
+            : null,
+        fast: opts.fast === true,
+        profile: typeof opts.profile === "string" ? opts.profile : null,
+        cwd: typeof opts.cwd === "string" ? opts.cwd : null,
+        workspacePaths: Array.isArray(opts.workspacePath)
+          ? opts.workspacePath.filter(
+              (entry): entry is string => typeof entry === "string",
+            )
+          : [],
+        workspaceEntries: Array.isArray(opts.workspaceEntry)
+          ? opts.workspaceEntry.filter(
+              (entry): entry is string => typeof entry === "string",
+            )
+          : [],
+      }),
+  );
+
+  withRunner(
+    agent
+      .command("selection-guide", readonlyHidden)
+      .description(
+        "Get the instructions for the agent selection guide. Instructs which child agents to create for different kinds of tasks.",
+      ),
+    () =>
+      buildAgentSelectionGuideCommand({
+        epicId: null,
+        senderAgentId: null,
+      }),
+  );
+
+  withRunner(
+    agent
+      .command("list-harnesses", readonlyHidden)
+      .description("List enabled harnesses."),
+    () => buildAgentListHarnessesCommand(),
+  );
+
+  withRunner(
+    agent
+      .command("list-harness-models", readonlyHidden)
+      .description("List available models (and params) for one harness.")
+      .argument("<harness>", harnessHelp),
+    (opts, args) =>
+      buildAgentListHarnessModelsCommand({
+        epicId: null,
+        senderAgentId: null,
+        harnessId: expectRequiredPositional(args[0], "harness"),
+      }),
+  );
+
+  withRunner(
+    agent
+      .command("list-profiles", readonlyHidden)
+      .description(
+        "List the provider profiles available for one harness, with their cached rate-limit status.",
+      )
+      .argument("<harness>", harnessHelp),
+    (opts, args) =>
+      buildAgentListProfilesCommand({
+        epicId: null,
+        senderAgentId: null,
+        harnessId: expectRequiredPositional(args[0], "harness"),
+      }),
+  );
+
+  withRunner(
+    agent
+      .command("profile-rate-limits", readonlyHidden)
+      .description(
+        "Read fresh, detailed rate limits for one provider profile of a harness.",
+      )
+      .argument("<harness>", harnessHelp)
+      .requiredOption("--profile <ambient|id>", profileRequiredHelp),
+    (opts, args) =>
+      buildAgentProfileRateLimitsCommand({
+        epicId: null,
+        senderAgentId: null,
+        harnessId: expectRequiredPositional(args[0], "harness"),
+        profile: typeof opts.profile === "string" ? opts.profile : "",
+      }),
+  );
+
+  withRunner(
+    agent
+      .command("configure", readonlyHidden)
+      .description(
+        "Switch the harness, model, and provider profile an existing GUI agent uses for future turns.",
+      )
+      .requiredOption("--agent-id <id>", "GUI agent to configure")
+      .requiredOption("--harness <id>", harnessHelp)
+      .requiredOption("--model <id>", "Model id for future turns")
+      .requiredOption("--profile <ambient|id>", profileRequiredHelp)
+      .option(
+        "--reasoning-effort <effort>",
+        "Reasoning effort for supported models. Omitting it sets no reasoning effort.",
+      )
+      .option(
+        "--fast",
+        "Enable fast mode for supported models. Omitting it disables fast mode. May consume additional credits - turn it on only when the user asks for it or the agent selection guide recommends it.",
+      )
+      .option(
+        "--permission-mode <mode>",
+        `Permission mode for future turns. ${A2A_PERMISSION_MODE_INSTRUCTION} Omit this flag to use \`full_access\`.`,
+      ),
+    (opts) =>
+      buildAgentConfigureCommand({
+        epicId: null,
+        permissionMode:
+          typeof opts.permissionMode === "string" ? opts.permissionMode : null,
+        senderAgentId: null,
+        agentId: typeof opts.agentId === "string" ? opts.agentId : "",
+        harness: typeof opts.harness === "string" ? opts.harness : "",
+        model: typeof opts.model === "string" ? opts.model : "",
+        profile: typeof opts.profile === "string" ? opts.profile : "",
+        reasoningEffort:
+          typeof opts.reasoningEffort === "string"
+            ? opts.reasoningEffort
+            : null,
+        fast: opts.fast === true,
+      }),
+  );
+
+  withRunner(
+    agent
+      .command("send", readonlyHidden)
+      .description("Send a prompt to another agent")
+      .requiredOption("--to <agentId>", "Receiver agent id")
+      .requiredOption("--message <text>", "Prompt to deliver")
+      .option(
+        "--expect-reply",
+        "Open or reuse a reply thread; the host returns a responseId. Without it the peer processes your message and never reports back.",
+      )
+      .option(
+        "--response-id <id>",
+        "Close an open thread - one reply answers every message received on it",
+      ),
+    (opts) =>
+      buildAgentSendCommand({
+        epicId: null,
+        senderAgentId: null,
+        to: typeof opts.to === "string" ? opts.to : "",
+        message: typeof opts.message === "string" ? opts.message : "",
+        expectReply: opts.expectReply === true,
+        responseId:
+          typeof opts.responseId === "string" ? opts.responseId : null,
+      }),
+  );
+
+  withRunner(
+    agent
+      .command("transcript")
+      .description("Print another agent's conversation transcript")
+      .requiredOption("--agent-id <id>", "Agent whose transcript to read"),
+    (opts) =>
+      buildAgentTranscriptCommand({
+        epicId: null,
+        agentId: typeof opts.agentId === "string" ? opts.agentId : "",
+      }),
+  );
+
+  if (agentRolesEnabled) {
+    const role = agent
+      .command("role")
+      .description(
+        "Claim, list, and relinquish durable Task-local roles for the calling agent",
+      );
+
+    withRunner(
+      role
+        .command("claim", readonlyHidden)
+        .description(
+          "Claim a durable role for the calling agent in this Task's role registry",
+        )
+        .requiredOption(
+          "--role <name>",
+          "Role name to claim. Short and memorable; disambiguate against existing roles.",
+        )
+        .requiredOption(
+          "--scope <scope>",
+          "Task-local scope of responsibility this role covers",
+        )
+        .option(
+          "--agent-id <id>",
+          "Claiming agent (defaults to $TRAYCER_AGENT_ID)",
+        ),
+      (opts) =>
+        buildAgentRoleClaimCommand({
+          epicId: null,
+          agentId: typeof opts.agentId === "string" ? opts.agentId : null,
+          role: typeof opts.role === "string" ? opts.role : null,
+          scope: typeof opts.scope === "string" ? opts.scope : null,
+        }),
+    );
+
+    withRunner(
+      role
+        .command("list")
+        .description(
+          "List the roles currently claimed in this Task (your account's live agents only)",
+        ),
+      () =>
+        buildAgentRoleListCommand({
+          epicId: null,
+        }),
+    );
+
+    withRunner(
+      role
+        .command("relinquish", readonlyHidden)
+        .description("Relinquish a role claim held by the calling agent")
+        .requiredOption(
+          "--claim-id <id>",
+          "Claim id to relinquish (see 'traycer agent role list')",
+        )
+        .option(
+          "--agent-id <id>",
+          "Relinquishing agent (defaults to $TRAYCER_AGENT_ID)",
+        ),
+      (opts) =>
+        buildAgentRoleRelinquishCommand({
+          epicId: null,
+          agentId: typeof opts.agentId === "string" ? opts.agentId : null,
+          claimId: typeof opts.claimId === "string" ? opts.claimId : null,
+        }),
+    );
+  }
+
+  withRunner(
+    agent
+      .command("inbox", readonlyHidden)
+      .description(
+        "Print your recently-delivered inbox messages in full (recovery for a truncated monitor notification).",
+      )
+      .option(
+        "--agent-id <id>",
+        "Agent whose inbox to read (defaults to $TRAYCER_AGENT_ID)",
+      ),
+    (opts) =>
+      buildAgentInboxCommand({
+        epicId: null,
+        agentId: typeof opts.agentId === "string" ? opts.agentId : null,
+      }),
+  );
+
+  withRunner(
+    agent
+      .command("title-from-hook", { hidden: true })
+      .description(
+        "Submit a TUI agent's first user prompt (read as hook JSON on stdin) to the host title flow.",
+      )
+      .requiredOption(
+        "--provider <provider>",
+        "Provider hook firing this call: 'claude', 'codex', or 'opencode'",
+      )
+      .option(
+        "--agent-id <id>",
+        "TUI agent id whose title to generate (defaults to $TRAYCER_AGENT_ID)",
+      )
+      .option(
+        "--harness-session-id <id>",
+        "Provider session id for hooks that run outside per-agent env",
+      ),
+    (opts) =>
+      buildAgentTitleFromHookCommand({
+        provider: typeof opts.provider === "string" ? opts.provider : "",
+        epicId: null,
+        agentId: typeof opts.agentId === "string" ? opts.agentId : null,
+        harnessSessionId:
+          typeof opts.harnessSessionId === "string"
+            ? opts.harnessSessionId
+            : null,
+      }),
+  );
+
+  withRunner(
+    agent
+      .command("activity-from-hook", { hidden: true })
+      .description(
+        "Submit a TUI agent turn lifecycle event from a provider hook.",
+      )
+      // Codex's `notify` (the only turn-end edge it exposes) invokes this as the
+      // `stop` program and appends its `agent-turn-complete` JSON as a trailing
+      // argv. The stop edge is keyed entirely on the bound agent env, so that
+      // payload is ignored - tolerate it instead of erroring on the extra arg.
+      .allowExcessArguments(true)
+      .requiredOption(
+        "--provider <provider>",
+        "Provider hook firing this call: 'claude', 'codex', or 'opencode'",
+      )
+      .requiredOption("--event <event>", "Lifecycle event: 'start' or 'stop'")
+      .option(
+        "--agent-id <id>",
+        "TUI agent id whose activity changed (defaults to $TRAYCER_AGENT_ID)",
+      )
+      .option(
+        "--harness-session-id <id>",
+        "Provider session id for hooks that run outside per-agent env",
+      ),
+    (opts) =>
+      buildAgentActivityFromHookCommand({
+        provider: typeof opts.provider === "string" ? opts.provider : "",
+        event: typeof opts.event === "string" ? opts.event : "",
+        epicId: null,
+        agentId: typeof opts.agentId === "string" ? opts.agentId : null,
+        harnessSessionId:
+          typeof opts.harnessSessionId === "string"
+            ? opts.harnessSessionId
+            : null,
+      }),
+  );
+
+  withRunner(
+    agent
+      .command("turn-ended-from-hook", { hidden: true })
+      .description(
+        "Signal the host that a TUI agent's turn ended (provider Stop hook) so inter-agent inactivity notices fire accurately.",
+      )
+      .requiredOption(
+        "--provider <provider>",
+        "Provider hook firing this call: 'claude', 'codex', or 'opencode'",
+      )
+      .option(
+        "--agent-id <id>",
+        "TUI agent id whose turn ended (defaults to $TRAYCER_AGENT_ID)",
+      ),
+    (opts) =>
+      buildAgentTurnEndedFromHookCommand({
+        provider: typeof opts.provider === "string" ? opts.provider : "",
+        epicId: null,
+        agentId: typeof opts.agentId === "string" ? opts.agentId : null,
+      }),
+  );
+
+  withRunner(
+    agent
+      .command("session-observed-from-hook", { hidden: true })
+      .description(
+        "Report the live provider session id (read as hook JSON on stdin) so the host resyncs the stored harness session id (Claude SessionStart hook).",
+      )
+      .requiredOption(
+        "--provider <provider>",
+        "Provider hook firing this call: 'claude', 'codex', or 'opencode'",
+      )
+      .option(
+        "--agent-id <id>",
+        "TUI agent id whose session id to resync (defaults to $TRAYCER_AGENT_ID)",
+      ),
+    (opts) =>
+      buildAgentSessionObservedFromHookCommand({
+        provider: typeof opts.provider === "string" ? opts.provider : "",
+        epicId: null,
+        agentId: typeof opts.agentId === "string" ? opts.agentId : null,
+      }),
+  );
+}
+
+// `monitor` is the long-running inbox subscriber the Claude Code plugin
+// spawns. Like `host start` it owns its own lifecycle and does NOT go
+// through the shared NDJSON runner - `addRunnerFlags` is applied only so
+// the shared globals still parse if present.
+function registerMonitorCommand(program: Command): void {
+  addRunnerFlags(
+    program
+      .command("monitor", {
+        hidden: resolveAgentCliSurface(readonlyEnv()) === "readonly",
+      })
+      .description("Stream this agent's inter-agent inbox messages to stdout.")
+      .option(
+        "--agent-id <id>",
+        "Agent to monitor (defaults to $TRAYCER_AGENT_ID)",
+      ),
+  ).action(async (opts: Record<string, unknown>) => {
+    const logger = createCliLogger(config.environment);
+    logger.info("Monitor command invoked", {
+      environment: config.environment,
+      hasAgentIdArg: typeof opts.agentId === "string",
+      hasAgentIdEnv: typeof process.env.TRAYCER_AGENT_ID === "string",
+      hasEpicIdEnv: typeof process.env.TRAYCER_EPIC_ID === "string",
+    });
+    try {
+      await runMonitor({
+        agentId: typeof opts.agentId === "string" ? opts.agentId : null,
+        epicId: null,
+      });
+    } catch (err) {
+      logger.error(
+        "Monitor command failed",
+        { exitCode: 1 },
+        errorFromUnknown(err),
+      );
+      writeStderr(
+        `[traycer monitor] fatal: ${
+          err instanceof Error ? err.message : String(err)
+        }\n`,
+      );
+      await flushStdio();
+      process.exit(1);
+    }
+  });
+}
+
+// Script entry. Skipped when this module is imported (e.g. by the
+// command-registration smoke test) so `buildProgram()` consumers don't
+// trigger `parseAsync` against `process.argv`. The check matches
+// argv[1] against this file's basename which is robust across both the
+// tsx dev path and a bundled `bun --compile` binary where argv[1] is
+// the CLI invocation itself - including the Windows `traycer.exe`
+// suffix produced by `bun build --compile --target=bun-windows-x64`.
+const entryArgv = typeof process !== "undefined" ? process.argv[1] : undefined;
+if (isTraycerCliEntrypoint(entryArgv)) {
+  const entryLogger = createCliLogger(config.environment);
+  installProcessFailureHandlers(entryLogger);
+  const program = buildProgram();
+  entryLogger.debug("CLI entrypoint parsing argv", {
+    environment: config.environment,
+    argvLength: process.argv.length,
+  });
+  program.parseAsync(process.argv).catch(async (err) => {
+    if (err instanceof CommanderError) {
+      const jsonMode = argvRequestsJson(program);
+      // Help (`--help`) and version (`--version`) flow through exitOverride
+      // with exitCode 0. In human mode commander already streamed the text
+      // to stdout; in --json mode that text was buffered (see the `write`
+      // override) so we wrap it in a single `result/ok` envelope rather than
+      // leaking raw prose onto an NDJSON stream.
+      if (err.exitCode === 0) {
+        entryLogger.debug("Commander handled informational exit", {
+          json: jsonMode,
+          commanderCode: err.code,
+          exitCode: err.exitCode,
+        });
+        if (jsonMode) {
+          const event = {
+            type: "result",
+            status: "ok",
+            data: { output: commanderStdoutBuffer.trimEnd() },
+            timestamp: new Date().toISOString(),
+          };
+          writeStdout(`${JSON.stringify(event)}\n`);
+        }
+        // `--help` under `--json` wraps the whole help text in one line;
+        // long help easily clears the 64 KiB pipe buffer. See std-write.ts.
+        await flushStdio();
+        process.exit(0);
+      }
+      // Parse failure. In --json mode emit the runner's NDJSON error
+      // envelope so downstream consumers see a coded `result/error`;
+      // in human mode commander already wrote the message to stderr
+      // (via the configureOutput passthrough above).
+      entryLogger.warn("Commander parse failed", {
+        json: jsonMode,
+        commanderCode: err.code,
+        exitCode: err.exitCode || 1,
+      });
+      if (jsonMode) {
+        const event = {
+          type: "result",
+          status: "error",
+          error: {
+            code: CLI_ERROR_CODES.INVALID_ARGUMENT,
+            // Commander prefixes its messages with "error: "; strip it so
+            // the envelope's `message` is clean (the `error` wrapper and
+            // `code` already convey severity).
+            message: err.message.replace(/^error:\s*/i, ""),
+            details: { commanderCode: err.code },
+          },
+          timestamp: new Date().toISOString(),
+        };
+        writeStdout(`${JSON.stringify(event)}\n`);
+      }
+      await flushStdio();
+      process.exit(err.exitCode || 1);
+    }
+    const error = errorFromUnknown(err);
+    entryLogger.error(
+      "CLI entrypoint failed outside Commander",
+      { exitCode: 1 },
+      error,
+    );
+    Sentry.captureException(err);
+    if (argvRequestsJson(program)) {
+      const event = {
+        type: "result",
+        status: "error",
+        error: {
+          code: CLI_ERROR_CODES.UNEXPECTED,
+          message: "Unexpected CLI failure. See the CLI log for details.",
+          details: null,
+        },
+        timestamp: new Date().toISOString(),
+      };
+      writeStdout(`${JSON.stringify(event)}\n`);
+    } else {
+      writeStderr(
+        `error: unexpected CLI failure [code=${CLI_ERROR_CODES.UNEXPECTED}]\n`,
+      );
+    }
+    await flushStdio();
+    process.exit(1);
+  });
+}
+
+let fatalExitInProgress = false;
+
+function installProcessFailureHandlers(logger: ILogger): void {
+  process.on("unhandledRejection", (reason) => {
+    exitAfterUnhandledFailure(
+      logger,
+      "Unhandled CLI promise rejection",
+      reason,
+    );
+  });
+  process.on("uncaughtException", (err) => {
+    exitAfterUnhandledFailure(logger, "Uncaught CLI exception", err);
+  });
+}
+
+function exitAfterUnhandledFailure(
+  logger: ILogger,
+  message: string,
+  cause: unknown,
+): void {
+  if (fatalExitInProgress) {
+    return;
+  }
+  fatalExitInProgress = true;
+  const error = errorFromUnknown(cause);
+  logger.error(message, { exitCode: 1 }, error);
+  Sentry.captureException(cause);
+  writeStderr(
+    `error: unexpected CLI failure [code=${CLI_ERROR_CODES.UNEXPECTED}]\n`,
+  );
+  void Sentry.flush(2000)
+    .catch((flushErr) => {
+      logger.warn("Sentry flush failed after process-level failure", {
+        errorName: errorFromUnknown(flushErr).name,
+        errorMessage: errorFromUnknown(flushErr).message,
+      });
+    })
+    .then(() => flushStdio())
+    .finally(() => {
+      process.exit(1);
+    });
+}

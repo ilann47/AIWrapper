@@ -1,5 +1,5 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\package.json" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\Dockerfile.opencodex"
-index e38d51b0..c20792ea 100644
+index e38d51b0a..c20792ead 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\package.json"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\Dockerfile.opencodex"	
 @@ -1,98 +1,12 @@

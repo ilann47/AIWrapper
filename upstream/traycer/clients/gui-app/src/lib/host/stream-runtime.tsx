@@ -1,0 +1,239 @@
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
+import type { HostClient } from "@traycer-clients/shared/host-client/host-client";
+import type { WsStreamClient } from "@traycer-clients/shared/host-transport/ws-stream-client";
+import type { VersionedRpcRegistry } from "@traycer/protocol/framework/index";
+import type { HostStreamRpcRegistry } from "@traycer/protocol/host/registry";
+import { useHostBinding } from "@/lib/host/runtime";
+import { hostTransportKey } from "@/lib/host/transport-key";
+import { buildHostStreamClient } from "@/hooks/host/use-host-stream-client-for";
+import { useStreamAuthRevalidator } from "@/lib/host/stream-auth-revalidator";
+import { useCloseWsStreamClientOnReplace } from "@/lib/host/use-close-ws-stream-client-on-replace";
+import { StreamRuntimeContext } from "@/lib/host/stream-runtime-context";
+import type { StreamRuntimeBinding } from "@/lib/host/stream-runtime-context";
+import { useReactiveHostReadiness } from "@/hooks/host/use-reactive-host-readiness";
+import { useSurfaceReadiness } from "@/components/layout/host-readiness-controller-context";
+import { useStreamWakeReconnect } from "@/lib/host/stream-wake-reconnect";
+import {
+  AVAILABILITY_RECOVERY_COOLDOWN_MS,
+  wireAvailabilityRecovery,
+} from "@/lib/host/availability-recovery";
+import { appLogger } from "@/lib/logger";
+
+export interface HostStreamProviderProps {
+  readonly children: ReactNode;
+}
+
+/**
+ * Mounts the app-wide `WsStreamClient` for the React-lifetime stream consumers
+ * (notifications, git-diff, voice dictation, migration) bound to the active
+ * host + `RequestContext`.
+ *
+ * The client is keyed on host IDENTITY (hostId + signed-in user), NOT on the
+ * endpoint URL. A host restart keeps the same identity - `HostClient.bind`
+ * takes its `sameHostId` path and only swaps the endpoint - so the live
+ * `endpoint()` provider re-dials the new address on the SAME client instead of
+ * the client being rebuilt-and-closed (which churns every consumer and can
+ * strand an in-flight subscribe). The client is rebuilt only on a genuine
+ * identity change (host swap / sign-out / user switch); a same-identity
+ * endpoint move drives an immediate re-dial nudge, not a rebuild.
+ *
+ * The per-tab durable streams (chat / terminal) and the epic stream OWN their
+ * transports via `openDurableStreamTransport`; this provider serves only the
+ * consumers that read the client from context. Must be rendered inside a
+ * `<HostRuntimeProvider>`.
+ */
+export function HostStreamProvider(props: HostStreamProviderProps): ReactNode {
+  const binding = useHostBinding();
+  const auth = useStreamAuthRevalidator();
+  const readiness = useReactiveHostReadiness(
+    binding === null ? null : binding.hostClient,
+  );
+  const defaultHostReadiness = useSurfaceReadiness("default-host", null);
+  const transportKey = useReactiveHostTransportKey(
+    binding === null ? null : binding.hostClient,
+  );
+  // Identity = the machine host + the signed-in user. Stable across a host
+  // restart (hostId is the device id; only the endpoint URL moves), so the
+  // memo below keeps the SAME client rather than rebuilding on every
+  // `transportKey` change. `null` until both are known - the "host
+  // communication may start" gate, equivalent to the old `readiness.isReady`.
+  const identityKey = streamIdentityKey({
+    readinessKind: defaultHostReadiness.kind,
+    hostId: readiness.hostId,
+    requestContextUserId: readiness.requestContextUserId,
+  });
+  // Liveness escape hatch: bumped when the served client turns out to be
+  // closed (see the guard effect below), forcing the memo to mint a fresh
+  // client even though the identity never changed.
+  const [rebuildNonce, setRebuildNonce] = useState(0);
+  const clientKey =
+    identityKey === null ? null : `${identityKey}\x1f${rebuildNonce}`;
+  const value = useMemo<StreamRuntimeBinding | null>(() => {
+    if (binding === null) return null;
+    if (clientKey === null) return null;
+    const wsStreamClient = buildHostStreamClient({
+      endpoint: () => binding.hostClient.getActiveHost(),
+      bearer: () => binding.hostClient.getRequestContext()?.credentials ?? null,
+      auth,
+    });
+    return { wsStreamClient };
+  }, [binding, auth, clientKey]);
+  useEffect(() => {
+    if (value === null) return;
+    appLogger.debug("[stream] app stream client created", {
+      hostId: readiness.hostId,
+      client: value.wsStreamClient.instanceId,
+      hasTransport:
+        binding !== null && binding.hostClient.getActiveHost() !== null,
+    });
+  }, [binding, readiness.hostId, value]);
+  // Liveness guard: a CLOSED client must be replaced, not left unavailable
+  // until the window reloads. Legitimate closes (replace / unmount) are always
+  // paired with a value change or teardown, so this effect's subscription is
+  // gone before they fire; anything else closing the served client - e.g. the
+  // deferred unmount-close in `useCloseWsStreamClientOnReplace` firing across
+  // an effects-disconnect where React preserves the memoized value - lands
+  // here and forces a rebuild. `useWsStreamClient` hides the dead instance
+  // during that handoff, and the `isClosed()` re-check covers closes that
+  // happened while this effect itself was disconnected.
+  useEffect(() => {
+    if (value === null) return;
+    const client = value.wsStreamClient;
+    const rebuild = (): void => {
+      appLogger.warn(
+        "[stream] app stream client closed underneath the provider - rebuilding",
+        {
+          client: client.instanceId,
+          closedReason: client.getClosedReason(),
+        },
+      );
+      setRebuildNonce((nonce) => nonce + 1);
+    };
+    if (client.isClosed()) {
+      rebuild();
+      return;
+    }
+    return client.onClosed(rebuild);
+  }, [value]);
+  useCloseWsStreamClientOnReplace(value?.wsStreamClient ?? null);
+  useStreamWakeReconnect(value?.wsStreamClient ?? null);
+  useReconnectStreamOnEndpointChange(
+    value?.wsStreamClient ?? null,
+    transportKey,
+  );
+
+  // On an in-place bearer rotation (token refresh), push the fresh credential
+  // onto the app-wide stream client's open sessions so the host updates each
+  // connection's lease without a reconnect.
+  const wsStreamClient = value?.wsStreamClient ?? null;
+  const hostClient = binding?.hostClient ?? null;
+  useEffect(() => {
+    if (wsStreamClient === null || hostClient === null) {
+      return;
+    }
+    return hostClient.onBearerRotated(() => {
+      wsStreamClient.notifyBearerRotated();
+    });
+  }, [wsStreamClient, hostClient]);
+
+  // The app-wide stream heartbeats against the active host continuously, so
+  // its recovery evidence (session re-open after a drop, pong after a
+  // stall-length gap) drives `notifyAvailabilityRecovered()` - un-stranding
+  // every host-scoped query left in a terminal error state while the host
+  // was stalled or restarting. This is the production caller that method was
+  // designed for; the stream client and the host client are bound to the
+  // same active-host identity by construction here.
+  useEffect(() => {
+    if (wsStreamClient === null || hostClient === null) {
+      return;
+    }
+    return wireAvailabilityRecovery({
+      wsStreamClient,
+      target: hostClient,
+      cooldownMs: AVAILABILITY_RECOVERY_COOLDOWN_MS,
+      now: () => Date.now(),
+    });
+  }, [wsStreamClient, hostClient]);
+
+  return (
+    <StreamRuntimeContext.Provider value={value}>
+      {props.children}
+    </StreamRuntimeContext.Provider>
+  );
+}
+
+function streamIdentityKey(args: {
+  readonly readinessKind: string;
+  readonly hostId: string | null;
+  readonly requestContextUserId: string | null;
+}): string | null {
+  if (args.readinessKind !== "ready") return null;
+  if (args.hostId === null || args.requestContextUserId === null) return null;
+  return `${args.hostId}\x1f${args.requestContextUserId}`;
+}
+
+/**
+ * Forces an immediate re-dial when the active host gains a (new) dialable
+ * endpoint UNDER a stable client - a host restart / re-provision that moved to a
+ * new websocketUrl, or simply came back available, while the identity (and
+ * therefore the client) stayed the same. The dropped socket would re-dial on
+ * its own once its reconnect backoff elapses; nudging skips that wait so
+ * recovery is instant. No nudge on a client REBUILD (a fresh client already
+ * dials the current endpoint) or while the endpoint is gone (`transportKey`
+ * null) - the next non-null transition fires it.
+ */
+function useReconnectStreamOnEndpointChange(
+  client: WsStreamClient<HostStreamRpcRegistry> | null,
+  transportKey: string | null,
+): void {
+  const previous = useRef<{
+    readonly client: WsStreamClient<HostStreamRpcRegistry> | null;
+    readonly transportKey: string | null;
+  }>({ client: null, transportKey: null });
+  useEffect(() => {
+    const prev = previous.current;
+    previous.current = { client, transportKey };
+    if (
+      client !== null &&
+      prev.client === client &&
+      transportKey !== null &&
+      prev.transportKey !== transportKey
+    ) {
+      appLogger.debug(
+        "[stream] app stream endpoint changed - reconnecting",
+        {},
+      );
+      client.reconnectAll("host-endpoint-change");
+    }
+  }, [client, transportKey]);
+}
+
+function useReactiveHostTransportKey<Registry extends VersionedRpcRegistry>(
+  client: HostClient<Registry> | null,
+): string | null {
+  const subscribe = useCallback(
+    (callback: () => void) => {
+      if (client === null) {
+        return () => undefined;
+      }
+      return client.onChange(callback);
+    },
+    [client],
+  );
+  const getSnapshot = useCallback(() => readHostTransportKey(client), [client]);
+  return useSyncExternalStore(subscribe, getSnapshot, () => null);
+}
+
+function readHostTransportKey<Registry extends VersionedRpcRegistry>(
+  client: HostClient<Registry> | null,
+): string | null {
+  return hostTransportKey(client?.getActiveHost() ?? null);
+}

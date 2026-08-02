@@ -1,0 +1,418 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, renderHook } from "@testing-library/react";
+import type { WorktreeBindingSelectorRowV12 } from "@traycer/protocol/host";
+import type { WorktreeIntent } from "@traycer/protocol/host/worktree-schemas";
+import type { CommandContext, CommandItem } from "@/lib/commands/types";
+import type { KeybindingRouter } from "@/lib/keybindings/dispatch";
+import type { OpenTileIntoTargetGroupArgs } from "@/lib/commands/actions/open-into-target";
+import type { NavigateNestedFocus } from "@/lib/epic-nested-focus-navigation";
+import {
+  EMPTY_PROJECTED_SLICES,
+  type ArtifactProjection,
+  type ChatProjection,
+  type EpicProjectedSlices,
+  type TuiAgentProjection,
+} from "@/stores/epics/open-epic/types";
+
+const spies = vi.hoisted(() => ({
+  openTileIntoTargetGroup: vi.fn<(args: OpenTileIntoTargetGroupArgs) => void>(),
+  createChatMutate: vi.fn(),
+  createTuiAgent: vi.fn(),
+}));
+const latestConversationWorkspaceSeedMock = vi.hoisted(() => ({
+  intent: {
+    entries: [
+      {
+        kind: "local",
+        workspacePath: "/repo-seeded",
+        repoIdentifier: { owner: "traycerai", repo: "seeded" },
+        isPrimary: true,
+      },
+    ],
+  } satisfies WorktreeIntent,
+  seed: {
+    intent: null as WorktreeIntent | null,
+    workspace: { folders: [], folderInfoByPath: {} },
+    sourceOwnerId: "c1",
+    sourceOwnerKind: "chat",
+  },
+}));
+latestConversationWorkspaceSeedMock.seed.intent =
+  latestConversationWorkspaceSeedMock.intent;
+
+const terminalBindingsMock = vi.hoisted(() => ({
+  rows: [
+    {
+      hostId: "host-2",
+      runningDir: "/work/traycer-wt/feature-x",
+      workspacePath: "/work/traycer",
+      worktreePath: "/work/traycer-wt/feature-x",
+      mode: "worktree",
+      isGitRepo: true,
+      repoIdentifier: { owner: "traycer", repo: "traycer" },
+      branch: "feature-x",
+      isPrimary: false,
+      isImported: false,
+      setupState: "not_required",
+      disabledReason: null,
+      sources: [],
+      isGitResolvePending: false,
+    },
+  ] satisfies WorktreeBindingSelectorRowV12[],
+}));
+
+function chat(id: string, title: string): ChatProjection {
+  return {
+    id,
+    title,
+    parentId: null,
+    createdAt: 0,
+    updatedAt: 0,
+    userId: null,
+    hostId: "chat-host",
+    isTitleEditedByUser: false,
+    archivedAt: null,
+    settings: null,
+  };
+}
+function agent(id: string, title: string): TuiAgentProjection {
+  return {
+    id,
+    harnessId: "claude",
+    title,
+    parentId: null,
+    createdAt: 0,
+    updatedAt: 0,
+    userId: null,
+    hostId: "agent-host",
+    workspaceFolders: [],
+    workspaceMode: undefined,
+    model: null,
+    reasoningEffort: null,
+    agentMode: "regular",
+    profileId: null,
+    archivedAt: null,
+    harnessSessionId: null,
+    terminalAgentArgs: null,
+    terminalShellCommand: null,
+    terminalShellArgs: null,
+  };
+}
+function artifact(id: string, title: string): ArtifactProjection {
+  return {
+    id,
+    kind: "spec",
+    title,
+    folderName: "",
+    parentId: null,
+    artifactRoomId: null,
+    createdAt: 0,
+    updatedAt: 0,
+    status: null,
+    createdManually: false,
+  };
+}
+
+const FAKE_PROJECTION: EpicProjectedSlices = {
+  ...EMPTY_PROJECTED_SLICES,
+  chats: { allIds: ["c1"], byId: { c1: chat("c1", "Chat One") } },
+  tuiAgents: { allIds: ["a1"], byId: { a1: agent("a1", "Agent One") } },
+  artifacts: { allIds: ["s1"], byId: { s1: artifact("s1", "Spec One") } },
+};
+
+vi.mock("@/lib/commands/actions", () => ({
+  openTileIntoTargetGroup: spies.openTileIntoTargetGroup,
+  openCreatedChatWhenProjected: vi.fn(),
+}));
+vi.mock("@/lib/commands/sources/open/use-active-epic-projection", () => ({
+  useActiveEpicProjection: () => FAKE_PROJECTION,
+}));
+vi.mock("@/hooks/host/use-reactive-active-host-id", () => ({
+  useReactiveActiveHostId: () => "default-host",
+}));
+// terminals-subpage reads the host client (passed to the mocked useTerminalList
+// below); stub it so the hook does not require a <HostRuntimeProvider>.
+vi.mock("@/lib/host", () => ({
+  useHostClient: () => ({
+    request: () => new Promise(() => {}),
+    getActiveHostId: () => "default-host",
+    getRequestContextUserId: () => "user-test",
+    onChange: () => () => undefined,
+  }),
+}));
+vi.mock("@/hooks/epic/use-epic-chat-mutations", () => ({
+  useEpicCreateChat: () => ({ mutate: spies.createChatMutate }),
+}));
+vi.mock("@/hooks/worktree/use-latest-conversation-workspace-seed", () => ({
+  useLatestConversationWorkspaceSeed: () =>
+    latestConversationWorkspaceSeedMock.seed,
+}));
+vi.mock("@/hooks/worktree/use-worktree-list-bindings-for-epic-query", () => ({
+  useWorktreeListBindingsForEpic: () => ({
+    data: { rows: terminalBindingsMock.rows },
+    isPending: false,
+    isError: false,
+  }),
+}));
+vi.mock("@/hooks/terminal/use-terminal-list-query", () => ({
+  useTerminalList: () => ({
+    data: {
+      sessions: [
+        {
+          sessionId: "term-1",
+          scope: { kind: "epic", epicId: "epic-1" },
+          sessionKind: "terminal",
+          status: "running",
+          title: "shell one",
+          cwd: "/work/repo",
+        },
+        {
+          sessionId: "term-signin",
+          scope: { kind: "epic", epicId: "epic-1" },
+          sessionKind: "terminal",
+          status: "running",
+          title: "Copilot sign-in",
+          cwd: "~",
+        },
+      ],
+    },
+  }),
+}));
+vi.mock("@/hooks/harnesses/use-gui-harness-catalog", () => ({
+  useGuiHarnessCatalog: () => ({
+    harnesses: [
+      {
+        id: "claude",
+        label: "Claude",
+        available: true,
+        models: [{ harnessId: "claude", slug: "sonnet", label: "Sonnet" }],
+      },
+      // GUI-only provider must be filtered out of the TUI harness picker.
+      { id: "traycer", label: "Traycer", available: true, models: [] },
+    ],
+  }),
+}));
+vi.mock("@/hooks/agent/use-create-tui-agent", () => ({
+  useCreateTuiAgent: () => ({ create: spies.createTuiAgent, isPending: false }),
+}));
+
+import { useAgentsOpenerItems } from "@/lib/commands/sources/open/agents-subpage";
+import { useTerminalsOpenerItems } from "@/lib/commands/sources/open/terminals-subpage";
+import { useArtifactsOpenerItems } from "@/lib/commands/sources/open/artifacts-subpage";
+import { useNewConversationModalStore } from "@/stores/epics/new-conversation-modal-store";
+import { useNewConversationModalOpenStore } from "@/stores/epics/new-conversation-modal-open-store";
+import {
+  recordProviderLoginTerminal,
+  useProviderLoginTerminalsStore,
+} from "@/stores/providers/provider-login-terminals";
+
+const navigateNestedFocusSpy = vi.fn<NavigateNestedFocus>();
+
+function noopRouter(): KeybindingRouter {
+  return {
+    getPathname: () => "/",
+    navigateHome: () => undefined,
+    navigateSettings: () => undefined,
+    navigateToEpic: () => undefined,
+    navigateToEpicTab: () => undefined,
+    navigateToEpicList: () => undefined,
+    navigateSettingsSection: () => undefined,
+    navigateToTabIntent: () => undefined,
+    goBack: () => undefined,
+    goForward: () => undefined,
+    isHistoryNavAvailable: () => false,
+    canGoBack: () => false,
+    canGoForward: () => false,
+    navigateNestedFocus: navigateNestedFocusSpy,
+  };
+}
+
+const CTX: CommandContext = {
+  pathname: "/",
+  router: noopRouter(),
+  activeTabId: "tab-1",
+  activeEpicId: "epic-1",
+  focusedComposerKind: null,
+  targetGroupId: "group-1",
+};
+
+function renderItems(
+  hook: (ctx: CommandContext) => ReadonlyArray<CommandItem>,
+): ReadonlyArray<CommandItem> {
+  return renderHook<ReadonlyArray<CommandItem>, unknown>(() => hook(CTX)).result
+    .current;
+}
+
+function runById(items: ReadonlyArray<CommandItem>, id: string): void {
+  const item = items.find((entry) => entry.id === id);
+  if (item === undefined) throw new Error(`no opener item ${id}`);
+  void item.run(CTX);
+}
+
+function renderSubpageItems(item: CommandItem): ReadonlyArray<CommandItem> {
+  if (item.subpage === null) throw new Error(`${item.id} has no subpage`);
+  const subpage = item.subpage;
+  return renderHook<ReadonlyArray<CommandItem>, unknown>(() =>
+    subpage.useItems(CTX),
+  ).result.current;
+}
+
+function lastTileOpen(): OpenTileIntoTargetGroupArgs {
+  const call = spies.openTileIntoTargetGroup.mock.calls.at(-1);
+  if (call === undefined) throw new Error("openTileIntoTargetGroup not called");
+  return call[0];
+}
+
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+  useNewConversationModalOpenStore.getState().close();
+  useNewConversationModalStore.getState().resetForTests();
+  useProviderLoginTerminalsStore.setState(
+    useProviderLoginTerminalsStore.getInitialState(),
+    true,
+  );
+});
+
+describe("Agents opener sub-page", () => {
+  it("leads with both interfaces' creation leaves, then every Agent record", () => {
+    const items = renderItems(useAgentsOpenerItems);
+    // Creation for both interfaces sits at the top; records follow as one list
+    // rather than two interface-grouped collections.
+    expect(items.slice(0, 2).map((i) => i.id)).toEqual([
+      "open:chats:new",
+      "open:tui:new",
+    ]);
+    expect(items[0].label).toBe("New agent (Chat)");
+    expect(items[1].label).toBe("New agent (Terminal)");
+    expect(items[1].subpage).toBeNull();
+    const ids = items.map((i) => i.id);
+    expect(ids).toContain("open:chats:c1");
+    expect(ids).toContain("open:tui:a1");
+  });
+
+  it("preserves the leaf id prefixes the palette keys analytics off", () => {
+    const items = renderItems(useAgentsOpenerItems);
+    // `palette-cmdk-controller` maps `open:chats:*` -> open_chat and
+    // `open:tui:*` -> open_terminal. Merging the visible category must not
+    // renumber the leaves out from under that routing.
+    expect(items.every((i) => /^open:(chats|tui):/.test(i.id))).toBe(true);
+  });
+
+  it("starts a Chat-interface agent and opens an existing one into the target", () => {
+    const items = renderItems(useAgentsOpenerItems);
+    runById(items, "open:chats:new");
+    expect(useNewConversationModalOpenStore.getState().request).toEqual({
+      epicId: "epic-1",
+      tabId: "tab-1",
+      placement: { kind: "target-group", groupId: "group-1" },
+      parentId: null,
+    });
+    expect(
+      useNewConversationModalStore.getState().draftPatchesByEpicId["epic-1"]
+        ?.composerMode,
+    ).toBe("chat");
+    runById(items, "open:chats:c1");
+    const opened = lastTileOpen();
+    expect(opened.groupId).toBe("group-1");
+    expect(opened.tabId).toBe("tab-1");
+    expect(opened.ref.id).toBe("c1");
+    expect(opened.ref.type).toBe("chat");
+    // Proves the "existing" opener leaf threads the ctx.router navigation
+    // seam through instead of bypassing it.
+    expect(opened.navigateNestedFocus).toBe(navigateNestedFocusSpy);
+  });
+
+  it("starts a Terminal-interface agent from the same category", () => {
+    const items = renderItems(useAgentsOpenerItems);
+    runById(items, "open:tui:new");
+    expect(useNewConversationModalOpenStore.getState().request).toEqual({
+      epicId: "epic-1",
+      tabId: "tab-1",
+      placement: { kind: "target-group", groupId: "group-1" },
+      parentId: null,
+    });
+    expect(
+      useNewConversationModalStore.getState().draftPatchesByEpicId["epic-1"]
+        ?.composerMode,
+    ).toBe("terminal");
+  });
+
+  it("opens an existing Terminal-interface agent into the target group", () => {
+    const items = renderItems(useAgentsOpenerItems);
+    runById(items, "open:tui:a1");
+    const opened = lastTileOpen();
+    expect(opened.groupId).toBe("group-1");
+    expect(opened.ref.id).toBe("a1");
+    expect(opened.ref.type).toBe("terminal-agent");
+    expect(opened.navigateNestedFocus).toBe(navigateNestedFocusSpy);
+  });
+});
+
+describe("Terminals opener sub-page", () => {
+  it("pins New terminal first, then opens a picked folder into the target", () => {
+    const items = renderItems(useTerminalsOpenerItems);
+    const newTerminal = items[0];
+    expect(newTerminal.id).toBe("open:terminals:new");
+    expect(newTerminal.subpage).not.toBeNull();
+    const folderItems = renderSubpageItems(newTerminal);
+    runById(
+      folderItems,
+      "open:terminals:new:host-2:%2Fwork%2Ftraycer-wt%2Ffeature-x",
+    );
+    const created = lastTileOpen();
+    expect(created.groupId).toBe("group-1");
+    expect(created.ref.type).toBe("terminal");
+    if (created.ref.type !== "terminal") throw new Error("expected terminal");
+    expect(created.ref.hostId).toBe("host-2");
+    expect(created.ref.cwd).toBe("/work/traycer-wt/feature-x");
+    expect(created.ref.name).toBe("New Terminal");
+    expect(created.navigateNestedFocus).toBe(navigateNestedFocusSpy);
+    runById(items, "open:terminals:term-1");
+    const existing = lastTileOpen();
+    expect(existing.ref.id).toBe("term-1");
+    expect(existing.ref.type).toBe("terminal");
+    expect(existing.navigateNestedFocus).toBe(navigateNestedFocusSpy);
+  });
+
+  // A sign-in terminal reopened from the palette must carry its origin too -
+  // `terminal.list` cannot say who created a session, so without this the
+  // eviction-recreate path (correct for an ordinary shell) would spawn a bare
+  // prompt under the sign-in session's id once the host lost the PTY.
+  it("carries provider-login origin for a recorded sign-in session, and leaves an unrecorded one plain", () => {
+    recordProviderLoginTerminal({
+      hostId: "default-host",
+      sessionId: "term-signin",
+      providerId: "copilot",
+    });
+    const items = renderItems(useTerminalsOpenerItems);
+
+    runById(items, "open:terminals:term-signin");
+    const signInOpened = lastTileOpen();
+    if (signInOpened.ref.type !== "terminal") {
+      throw new Error("expected terminal");
+    }
+    expect(signInOpened.ref.origin).toBe("provider-login");
+    expect(signInOpened.ref.originProviderId).toBe("copilot");
+
+    runById(items, "open:terminals:term-1");
+    const plainOpened = lastTileOpen();
+    if (plainOpened.ref.type !== "terminal") {
+      throw new Error("expected terminal");
+    }
+    expect(plainOpened.ref.origin).toBeUndefined();
+  });
+});
+
+describe("Artifacts opener sub-page", () => {
+  it("lists existing artifacts and opens them into the target", () => {
+    const items = renderItems(useArtifactsOpenerItems);
+    expect(items.map((i) => i.id)).toEqual(["open:artifacts:s1"]);
+    runById(items, "open:artifacts:s1");
+    const opened = lastTileOpen();
+    expect(opened.groupId).toBe("group-1");
+    expect(opened.ref.id).toBe("s1");
+    expect(opened.ref.type).toBe("spec");
+    expect(opened.navigateNestedFocus).toBe(navigateNestedFocusSpy);
+  });
+});
