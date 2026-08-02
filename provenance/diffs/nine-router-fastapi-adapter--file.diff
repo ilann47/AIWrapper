@@ -1,5 +1,5 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\rtk\\index.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\nine_router.py"
-index dd1e50184..56022b48f 100644
+index dd1e50184..2a2fa3e34 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\rtk\\index.js"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\nine_router.py"	
 @@ -1,155 +1,38 @@
@@ -189,9 +189,9 @@ index dd1e50184..56022b48f 100644
 +    return json.loads(stdout.decode("utf-8"))
 +
 +
-+async def compress_request(body: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any] | None]:
++async def compress_request(body: dict[str, Any], model: str = "") -> tuple[dict[str, Any], dict[str, Any] | None]:
 +    try:
-+        result = await nine_router("compress", {"body": body, "enabled": bool(settings.aiwrapper_rtk_enabled)})
++        result = await nine_router("compress", {"body": body, "model": model, "enabled": bool(settings.aiwrapper_rtk_enabled)})
 +        return result.get("body", body), result.get("stats")
 +    except Exception:
 +        # 9router's RTK contract is fail-open: bridge failures must not block a request.

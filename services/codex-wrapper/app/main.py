@@ -158,7 +158,7 @@ async def chat_completions(req: ChatCompletionRequest, request: Request):
         session = aiwrapper_store.session(aiwrapper_user["id"], requested_session if isinstance(requested_session, str) else None, model_name, raw_content)
         history = aiwrapper_store.session_messages(session["id"])
         message_payload = [{"role": row["role"], "content": _stored_content(row["content"])} for row in history]
-    compressed_payload, rtk_stats = await compress_request({"messages": message_payload})
+    compressed_payload, rtk_stats = await compress_request({"messages": message_payload}, model_name)
     message_payload = compressed_payload.get("messages", message_payload)
     prompt, image_urls = build_prompt_and_images(message_payload)
     x_overrides = req.x_codex.dict(exclude_none=True) if req.x_codex else {}
@@ -349,7 +349,7 @@ async def responses_endpoint(req: ResponsesRequest, request: Request):
         session = aiwrapper_store.session(aiwrapper_user["id"], req.previous_response_id, model, raw_input)
         history = aiwrapper_store.session_messages(session["id"])
         messages = [{"role": row["role"], "content": _stored_content(row["content"])} for row in history]
-    compressed_payload, _ = await compress_request({"messages": messages})
+    compressed_payload, _ = await compress_request({"messages": messages}, model)
     messages = compressed_payload.get("messages", messages)
     prompt, image_urls = build_prompt_and_images(messages)
 

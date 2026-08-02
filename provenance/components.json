@@ -444,7 +444,7 @@
     },
     {
       "id": "nine-router-token-saver-ui",
-      "functionality": "Administrator Token Saver card with persisted RTK, Caveman and Ponytail controls, levels, effective status and environment safety lock",
+      "functionality": "Administrator Token Saver card with persisted RTK, external Headroom, Caveman and Ponytail controls, levels, health and environment safety lock",
       "project": "decolua/9router",
       "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
       "license": "MIT / project adapter code",
@@ -452,11 +452,11 @@
       "kind": "file",
       "source": "upstream/9router/src/app/(dashboard)/dashboard/token-saver/TokenSaverClient.js",
       "destination": "extensions/aiwrapper-admin/src/TokenSaverPanel.tsx",
-      "incompatibility": "The original page is a Next.js/Tailwind administration suite for RTK, Headroom, Caveman, Ponytail and PXPIPE, including local installers and proxy processes that do not exist in AIWrapper's production image. RTK, Caveman and Ponytail are on AIWrapper's canonical request path; their load, toggle-after-success, level selection and explanations are adapted to the OpenCodex design system and authenticated administrator API.",
+      "incompatibility": "The original page is a Next.js/Tailwind administration suite for RTK, Headroom, Caveman, Ponytail and PXPIPE. RTK, externally managed Headroom, Caveman and Ponytail are on AIWrapper's canonical request path; their load, toggle-after-success, URL/health, level selection and explanations are adapted to the OpenCodex design system and authenticated administrator API. Host-mutating installers/process management are intentionally excluded from the production container.",
       "parityAudit": {
-        "retained": ["RTK enabled state", "Caveman enabled state and all six levels", "Ponytail enabled state and all three levels", "Load persisted settings", "Persist before changing effective state", "60-90 percent savings explanation", "RTK documentation link", "Responsive card"],
-        "lost": ["Headroom installer/proxy", "PXPIPE image compression and installer"],
-        "decision": "Expose the three token-saver transforms that execute on the canonical request path. Preserve the complete upstream page in upstream/ and keep process-managed Headroom/PXPIPE as explicitly unwired candidates."
+        "retained": ["RTK enabled state", "Headroom enabled state, URL, health and user-message option", "Caveman enabled state and all six levels", "Ponytail enabled state and all three levels", "Load persisted settings", "Persist before changing effective state", "60-90 percent savings explanation", "RTK documentation link", "Responsive card"],
+        "lost": ["Headroom Python installer and detached local process manager", "PXPIPE image compression and installer"],
+        "decision": "Expose the four token-saver transforms that execute on the canonical request path. Keep Headroom service lifecycle outside the application container and preserve its upstream process manager for audit."
       }
     },
     {
@@ -469,12 +469,42 @@
       "kind": "file",
       "source": "upstream/9router/src/app/api/settings/route.js",
       "destination": "services/codex-wrapper/app/aiwrapper/router.py",
-      "incompatibility": "The source is a Next.js route bound to dashboard cookies, bcrypt and all 9router settings. AIWrapper is FastAPI and must enforce its existing administrator principal, expose only non-secret RTK/Caveman/Ponytail fields, retain the environment RTK lock, validate levels and write its audit ledger. The original settings repository remains the persistence implementation behind this transport adapter.",
+      "incompatibility": "The source is a Next.js route bound to dashboard cookies, bcrypt and all 9router settings. AIWrapper is FastAPI and must enforce its existing administrator principal, expose only non-secret RTK/Headroom/Caveman/Ponytail fields, retain the environment RTK lock, validate levels/URL and write its audit ledger. The original settings repository remains the persistence implementation behind this transport adapter.",
       "parityAudit": {
         "retained": ["No-store-style live settings read", "PATCH persistence through updateSettings", "Protected narrow response", "Immediate runtime effect"],
         "lost": ["Password, OIDC, proxy and unrelated 9router settings fields"],
         "decision": "Adapt only the HTTP/authentication boundary and delegate persistence to the preserved repository."
       }
+    },
+    {
+      "id": "nine-router-headroom-runtime",
+      "functionality": "Original fail-open Headroom compression, size diagnostics and proxy health probe on the canonical request path",
+      "project": "decolua/9router",
+      "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+      "license": "MIT",
+      "classification": "directly imported",
+      "kind": "file",
+      "source": "upstream/9router/open-sse/rtk/headroom.js",
+      "destination": "extensions/aiwrapper-runtime/src/nine-router-bridge.mjs",
+      "incompatibility": "The bridge supplies the canonical OpenAI body, selected model and persisted external proxy settings to compressWithHeadroom. Its translator dependencies require the same undici and uuid packages declared by upstream; those exact versions are installed locally and in the production image. Service lifecycle remains externally managed.",
+      "parityAudit": {
+        "retained": ["Original compressWithHeadroom", "Fail-open behavior", "Timeout", "HTTP diagnostics with sensitive URL scrubbing", "OpenAI/Claude/Responses/Kiro translator dependencies", "Body-size diagnostics", "Phantom-savings helpers", "Original health probe"],
+        "lost": ["Local Python package installer and detached proxy process manager"],
+        "decision": "Execute the mature compressor and health probe unchanged against an administrator-configured service; do not let the application mutate its host runtime."
+      }
+    },
+    {
+      "id": "nine-router-headroom-health-runtime",
+      "functionality": "Original Headroom health probe with bounded timeout",
+      "project": "decolua/9router",
+      "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+      "license": "MIT",
+      "classification": "directly imported",
+      "kind": "file",
+      "source": "upstream/9router/src/lib/headroom/detect.js",
+      "destination": "extensions/aiwrapper-runtime/src/nine-router-bridge.mjs",
+      "incompatibility": "The bridge imports probeProxyRunning directly and calls it with the persisted URL. Other exports in detect.js inspect local Python/CLI installation and are deliberately unused for an externally managed production service.",
+      "parityAudit": { "retained": ["Original probeProxyRunning", "Original 1500 ms timeout", "Fail-closed unreachable result"], "lost": ["Local binary and Python package detection"], "decision": "Reuse the exact network health primitive without coupling service health to mutable host installation state." }
     },
     {
       "id": "nine-router-caveman-runtime",

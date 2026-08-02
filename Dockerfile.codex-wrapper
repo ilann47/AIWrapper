@@ -29,6 +29,7 @@ COPY --from=governance /src/packages/codex-multi-auth /opt/aiwrapper/packages/co
 COPY extensions/aiwrapper-admin /opt/aiwrapper/extensions/aiwrapper-admin
 COPY extensions/aiwrapper-runtime /opt/aiwrapper/extensions/aiwrapper-runtime
 COPY upstream/9router /opt/aiwrapper/upstream/9router
+RUN cd /opt/aiwrapper/upstream && npm install --no-save --package-lock=false --ignore-scripts undici@7.19.2 uuid@13.0.0
 RUN mkdir -p /workspace /data /home/codex/.codex \
     && chown -R codex:codex /workspace /data /home/codex
 ENV CODEX_PATH=codex CODEX_WORKDIR=/workspace CODEX_CONFIG_DIR=/home/codex/.codex

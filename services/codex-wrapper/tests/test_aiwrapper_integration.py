@@ -1,7 +1,10 @@
 import asyncio
 import importlib
+import json
 import sqlite3
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from threading import Thread
 
 from fastapi.testclient import TestClient
 
@@ -225,6 +228,53 @@ def test_nine_router_executes_upstream_caveman_and_ponytail_injectors(tmp_path, 
     assert result["transforms"] == ["CAVEMAN:lite", "PONYTAIL:full"]
 
 
+def test_nine_router_executes_upstream_headroom_compressor_and_health_probe(tmp_path, monkeypatch):
+    class HeadroomHandler(BaseHTTPRequestHandler):
+        def log_message(self, *_args):
+            return
+
+        def do_GET(self):
+            self.send_response(200 if self.path == "/health" else 404)
+            self.end_headers()
+
+        def do_POST(self):
+            size = int(self.headers.get("Content-Length", "0"))
+            payload = json.loads(self.rfile.read(size))
+            response = {
+                "messages": [{**message, "content": "compressed by headroom"} for message in payload["messages"]],
+                "tokens_before": 100,
+                "tokens_after": 25,
+                "tokens_saved": 75,
+            }
+            body = json.dumps(response).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), HeadroomHandler)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    url = f"http://127.0.0.1:{server.server_port}"
+    try:
+        monkeypatch.setattr(settings, "aiwrapper_database_path", str(tmp_path / "headroom.sqlite"))
+        asyncio.run(nine_router("settings:update", {"updates": {"headroomEnabled": True, "headroomUrl": url}}))
+        result = asyncio.run(nine_router("compress", {
+            "body": {"messages": [{"role": "user", "content": "large context"}]},
+            "model": "gpt-test",
+            "enabled": False,
+        }))
+        status = asyncio.run(nine_router("headroom:status", {}))
+    finally:
+        server.shutdown()
+        server.server_close()
+
+    assert result["body"]["messages"][0]["content"] == "compressed by headroom"
+    assert result["headroom"]["stats"]["tokens_saved"] == 75
+    assert status == {"url": url, "running": True}
+
+
 def test_administrator_can_update_token_saver_setting(tmp_path, monkeypatch):
     store_module = importlib.import_module("app.aiwrapper.store")
     auth_module = importlib.import_module("app.aiwrapper.auth")
@@ -256,6 +306,9 @@ def test_administrator_can_update_token_saver_setting(tmp_path, monkeypatch):
         "cavemanLevel": "full",
         "ponytailEnabled": False,
         "ponytailLevel": "full",
+        "headroomEnabled": False,
+        "headroomUrl": "http://localhost:8787",
+        "headroomCompressUserMessages": False,
     }
     assert local_store.list_audit_events()[0]["action"] == "token_saver.updated"
 
@@ -269,10 +322,12 @@ def test_administrator_can_update_token_saver_setting(tmp_path, monkeypatch):
     assert prompts.json()["cavemanLevel"] == "ultra"
     assert prompts.json()["ponytailEnabled"] is True
     assert client.patch("/admin/token-saver", headers=headers, json={"cavemanLevel": "invalid"}).status_code == 400
+    assert client.patch("/admin/token-saver", headers=headers, json={"headroomUrl": "file:///etc/passwd"}).status_code == 400
 
     user_login = client.post("/auth/sessions", headers={"Authorization": f"Bearer {regular_user['apiKey']['secret']}", "Origin": origin})
     user_headers = {"Authorization": f"Bearer {user_login.json()['accessToken']}", "Origin": origin}
     assert client.get("/admin/token-saver", headers=user_headers).status_code == 403
+    assert client.get("/admin/token-saver/headroom-status", headers=user_headers).status_code == 403
 
 
 def test_nine_router_backup_preserves_schema_and_data(tmp_path):

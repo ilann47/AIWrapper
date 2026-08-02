@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\en.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\en.ts"
-index 26aa5f653..0a3952b99 100644
+index 26aa5f653..8309d3f5d 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\en.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\en.ts"	
-@@ -10,6 +10,175 @@ export const en = {
+@@ -10,6 +10,183 @@ export const en = {
    "nav.subagents": "Subagents",
    "nav.logs": "Logs & Debug",
    "nav.usage": "Usage",
@@ -47,6 +47,14 @@ index 26aa5f653..0a3952b99 100644
 +  "aiw.tokenSaver.ponytail": "Ponytail coding",
 +  "aiw.tokenSaver.ponytailDescription": "Bias coding answers toward the smallest safe implementation and shortest useful explanation.",
 +  "aiw.tokenSaver.level": "Compression level",
++  "aiw.tokenSaver.headroom": "Enable Headroom compression",
++  "aiw.tokenSaver.headroomDescription": "Send message history to a separately deployed Headroom proxy before model execution.",
++  "aiw.tokenSaver.headroomUrl": "Headroom proxy URL",
++  "aiw.tokenSaver.check": "Check",
++  "aiw.tokenSaver.checking": "Checking",
++  "aiw.tokenSaver.reachable": "Reachable",
++  "aiw.tokenSaver.unreachable": "Unreachable",
++  "aiw.tokenSaver.compressUserMessages": "Allow Headroom to compress user messages",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -178,7 +186,7 @@ index 26aa5f653..0a3952b99 100644
    "common.github": "GitHub",
    "common.save": "Save",
    "common.saving": "Saving…",
-@@ -1036,6 +1205,9 @@ export const en = {
+@@ -1036,6 +1213,9 @@ export const en = {
    "nav.codexAuth": "Codex Auth",
    "nav.api": "API",
    "nav.openMenu": "Open menu",

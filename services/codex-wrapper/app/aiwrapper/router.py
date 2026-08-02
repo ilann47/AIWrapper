@@ -1,6 +1,7 @@
 import re
 import time
 from typing import Any
+from urllib.parse import urlsplit
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
@@ -147,6 +148,9 @@ def _token_saver_response(runtime_settings: dict[str, Any]) -> dict[str, Any]:
         "cavemanLevel": runtime_settings.get("cavemanLevel", "full"),
         "ponytailEnabled": runtime_settings.get("ponytailEnabled") is True,
         "ponytailLevel": runtime_settings.get("ponytailLevel", "full"),
+        "headroomEnabled": runtime_settings.get("headroomEnabled") is True,
+        "headroomUrl": runtime_settings.get("headroomUrl", "http://localhost:8787"),
+        "headroomCompressUserMessages": runtime_settings.get("headroomCompressUserMessages") is True,
     }
 
 
@@ -163,22 +167,39 @@ async def token_saver_settings(request: Request):
 async def update_token_saver_settings(request: Request):
     user = administrator(request)
     body = await request.json()
-    allowed = {"rtkEnabled", "cavemanEnabled", "cavemanLevel", "ponytailEnabled", "ponytailLevel"}
+    allowed = {
+        "rtkEnabled", "cavemanEnabled", "cavemanLevel", "ponytailEnabled", "ponytailLevel",
+        "headroomEnabled", "headroomUrl", "headroomCompressUserMessages",
+    }
     if not body or set(body) - allowed:
         raise HTTPException(status_code=400, detail="Unsupported token-saver setting")
-    for key in ("rtkEnabled", "cavemanEnabled", "ponytailEnabled"):
+    for key in ("rtkEnabled", "cavemanEnabled", "ponytailEnabled", "headroomEnabled", "headroomCompressUserMessages"):
         if key in body and not isinstance(body[key], bool):
             raise HTTPException(status_code=400, detail=f"{key} must be a boolean")
     if "cavemanLevel" in body and body["cavemanLevel"] not in _CAVEMAN_LEVELS:
         raise HTTPException(status_code=400, detail="Invalid cavemanLevel")
     if "ponytailLevel" in body and body["ponytailLevel"] not in _PONYTAIL_LEVELS:
         raise HTTPException(status_code=400, detail="Invalid ponytailLevel")
+    if "headroomUrl" in body:
+        url = body["headroomUrl"]
+        parsed = urlsplit(url) if isinstance(url, str) and len(url) <= 2048 else None
+        if not parsed or parsed.scheme not in {"http", "https"} or not parsed.hostname:
+            raise HTTPException(status_code=400, detail="headroomUrl must be an HTTP(S) URL")
     try:
         runtime_settings = await nine_router("settings:update", {"updates": body})
     except RuntimeError as error:
         raise HTTPException(status_code=503, detail=str(error)) from error
     store.audit_event(user["id"], "token_saver.updated", "setting", "token-saver", {"updates": body})
     return _token_saver_response(runtime_settings)
+
+
+@router.get("/admin/token-saver/headroom-status")
+async def headroom_status(request: Request):
+    administrator(request)
+    try:
+        return await nine_router("headroom:status", {})
+    except RuntimeError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
 
 
 @router.post("/admin/users", status_code=201)

@@ -96,7 +96,9 @@ Os serviços são publicados somente em loopback: OpenCodex em `8765` e Codex-Wr
 
 O botão **Download backup** no dashboard administrativo executa o algoritmo SQLite original do 9router, preserva esquema e dados e mantém somente as três cópias mais recentes em `AIWRAPPER_STATE_DIR/backups`.
 
-O card **Token Saver** no dashboard controla RTK, Caveman e Ponytail sem reiniciar os serviços. O repositório transacional original do 9router persiste as escolhas na base AIWrapper; os módulos Caveman/Ponytail originais injetam os respectivos prompts no pedido OpenAI e `AIWRAPPER_RTK_ENABLED=false` continua funcionando como trava mestra exclusiva da compressão RTK.
+O card **Token Saver** no dashboard controla RTK, Headroom, Caveman e Ponytail sem reiniciar os serviços. O repositório transacional original do 9router persiste as escolhas na base AIWrapper; os módulos Headroom/Caveman/Ponytail originais executam no pedido OpenAI e `AIWRAPPER_RTK_ENABLED=false` continua funcionando como trava mestra exclusiva da compressão RTK.
+
+Headroom é integrado como serviço externo: implante o proxy separadamente, informe uma URL HTTP(S) alcançável pelo `codex-wrapper` (por exemplo `http://headroom:8787` numa rede Compose) e confirme **Reachable** antes de ativar. O AIWrapper não instala pacotes Python nem inicia processos no host; o status usa o health probe original do 9router e o compressor permanece fail-open.
 
 ## Validação e proveniência
 

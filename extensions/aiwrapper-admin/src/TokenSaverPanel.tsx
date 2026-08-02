@@ -13,7 +13,12 @@ type TokenSaverSettings = {
   cavemanLevel: string;
   ponytailEnabled: boolean;
   ponytailLevel: string;
+  headroomEnabled: boolean;
+  headroomUrl: string;
+  headroomCompressUserMessages: boolean;
 };
+
+type HeadroomStatus = { url: string; running: boolean };
 
 const CAVEMAN_LEVELS = ["lite", "full", "ultra", "wenyan-lite", "wenyan", "wenyan-ultra"];
 const PONYTAIL_LEVELS = ["lite", "full", "ultra"];
@@ -26,6 +31,9 @@ export default function TokenSaverPanel() {
   const [cavemanLevel, setCavemanLevel] = useState("full");
   const [ponytailEnabled, setPonytailEnabled] = useState(false);
   const [ponytailLevel, setPonytailLevel] = useState("full");
+  const [headroomEnabled, setHeadroomEnabled] = useState(false);
+  const [headroomUrl, setHeadroomUrl] = useState("http://localhost:8787");
+  const [headroomCompressUserMessages, setHeadroomCompressUserMessages] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const isAdministrator = principal?.role === "admin" || principal?.role === "owner";
@@ -38,6 +46,15 @@ export default function TokenSaverPanel() {
     },
     { enabled: Boolean(client && isAdministrator) },
   );
+  const headroomResource = useKeyedClientResource<HeadroomStatus>(
+    `aiwrapper-headroom-status:${principal?.userId ?? "anonymous"}`,
+    [client, principal?.userId],
+    async () => {
+      if (!client) throw new Error(t("aiw.overview.notConnected"));
+      return client.get<HeadroomStatus>("/admin/token-saver/headroom-status");
+    },
+    { enabled: Boolean(client && isAdministrator), pollMs: 30_000 },
+  );
 
   useEffect(() => {
     if (resource.data) {
@@ -46,6 +63,9 @@ export default function TokenSaverPanel() {
       setCavemanLevel(resource.data.cavemanLevel);
       setPonytailEnabled(resource.data.ponytailEnabled);
       setPonytailLevel(resource.data.ponytailLevel);
+      setHeadroomEnabled(resource.data.headroomEnabled);
+      setHeadroomUrl(resource.data.headroomUrl);
+      setHeadroomCompressUserMessages(resource.data.headroomCompressUserMessages);
     }
   }, [resource.data]);
 
@@ -61,6 +81,9 @@ export default function TokenSaverPanel() {
       setCavemanLevel(updated.cavemanLevel);
       setPonytailEnabled(updated.ponytailEnabled);
       setPonytailLevel(updated.ponytailLevel);
+      setHeadroomEnabled(updated.headroomEnabled);
+      setHeadroomUrl(updated.headroomUrl);
+      setHeadroomCompressUserMessages(updated.headroomCompressUserMessages);
       resource.refresh();
     } catch (reason) {
       setSaveError(reason instanceof Error ? reason.message : String(reason));
@@ -98,6 +121,27 @@ export default function TokenSaverPanel() {
           disabled={saving || resource.loading || environmentLocked}
           label={t("aiw.tokenSaver.toggle")}
         />
+      </div>
+      <div className="aiw-token-saver__feature aiw-token-saver__feature--headroom">
+        <div className="aiw-token-saver__copy">
+          <div className="aiw-token-saver__title-row">
+            <strong>Headroom</strong>
+            <span className={`badge ${headroomResource.data?.running ? "badge-green" : "badge-muted"}`}>
+              {headroomResource.loading ? t("aiw.tokenSaver.checking") : headroomResource.data?.running ? t("aiw.tokenSaver.reachable") : t("aiw.tokenSaver.unreachable")}
+            </span>
+          </div>
+          <p>{t("aiw.tokenSaver.headroomDescription")}</p>
+          <div className="aiw-token-saver__url">
+            <input className="input" value={headroomUrl} onChange={event => setHeadroomUrl(event.target.value)} aria-label={t("aiw.tokenSaver.headroomUrl")} />
+            <button type="button" className="btn btn-sm" disabled={saving} onClick={() => void savePatch({ headroomUrl: headroomUrl.trim() })}>{t("common.save")}</button>
+            <button type="button" className="btn btn-ghost btn-sm" disabled={headroomResource.loading} onClick={() => headroomResource.refresh()}>{t("aiw.tokenSaver.check")}</button>
+          </div>
+          <label className="aiw-token-saver__checkbox">
+            <input type="checkbox" checked={headroomCompressUserMessages} onChange={event => void savePatch({ headroomCompressUserMessages: event.target.checked })} disabled={saving} />
+            {t("aiw.tokenSaver.compressUserMessages")}
+          </label>
+        </div>
+        <Switch on={headroomEnabled} onClick={() => void savePatch({ headroomEnabled: !headroomEnabled })} disabled={saving || resource.loading} label={t("aiw.tokenSaver.headroom")} />
       </div>
       <div className="aiw-token-saver__feature">
         <div className="aiw-token-saver__copy">

@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\zh.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\zh.ts"
-index 3a50a7658..2d050d2d8 100644
+index 3a50a7658..bb393b056 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\zh.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\zh.ts"	
-@@ -10,6 +10,175 @@ export const zh: Record<TKey, string> = {
+@@ -10,6 +10,183 @@ export const zh: Record<TKey, string> = {
    "nav.subagents": "子代理",
    "nav.logs": "日志与调试",
    "nav.usage": "用量",
@@ -47,6 +47,14 @@ index 3a50a7658..2d050d2d8 100644
 +  "aiw.tokenSaver.ponytail": "最小代码",
 +  "aiw.tokenSaver.ponytailDescription": "优先采用最小安全实现和最短有效说明。",
 +  "aiw.tokenSaver.level": "压缩级别",
++  "aiw.tokenSaver.headroom": "启用 Headroom 压缩",
++  "aiw.tokenSaver.headroomDescription": "在模型执行前将消息历史发送到单独部署的 Headroom 代理。",
++  "aiw.tokenSaver.headroomUrl": "Headroom 代理 URL",
++  "aiw.tokenSaver.check": "检查",
++  "aiw.tokenSaver.checking": "检查中",
++  "aiw.tokenSaver.reachable": "可连接",
++  "aiw.tokenSaver.unreachable": "不可连接",
++  "aiw.tokenSaver.compressUserMessages": "允许 Headroom 压缩用户消息",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -178,7 +186,7 @@ index 3a50a7658..2d050d2d8 100644
    "common.github": "GitHub",
    "common.save": "保存",
    "common.saving": "保存中…",
-@@ -639,6 +808,9 @@ export const zh: Record<TKey, string> = {
+@@ -639,6 +816,9 @@ export const zh: Record<TKey, string> = {
    "nav.api": "API",
    "nav.codexAuth": "Codex 认证",
    "nav.openMenu": "打开菜单",

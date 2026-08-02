@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\app\\api\\settings\\route.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"
-index 6a7134331..89eb9b3bc 100644
+index 6a7134331..b5d07ffe1 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\app\\api\\settings\\route.js"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"	
-@@ -1,118 +1,329 @@
+@@ -1,118 +1,350 @@
 -import { NextResponse } from "next/server";
 -import { getSettings, updateSettings } from "@/lib/localDb";
 -import { applyOutboundProxyEnv } from "@/lib/network/outboundProxy";
@@ -77,16 +77,11 @@ index 6a7134331..89eb9b3bc 100644
 +import re
 +import time
 +from typing import Any
- 
--    if (Object.prototype.hasOwnProperty.call(body, "oidcClientSecret")) {
--      if (!body.oidcClientSecret || !String(body.oidcClientSecret).trim()) {
--        delete body.oidcClientSecret;
--      }
--    }
++from urllib.parse import urlsplit
++
 +from fastapi import APIRouter, HTTPException, Request
 +from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
- 
--    const settings = await updateSettings(body);
++
 +from .backups import create_backup as create_database_backup, list_backups, resolve_backup
 +from .governance import governance
 +from .nine_router import nine_router
@@ -94,23 +89,8 @@ index 6a7134331..89eb9b3bc 100644
 +from .store import store
 +from ..codex import codex_parallel_status
 +from ..config import settings
- 
--    // Apply outbound proxy settings immediately (no restart required)
--    if (
--      Object.prototype.hasOwnProperty.call(body, "outboundProxyEnabled") ||
--      Object.prototype.hasOwnProperty.call(body, "outboundProxyUrl") ||
--      Object.prototype.hasOwnProperty.call(body, "outboundNoProxy")
--    ) {
--      applyOutboundProxyEnv(settings);
--    }
- 
--    // Invalidate combo rotation state when strategy settings change
--    if (
--      Object.prototype.hasOwnProperty.call(body, "comboStrategy") ||
--      Object.prototype.hasOwnProperty.call(body, "comboStickyRoundRobinLimit") ||
--      Object.prototype.hasOwnProperty.call(body, "comboStrategies")
--    ) {
--      resetComboRotation();
++
++
 +router = APIRouter()
 +public_router = APIRouter()
 +
@@ -121,7 +101,11 @@ index 6a7134331..89eb9b3bc 100644
 +        raise HTTPException(status_code=401, detail="Individual AIWrapper key required")
 +    return value
 +
-+
+ 
+-    if (Object.prototype.hasOwnProperty.call(body, "oidcClientSecret")) {
+-      if (!body.oidcClientSecret || !String(body.oidcClientSecret).trim()) {
+-        delete body.oidcClientSecret;
+-      }
 +def administrator(request: Request) -> dict[str, Any]:
 +    value = principal(request)
 +    if value["role"] not in {"admin", "owner"}:
@@ -159,15 +143,15 @@ index 6a7134331..89eb9b3bc 100644
 +        "outcomes": summary_outcomes["buckets"],
      }
  
+-    const settings = await updateSettings(body);
+ 
+-    // Apply outbound proxy settings immediately (no restart required)
 -    if (
--      Object.prototype.hasOwnProperty.call(body, "claudeAutoPing") ||
--      Object.prototype.hasOwnProperty.call(body, "codexAutoPing")
+-      Object.prototype.hasOwnProperty.call(body, "outboundProxyEnabled") ||
+-      Object.prototype.hasOwnProperty.call(body, "outboundProxyUrl") ||
+-      Object.prototype.hasOwnProperty.call(body, "outboundNoProxy")
 -    ) {
--      // Keep the scheduler absent when no account opted in; load its provider graph only on demand.
--      import("@/shared/services/quotaAutoPing")
--        .then(({ configureQuotaAutoPing }) => {
--          configureQuotaAutoPing(settings);
-+
+-      applyOutboundProxyEnv(settings);
 +@router.get("/admin/users")
 +async def users(request: Request):
 +    administrator(request)
@@ -179,8 +163,7 @@ index 6a7134331..89eb9b3bc 100644
 +            "profile_id": user["profile_name"],
 +            "backend_id": "codex-wrapper",
 +            "weighted_units": summary["totals"]["totalTokens"],
-         })
--        .catch((error) => console.warn("[AutoPing] settings update failed:", error.message));
++        })
 +    return {"data": data}
 +
 +
@@ -199,8 +182,15 @@ index 6a7134331..89eb9b3bc 100644
 +        "audit": store.list_audit_events(10),
 +        "throughputPerMinute": round(float(totals.get("requests", 0)) / elapsed_minutes, 3),
 +        "window": {"since": since_ms, "until": now_ms},
-+    }
-+
+     }
+ 
+-    // Invalidate combo rotation state when strategy settings change
+-    if (
+-      Object.prototype.hasOwnProperty.call(body, "comboStrategy") ||
+-      Object.prototype.hasOwnProperty.call(body, "comboStickyRoundRobinLimit") ||
+-      Object.prototype.hasOwnProperty.call(body, "comboStrategies")
+-    ) {
+-      resetComboRotation();
 +
 +@router.get("/admin/audit")
 +async def audit_events(request: Request):
@@ -253,16 +243,21 @@ index 6a7134331..89eb9b3bc 100644
 +        "cavemanLevel": runtime_settings.get("cavemanLevel", "full"),
 +        "ponytailEnabled": runtime_settings.get("ponytailEnabled") is True,
 +        "ponytailLevel": runtime_settings.get("ponytailLevel", "full"),
++        "headroomEnabled": runtime_settings.get("headroomEnabled") is True,
++        "headroomUrl": runtime_settings.get("headroomUrl", "http://localhost:8787"),
++        "headroomCompressUserMessages": runtime_settings.get("headroomCompressUserMessages") is True,
      }
  
--    const { password, oidcClientSecret, ...safeSettings } = settings;
--    safeSettings.oidcConfigured = !!(safeSettings.oidcIssuerUrl && safeSettings.oidcClientId && oidcClientSecret);
--    return NextResponse.json(safeSettings, { headers: SETTINGS_RESPONSE_HEADERS });
--  } catch (error) {
--    console.log("Error updating settings:", error);
--    return NextResponse.json({ error: error.message }, { status: 500 });
--  }
--}
+-    if (
+-      Object.prototype.hasOwnProperty.call(body, "claudeAutoPing") ||
+-      Object.prototype.hasOwnProperty.call(body, "codexAutoPing")
+-    ) {
+-      // Keep the scheduler absent when no account opted in; load its provider graph only on demand.
+-      import("@/shared/services/quotaAutoPing")
+-        .then(({ configureQuotaAutoPing }) => {
+-          configureQuotaAutoPing(settings);
+-        })
+-        .catch((error) => console.warn("[AutoPing] settings update failed:", error.message));
 +
 +@router.get("/admin/token-saver")
 +async def token_saver_settings(request: Request):
@@ -277,22 +272,39 @@ index 6a7134331..89eb9b3bc 100644
 +async def update_token_saver_settings(request: Request):
 +    user = administrator(request)
 +    body = await request.json()
-+    allowed = {"rtkEnabled", "cavemanEnabled", "cavemanLevel", "ponytailEnabled", "ponytailLevel"}
++    allowed = {
++        "rtkEnabled", "cavemanEnabled", "cavemanLevel", "ponytailEnabled", "ponytailLevel",
++        "headroomEnabled", "headroomUrl", "headroomCompressUserMessages",
+     }
 +    if not body or set(body) - allowed:
 +        raise HTTPException(status_code=400, detail="Unsupported token-saver setting")
-+    for key in ("rtkEnabled", "cavemanEnabled", "ponytailEnabled"):
++    for key in ("rtkEnabled", "cavemanEnabled", "ponytailEnabled", "headroomEnabled", "headroomCompressUserMessages"):
 +        if key in body and not isinstance(body[key], bool):
 +            raise HTTPException(status_code=400, detail=f"{key} must be a boolean")
 +    if "cavemanLevel" in body and body["cavemanLevel"] not in _CAVEMAN_LEVELS:
 +        raise HTTPException(status_code=400, detail="Invalid cavemanLevel")
 +    if "ponytailLevel" in body and body["ponytailLevel"] not in _PONYTAIL_LEVELS:
 +        raise HTTPException(status_code=400, detail="Invalid ponytailLevel")
++    if "headroomUrl" in body:
++        url = body["headroomUrl"]
++        parsed = urlsplit(url) if isinstance(url, str) and len(url) <= 2048 else None
++        if not parsed or parsed.scheme not in {"http", "https"} or not parsed.hostname:
++            raise HTTPException(status_code=400, detail="headroomUrl must be an HTTP(S) URL")
 +    try:
 +        runtime_settings = await nine_router("settings:update", {"updates": body})
 +    except RuntimeError as error:
 +        raise HTTPException(status_code=503, detail=str(error)) from error
 +    store.audit_event(user["id"], "token_saver.updated", "setting", "token-saver", {"updates": body})
 +    return _token_saver_response(runtime_settings)
++
++
++@router.get("/admin/token-saver/headroom-status")
++async def headroom_status(request: Request):
++    administrator(request)
++    try:
++        return await nine_router("headroom:status", {})
++    except RuntimeError as error:
++        raise HTTPException(status_code=503, detail=str(error)) from error
 +
 +
 +@router.post("/admin/users", status_code=201)
@@ -434,7 +446,15 @@ index 6a7134331..89eb9b3bc 100644
 +    if not store.revoke_share(user["id"], share_id):
 +        raise HTTPException(status_code=404, detail="Share not found")
 +
-+
+ 
+-    const { password, oidcClientSecret, ...safeSettings } = settings;
+-    safeSettings.oidcConfigured = !!(safeSettings.oidcIssuerUrl && safeSettings.oidcClientId && oidcClientSecret);
+-    return NextResponse.json(safeSettings, { headers: SETTINGS_RESPONSE_HEADERS });
+-  } catch (error) {
+-    console.log("Error updating settings:", error);
+-    return NextResponse.json({ error: error.message }, { status: 500 });
+-  }
+-}
 +@public_router.get("/public/shares/{token}")
 +async def public_share(token: str):
 +    result = store.public_share(token)

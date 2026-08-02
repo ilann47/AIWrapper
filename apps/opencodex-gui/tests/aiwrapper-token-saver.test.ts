@@ -10,5 +10,7 @@ test("the administrator dashboard exposes the persisted 9router RTK control", as
   expect(panel).toContain("environmentLocked");
   expect(panel).toContain("cavemanEnabled");
   expect(panel).toContain("ponytailEnabled");
+  expect(panel).toContain('client.get<HeadroomStatus>("/admin/token-saver/headroom-status")');
+  expect(panel).toContain("headroomCompressUserMessages");
   expect(panel).toContain("<Switch");
 });

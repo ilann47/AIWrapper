@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ja.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ja.ts"
-index 47b1de3f0..631c73c1f 100644
+index 47b1de3f0..fe84086c2 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ja.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ja.ts"	
-@@ -10,6 +10,175 @@ export const ja: Record<TKey, string> = {
+@@ -10,6 +10,183 @@ export const ja: Record<TKey, string> = {
    "nav.subagents": "サブエージェント",
    "nav.logs": "ログ & デバッグ",
    "nav.usage": "使用量",
@@ -47,6 +47,14 @@ index 47b1de3f0..631c73c1f 100644
 +  "aiw.tokenSaver.ponytail": "最小限のコード",
 +  "aiw.tokenSaver.ponytailDescription": "安全で最小の実装と短い説明を優先します。",
 +  "aiw.tokenSaver.level": "圧縮レベル",
++  "aiw.tokenSaver.headroom": "Headroom 圧縮を有効にする",
++  "aiw.tokenSaver.headroomDescription": "モデル実行前に会話履歴を別途展開した Headroom プロキシへ送信します。",
++  "aiw.tokenSaver.headroomUrl": "Headroom プロキシ URL",
++  "aiw.tokenSaver.check": "確認",
++  "aiw.tokenSaver.checking": "確認中",
++  "aiw.tokenSaver.reachable": "接続可能",
++  "aiw.tokenSaver.unreachable": "接続不可",
++  "aiw.tokenSaver.compressUserMessages": "ユーザーメッセージの圧縮を許可",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -178,7 +186,7 @@ index 47b1de3f0..631c73c1f 100644
    "common.github": "GitHub",
    "common.save": "保存",
    "common.saving": "保存中…",
-@@ -993,6 +1162,9 @@ export const ja: Record<TKey, string> = {
+@@ -993,6 +1170,9 @@ export const ja: Record<TKey, string> = {
    "nav.codexAuth": "Codex 認証",
    "nav.api": "API",
    "nav.openMenu": "メニューを開く",

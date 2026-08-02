@@ -24,6 +24,20 @@ if (operation === "compress") {
   const body = structuredClone(input.body ?? {});
   const runtimeSettings = await getSettings();
   const stats = compressMessages(body, input.enabled !== false && runtimeSettings.rtkEnabled !== false);
+  const headroomDiagnostics = { reason: "disabled" };
+  let headroomStats = null;
+  if (runtimeSettings.headroomEnabled === true) {
+    const { compressWithHeadroom } = await import("../../../upstream/9router/open-sse/rtk/headroom.js");
+    delete headroomDiagnostics.reason;
+    headroomStats = await compressWithHeadroom(body, {
+      enabled: true,
+      url: runtimeSettings.headroomUrl,
+      model: input.model || "",
+      format: "openai",
+      compressUserMessages: runtimeSettings.headroomCompressUserMessages === true,
+      diagnostics: headroomDiagnostics,
+    });
+  }
   const transforms = [];
   if (runtimeSettings.cavemanEnabled && runtimeSettings.cavemanLevel) {
     injectCaveman(body, "openai", runtimeSettings.cavemanLevel);
@@ -33,13 +47,18 @@ if (operation === "compress") {
     injectPonytail(body, "openai", runtimeSettings.ponytailLevel);
     transforms.push(`PONYTAIL:${runtimeSettings.ponytailLevel}`);
   }
-  result = { body, stats, transforms, log: formatRtkLog(stats) };
+  result = { body, stats, headroom: { stats: headroomStats, diagnostics: headroomDiagnostics }, transforms, log: formatRtkLog(stats) };
 } else if (operation === "capabilities") {
   result = { required: [...detectRequiredCapabilities(input.body ?? {})] };
 } else if (operation === "settings:get") {
   result = await getSettings();
 } else if (operation === "settings:update") {
   result = await updateSettings(input.updates ?? {});
+} else if (operation === "headroom:status") {
+  const { probeProxyRunning } = await import("../../../upstream/9router/src/lib/headroom/detect.js");
+  const runtimeSettings = await getSettings();
+  const url = runtimeSettings.headroomUrl || "http://localhost:8787";
+  result = { url, running: await probeProxyRunning(url) };
 } else if (operation === "backup") {
   const { DatabaseSync } = await import("node:sqlite");
   const database = new DatabaseSync(input.databasePath);

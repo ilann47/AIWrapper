@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ko.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ko.ts"
-index 2372bf500..66cbbf7ee 100644
+index 2372bf500..d8bd97e9f 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ko.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ko.ts"	
-@@ -10,6 +10,175 @@ export const ko: Record<TKey, string> = {
+@@ -10,6 +10,183 @@ export const ko: Record<TKey, string> = {
    "nav.subagents": "서브에이전트",
    "nav.logs": "로그&디버그",
    "nav.usage": "사용량",
@@ -47,6 +47,14 @@ index 2372bf500..66cbbf7ee 100644
 +  "aiw.tokenSaver.ponytail": "최소 코드",
 +  "aiw.tokenSaver.ponytailDescription": "가장 작고 안전한 구현과 짧은 설명을 우선합니다.",
 +  "aiw.tokenSaver.level": "압축 수준",
++  "aiw.tokenSaver.headroom": "Headroom 압축 활성화",
++  "aiw.tokenSaver.headroomDescription": "모델 실행 전에 메시지 기록을 별도로 배포된 Headroom 프록시로 보냅니다.",
++  "aiw.tokenSaver.headroomUrl": "Headroom 프록시 URL",
++  "aiw.tokenSaver.check": "확인",
++  "aiw.tokenSaver.checking": "확인 중",
++  "aiw.tokenSaver.reachable": "연결 가능",
++  "aiw.tokenSaver.unreachable": "연결 불가",
++  "aiw.tokenSaver.compressUserMessages": "사용자 메시지 압축 허용",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -178,7 +186,7 @@ index 2372bf500..66cbbf7ee 100644
    "common.github": "GitHub",
    "common.save": "저장",
    "common.saving": "저장 중…",
-@@ -639,6 +808,9 @@ export const ko: Record<TKey, string> = {
+@@ -639,6 +816,9 @@ export const ko: Record<TKey, string> = {
    "nav.api": "API",
    "nav.codexAuth": "Codex 인증",
    "nav.openMenu": "메뉴 열기",
