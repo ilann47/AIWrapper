@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from .backups import create_backup as create_database_backup, list_backups, resolve_backup
 from .governance import governance
 from .nine_router import nine_router
-from .profiles import ensure_profile
+from .profiles import ensure_profile, profile_diagnostics
 from .store import store
 from ..codex import codex_parallel_status
 from ..config import settings
@@ -333,6 +333,15 @@ async def update_user(user_id: str, request: Request):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return {key: value for key, value in user.items() if key != "api_key_hash"}
+
+
+@router.get("/admin/profiles")
+async def profiles(request: Request):
+    administrator(request)
+    try:
+        return await profile_diagnostics()
+    except RuntimeError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
 
 
 @router.patch("/admin/users/{user_id}/status", status_code=204)

@@ -1,8 +1,8 @@
-diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\pages\\ApiKeys.tsx" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-users\\src\\UsersPage.tsx"
-index 87f0704d7..abcf69f70 100644
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\pages\\ApiKeys.tsx" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-users\\src\\ProfilesPage.tsx"
+index 87f0704d7..d88ef8f8c 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\pages\\ApiKeys.tsx"	
-+++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-users\\src\\UsersPage.tsx"	
-@@ -1,310 +1,75 @@
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-users\\src\\ProfilesPage.tsx"	
+@@ -1,310 +1,62 @@
 -import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 -import { Notice } from "../ui";
 -import { useI18n, LOCALES } from "../i18n/shared";
@@ -36,33 +36,29 @@ index 87f0704d7..abcf69f70 100644
 -  messagesEndpoint?: string;
 -  modelsEndpoint?: string;
 -  claudeCodeEnabled?: boolean;
-+import { useEffect, useState } from "react";
-+import { IconPlus, IconRefresh } from "../../../apps/opencodex-gui/src/icons";
++import { IconHardDrive, IconRefresh, IconTerminal } from "../../../apps/opencodex-gui/src/icons";
++import { useKeyedClientResource } from "../../../apps/opencodex-gui/src/client-resource";
 +import { useT } from "../../../apps/opencodex-gui/src/i18n/shared";
-+import { EmptyState, Notice, Select } from "../../../apps/opencodex-gui/src/ui";
++import { EmptyState, Notice } from "../../../apps/opencodex-gui/src/ui";
 +import { PageFrame } from "../../aiwrapper-admin/src/PageFrame";
 +import { useAIWrapper } from "../../aiwrapper-admin/src/auth";
++import "./styles.css";
 +
-+interface UserRecord {
-+  id: string;
++interface ProfileStatus {
 +  name: string;
++  home: string;
++  state: "ok" | "not_initialized" | "not_logged_in" | "error";
 +  status: string;
-+  role: string;
-+  profile_id?: string;
-+  profile_name?: string;
-+  backend_id?: string;
-+  weighted_units?: number;
-+  quota_5h?: number;
-+  quota_7d?: number;
++  exit_code: number;
  }
  
 -interface CreateKeyResponse {
 -  key?: unknown;
-+function UserRow({ user, save }: { user: UserRecord; save: (userId: string, quota5h: number, quota7d: number) => Promise<void> }) {
-+  const t = useT();
-+  const [quota5h, setQuota5h] = useState(user.quota_5h ?? 100000);
-+  const [quota7d, setQuota7d] = useState(user.quota_7d ?? 500000);
-+  return <tr><td>{user.name}</td><td>{user.role}</td><td><span className={`badge ${user.status === "active" ? "badge-green" : "badge-muted"}`}>{user.status}</span></td><td><code>{user.profile_name ?? user.profile_id ?? "—"}</code></td><td>{Number(user.weighted_units ?? 0).toLocaleString()}</td><td><input className="input aiw-quota-input" aria-label={t("aiw.users.quota5h")} type="number" min="1" value={quota5h} onChange={event => setQuota5h(Number(event.target.value))} /></td><td><input className="input aiw-quota-input" aria-label={t("aiw.users.quota7d")} type="number" min="1" value={quota7d} onChange={event => setQuota7d(Number(event.target.value))} /></td><td><button type="button" className="btn btn-ghost btn-sm" onClick={() => void save(user.id, quota5h, quota7d)}>{t("common.save")}</button></td></tr>;
++interface ProfileDiagnostics {
++  commandExitCode: number;
++  cli: { found: boolean; path: string | null; version: string | null; source: string | null; healthy: boolean };
++  status: { skipped: boolean; reason?: string; profiles?: ProfileStatus[] };
++  workspaces: { guard_mode: string | null; registry_valid: boolean; binding_count: number; missing_paths: number; missing_profiles: number };
  }
  
 -export default function ApiKeys({ apiBase }: { apiBase: string }) {
@@ -246,28 +242,12 @@ index 87f0704d7..abcf69f70 100644
 -    if (protocol === "responses") return t("api.protocolResponses");
 -    if (protocol === "messages") return t("api.protocolMessages");
 -    return t("api.protocolChatCompletions");
-+export default function UsersPage() {
-+  const { client } = useAIWrapper();
-+  const t = useT();
-+  const [users, setUsers] = useState<UserRecord[]>([]);
-+  const [name, setName] = useState("");
-+  const [role, setRole] = useState("user");
-+  const [secret, setSecret] = useState("");
-+  const [error, setError] = useState("");
-+
-+  const load = async () => {
-+    if (!client) return;
-+    try { setUsers((await client.get<{ data: UserRecord[] }>("/admin/users")).data); setError(""); }
-+    catch (reason) { setError(reason instanceof Error ? reason.message : String(reason)); }
-   };
-+  useEffect(() => { void load(); }, [client]);
- 
+-  };
+-
 -  const testModel = async (model: ExternalModelRow) => {
 -    const modelId = externalModelId(model);
 -    setModelTests(current => ({ ...current, [modelId]: { state: "testing" } }));
-+  const create = async () => {
-+    if (!client) return;
-     try {
+-    try {
 -      const res = await fetch(endpoints.chatCompletions, {
 -        method: "POST",
 -        headers: { "Content-Type": "application/json" },
@@ -293,36 +273,46 @@ index 87f0704d7..abcf69f70 100644
 -        [modelId]: { state: "error", detail: error instanceof Error ? error.message : t("api.testFailed") },
 -      }));
 -    }
-+      const result = await client.send<{ apiKey?: { secret?: string }; secret?: string }>("/admin/users", "POST", { name, role });
-+      setSecret(result.apiKey?.secret ?? result.secret ?? "");
-+      setName("");
-+      await load();
-+    } catch (reason) { setError(reason instanceof Error ? reason.message : String(reason)); }
-   };
+-  };
++function stateTone(state: ProfileStatus["state"]): string {
++  if (state === "ok") return "badge-green";
++  if (state === "error") return "badge-red";
++  return "badge-muted";
++}
  
 -  // Subtitle carries two inline <code> chips; split the localized string on both tokens.
 -  const subtitleParts = t("api.subtitle").split(/\{authHeader\}|\{altHeader\}/);
--
++export default function ProfilesPage() {
++  const t = useT();
++  const { client } = useAIWrapper();
++  const diagnostics = useKeyedClientResource<ProfileDiagnostics>(
++    `aiwrapper-profile-diagnostics:${client?.baseUrl ?? "anonymous"}`,
++    [client],
++    async () => {
++      if (!client) throw new Error(t("aiw.profiles.notConnected"));
++      return client.get<ProfileDiagnostics>("/admin/profiles");
++    },
++    { enabled: Boolean(client) },
++  );
++  const data = diagnostics.data;
++  const profiles = data?.status.profiles ?? [];
+ 
    return (
 -    <section className="api-page">
 -      <div className="page-head">
 -        <h2>{t("api.title")}</h2>
-+    <PageFrame title="aiw.users.title" subtitle="aiw.users.subtitle">
++    <PageFrame title="aiw.profiles.title" subtitle="aiw.profiles.subtitle">
 +      <div className="aiw-stack">
-+        <section className="panel">
-+          <div className="panel-head"><h3 className="panel-title">{t("aiw.users.create")}</h3></div>
-+          <div className="aiw-form-grid">
-+            <label className="aiw-field"><span>{t("aiw.users.name")}</span><input className="input" value={name} onChange={event => setName(event.target.value)} /></label>
-+            <label className="aiw-field"><span>{t("aiw.users.role")}</span><Select value={role} options={["user", "operator", "admin"].map(value => ({ value, label: value }))} onChange={setRole} /></label>
-+            <div className="aiw-field"><span>{t("aiw.users.profile")}</span><small>{t("aiw.users.profileAutomatic")}</small></div>
-+          </div>
-+          <button type="button" className="btn btn-primary" disabled={!name.trim()} onClick={() => void create()}><IconPlus /> {t("aiw.users.createAction")}</button>
-+          {secret && <code className="aiw-secret">{secret}</code>}
++        <div className="aiw-profile-actions"><button type="button" className="btn btn-sm btn-ghost" disabled={diagnostics.loading} onClick={() => diagnostics.refresh({ forceLoading: true })}><IconRefresh /> {t("common.retry")}</button></div>
++        {diagnostics.error ? <Notice tone="err">{diagnostics.error instanceof Error ? diagnostics.error.message : String(diagnostics.error)}</Notice> : null}
++        <section className="stat-row aiw-profile-stats">
++          <article className="stat"><span className="label"><IconTerminal />{t("aiw.profiles.cli")}</span><strong className="value">{data?.cli.found ? data.cli.version ?? t("aiw.profiles.available") : t("aiw.profiles.unavailable")}</strong><small>{data?.cli.path ?? data?.status.reason ?? "—"}</small></article>
++          <article className="stat"><span className="label"><IconHardDrive />{t("aiw.profiles.workspaceBindings")}</span><strong className="value">{data?.workspaces.binding_count ?? 0}</strong><small>{data?.workspaces.registry_valid === false ? t("aiw.profiles.registryInvalid") : t("aiw.profiles.guard", { mode: data?.workspaces.guard_mode ?? "off" })}</small></article>
++          <article className="stat"><span className="label"><IconRefresh />{t("aiw.profiles.health")}</span><strong className="value">{data?.cli.healthy ? t("aiw.profiles.healthy") : t("aiw.profiles.needsAttention")}</strong><small>{t("aiw.profiles.missingReferences", { paths: String(data?.workspaces.missing_paths ?? 0), profiles: String(data?.workspaces.missing_profiles ?? 0) })}</small></article>
 +        </section>
 +        <section className="panel">
-+          <div className="panel-head"><h3 className="panel-title">{t("aiw.users.list")}</h3><button type="button" className="btn btn-ghost btn-sm" onClick={() => void load()}><IconRefresh /> {t("common.retry")}</button></div>
-+          {error && <Notice tone="err">{error}</Notice>}
-+          {users.length === 0 ? <EmptyState title={t("aiw.users.empty")} /> : <div className="aiw-table-wrap"><table className="tbl"><thead><tr><th>{t("aiw.users.name")}</th><th>{t("aiw.users.role")}</th><th>{t("aiw.users.status")}</th><th>{t("aiw.users.profile")}</th><th>{t("aiw.users.units")}</th><th>{t("aiw.users.quota5h")}</th><th>{t("aiw.users.quota7d")}</th><th /></tr></thead><tbody>{users.map(user => <UserRow key={user.id} user={user} save={async (userId, quota5h, quota7d) => { if (!client) return; await client.send(`/admin/users/${userId}`, "PATCH", { quota_5h: quota5h, quota_7d: quota7d }); await load(); }} />)}</tbody></table></div>}
++          <div className="panel-head"><div><h3 className="panel-title">{t("aiw.profiles.list")}</h3><p>{t("aiw.profiles.listDescription")}</p></div></div>
++          {diagnostics.loading && !data ? <EmptyState title={t("common.loading")} /> : profiles.length === 0 ? <EmptyState title={t("aiw.profiles.empty")}><span>{data?.status.reason ?? t("aiw.profiles.emptyHint")}</span></EmptyState> : <div className="aiw-table-wrap"><table className="tbl"><thead><tr><th>{t("aiw.profiles.name")}</th><th>{t("aiw.profiles.state")}</th><th>{t("aiw.profiles.home")}</th><th>{t("aiw.profiles.status")}</th></tr></thead><tbody>{profiles.map((profile) => <tr key={profile.name}><td><strong>{profile.name}</strong></td><td><span className={`badge ${stateTone(profile.state)}`}>{profile.state.replaceAll("_", " ")}</span></td><td><code>{profile.home}</code></td><td>{profile.status}</td></tr>)}</tbody></table></div>}
 +        </section>
        </div>
 -      <p className="page-sub">

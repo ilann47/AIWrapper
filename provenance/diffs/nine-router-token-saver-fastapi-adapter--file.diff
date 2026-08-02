@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\app\\api\\settings\\route.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"
-index 6a7134331..576d84da3 100644
+index 6a7134331..ba036af3a 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\app\\api\\settings\\route.js"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"	
-@@ -1,118 +1,451 @@
+@@ -1,118 +1,460 @@
 -import { NextResponse } from "next/server";
 -import { getSettings, updateSettings } from "@/lib/localDb";
 -import { applyOutboundProxyEnv } from "@/lib/network/outboundProxy";
@@ -86,7 +86,7 @@ index 6a7134331..576d84da3 100644
 +from .backups import create_backup as create_database_backup, list_backups, resolve_backup
 +from .governance import governance
 +from .nine_router import nine_router
-+from .profiles import ensure_profile
++from .profiles import ensure_profile, profile_diagnostics
 +from .store import store
 +from ..codex import codex_parallel_status
 +from ..config import settings
@@ -108,12 +108,12 @@ index 6a7134331..576d84da3 100644
 +    if value["role"] not in {"admin", "owner"}:
 +        raise HTTPException(status_code=403, detail="Administrator role required")
 +    return value
++
  
 -    if (Object.prototype.hasOwnProperty.call(body, "oidcClientSecret")) {
 -      if (!body.oidcClientSecret || !String(body.oidcClientSecret).trim()) {
 -        delete body.oidcClientSecret;
 -      }
-+
 +@router.get("/v1/me")
 +async def me(request: Request):
 +    user = principal(request)
@@ -356,16 +356,8 @@ index 6a7134331..576d84da3 100644
 +        "headroomEnabled": runtime_settings.get("headroomEnabled") is True,
 +        "headroomUrl": runtime_settings.get("headroomUrl", "http://localhost:8787"),
 +        "headroomCompressUserMessages": runtime_settings.get("headroomCompressUserMessages") is True,
-     }
- 
--    const { password, oidcClientSecret, ...safeSettings } = settings;
--    safeSettings.oidcConfigured = !!(safeSettings.oidcIssuerUrl && safeSettings.oidcClientId && oidcClientSecret);
--    return NextResponse.json(safeSettings, { headers: SETTINGS_RESPONSE_HEADERS });
--  } catch (error) {
--    console.log("Error updating settings:", error);
--    return NextResponse.json({ error: error.message }, { status: 500 });
--  }
--}
++    }
++
 +
 +@router.get("/admin/token-saver")
 +async def token_saver_settings(request: Request):
@@ -383,7 +375,7 @@ index 6a7134331..576d84da3 100644
 +    allowed = {
 +        "rtkEnabled", "cavemanEnabled", "cavemanLevel", "ponytailEnabled", "ponytailLevel",
 +        "headroomEnabled", "headroomUrl", "headroomCompressUserMessages",
-+    }
+     }
 +    if not body or set(body) - allowed:
 +        raise HTTPException(status_code=400, detail="Unsupported token-saver setting")
 +    for key in ("rtkEnabled", "cavemanEnabled", "ponytailEnabled", "headroomEnabled", "headroomCompressUserMessages"):
@@ -445,6 +437,15 @@ index 6a7134331..576d84da3 100644
 +    if not user:
 +        raise HTTPException(status_code=404, detail="User not found")
 +    return {key: value for key, value in user.items() if key != "api_key_hash"}
++
++
++@router.get("/admin/profiles")
++async def profiles(request: Request):
++    administrator(request)
++    try:
++        return await profile_diagnostics()
++    except RuntimeError as error:
++        raise HTTPException(status_code=503, detail=str(error)) from error
 +
 +
 +@router.patch("/admin/users/{user_id}/status", status_code=204)
@@ -554,7 +555,15 @@ index 6a7134331..576d84da3 100644
 +    if not store.revoke_share(user["id"], share_id):
 +        raise HTTPException(status_code=404, detail="Share not found")
 +
-+
+ 
+-    const { password, oidcClientSecret, ...safeSettings } = settings;
+-    safeSettings.oidcConfigured = !!(safeSettings.oidcIssuerUrl && safeSettings.oidcClientId && oidcClientSecret);
+-    return NextResponse.json(safeSettings, { headers: SETTINGS_RESPONSE_HEADERS });
+-  } catch (error) {
+-    console.log("Error updating settings:", error);
+-    return NextResponse.json({ error: error.message }, { status: 500 });
+-  }
+-}
 +@public_router.get("/public/shares/{token}")
 +async def public_share(token: str):
 +    result = store.public_share(token)

@@ -18,6 +18,7 @@ export type Page =
   | "grok"
   | "aiwrapper-chat"
   | "aiwrapper-users"
+  | "aiwrapper-profiles"
   | "aiwrapper-organizations"
   | "aiwrapper-sessions"
   | "aiwrapper-sharing"
@@ -42,6 +43,7 @@ export const VALID_PAGES = new Set<Page>([
   "grok",
   "aiwrapper-chat",
   "aiwrapper-users",
+  "aiwrapper-profiles",
   "aiwrapper-organizations",
   "aiwrapper-sessions",
   "aiwrapper-sharing",

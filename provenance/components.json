@@ -19,7 +19,7 @@
       "kind": "directory",
       "source": "upstream/opencodex/gui",
       "destination": "apps/opencodex-gui",
-      "exclude": ["dist", "tests/aiwrapper-token-saver.test.ts", "tests/aiwrapper-traycer-session-history.test.ts", "tests/aiwrapper-traycer-notifications.test.ts", "tests/aiwrapper-traycer-onboarding.test.ts", "tests/aiwrapper-nine-router-connections.test.ts", "tests/aiwrapper-container-layout.test.ts"]
+      "exclude": ["dist", "tests/aiwrapper-token-saver.test.ts", "tests/aiwrapper-traycer-session-history.test.ts", "tests/aiwrapper-traycer-notifications.test.ts", "tests/aiwrapper-traycer-onboarding.test.ts", "tests/aiwrapper-nine-router-connections.test.ts", "tests/aiwrapper-codex-profiles-admin.test.ts", "tests/aiwrapper-container-layout.test.ts"]
     },
     {
       "id": "opencodex-data-plane-execution",
@@ -151,7 +151,7 @@
       "kind": "directory",
       "source": "upstream/Codex-Wrapper",
       "destination": "services/codex-wrapper",
-      "exclude": ["app/aiwrapper", "tests/test_aiwrapper_integration.py", "tests/test_opencodex_adapter.py", ".aiwrapper"]
+      "exclude": ["app/aiwrapper", "tests/test_aiwrapper_integration.py", "tests/test_aiwrapper_profiles.py", "tests/test_opencodex_adapter.py", ".aiwrapper"]
     },
     {
       "id": "codex-multi-auth-package",
@@ -263,7 +263,7 @@
     },
     {
       "id": "codex-profiles-python-adapter",
-      "functionality": "FastAPI adapter invoking the original codex-profile executable through Bash",
+      "functionality": "FastAPI adapter invoking the original codex-profile init, path and doctor --json contracts through Bash",
       "project": "Ducksss/codex-profiles",
       "sourceCommit": "b0df2dd0ab955eb712436f234bbab984cc017992",
       "license": "MIT",
@@ -273,10 +273,23 @@
       "destination": "services/codex-wrapper/app/aiwrapper/profiles.py",
       "incompatibility": "The upstream interface is a Bash executable while FastAPI needs an asynchronous Python call boundary; the adapter launches the unchanged executable instead of porting profile behavior.",
       "parityAudit": {
-        "retained": ["Original profile init", "Original profile path resolution", "Original CODEX_HOME layout"],
+        "retained": ["Original profile init", "Original profile path resolution", "Original CODEX_HOME layout", "Original doctor --json profile discovery", "Original CLI health", "Original workspace binding diagnostics"],
         "lost": [],
-        "decision": "No profile logic is reimplemented; additional upstream commands remain available through the copied package and can be exposed later."
+        "decision": "No profile discovery, validation or health logic is reimplemented; FastAPI parses and returns the original machine-readable command output. Additional upstream mutation commands remain available through the copied package."
       }
+    },
+    {
+      "id": "codex-profiles-administration-ui",
+      "functionality": "Administrator profile inventory with Codex CLI health, authentication state, isolated CODEX_HOME paths and workspace-reference diagnostics",
+      "project": "Ducksss/codex-profiles and lidge-jun/OpenCodex",
+      "sourceCommit": "b0df2dd0ab955eb712436f234bbab984cc017992",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/codex-profiles/bin/codex-profile",
+      "destination": "extensions/aiwrapper-users/src/ProfilesPage.tsx",
+      "incompatibility": "codex-profiles is intentionally a dependency-free Bash CLI with no frontend. AIWrapper must not port its profile discovery or doctor logic; the OpenCodex page renders the unchanged doctor --json response through existing card, table, loading and error primitives.",
+      "parityAudit": { "retained": ["all-profile status rows", "profile name", "CODEX_HOME", "state", "authentication status", "Codex CLI found/version/path/health", "workspace guard mode", "binding count", "missing paths", "missing profiles"], "lost": ["desktop application details are returned by the API but not displayed", "legacy clone-root detail", "profile/workspace mutation commands remain CLI-only"], "decision": "Expose the original read-only diagnostic contract as a commercial admin page and keep mutation in the hardened upstream CLI." }
     },
     {
       "id": "nine-router-oauth-security-boundary",

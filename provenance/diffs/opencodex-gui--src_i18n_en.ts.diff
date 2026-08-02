@@ -1,13 +1,35 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\en.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\en.ts"
-index 26aa5f653..39d31c553 100644
+index 26aa5f653..b50df14cf 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\en.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\en.ts"	
-@@ -10,6 +10,255 @@ export const en = {
+@@ -10,6 +10,278 @@ export const en = {
    "nav.subagents": "Subagents",
    "nav.logs": "Logs & Debug",
    "nav.usage": "Usage",
 +  "nav.aiwrapperChat": "AIWrapper Chat",
 +  "nav.aiwrapperUsers": "Users",
++  "nav.aiwrapperProfiles": "Profiles",
++  "aiw.profiles.title": "Codex profiles",
++  "aiw.profiles.subtitle": "Isolated Codex homes and diagnostics from the original codex-profile runtime.",
++  "aiw.profiles.notConnected": "Connect as an administrator to inspect profiles.",
++  "aiw.profiles.cli": "Codex CLI",
++  "aiw.profiles.available": "Available",
++  "aiw.profiles.unavailable": "Unavailable",
++  "aiw.profiles.workspaceBindings": "Workspace bindings",
++  "aiw.profiles.registryInvalid": "Workspace registry needs attention",
++  "aiw.profiles.guard": "Guard mode: {mode}",
++  "aiw.profiles.health": "Profile health",
++  "aiw.profiles.healthy": "Healthy",
++  "aiw.profiles.needsAttention": "Needs attention",
++  "aiw.profiles.missingReferences": "{paths} missing paths · {profiles} missing profiles",
++  "aiw.profiles.list": "Isolated profiles",
++  "aiw.profiles.listDescription": "Status is read directly from codex-profile doctor --json.",
++  "aiw.profiles.empty": "No profiles reported",
++  "aiw.profiles.emptyHint": "Create a user to initialize its isolated Codex home automatically.",
++  "aiw.profiles.name": "Profile",
++  "aiw.profiles.state": "State",
++  "aiw.profiles.home": "CODEX_HOME",
++  "aiw.profiles.status": "Authentication status",
 +  "nav.aiwrapperOrganizations": "Organizations",
 +  "nav.aiwrapperSessions": "Sessions",
 +  "nav.aiwrapperSharing": "Sharing",
@@ -187,6 +209,7 @@ index 26aa5f653..39d31c553 100644
 +  "aiw.users.name": "Name",
 +  "aiw.users.role": "Role",
 +  "aiw.users.codexHome": "CODEX_HOME",
++  "aiw.users.profileAutomatic": "An isolated CODEX_HOME is created automatically from the user name.",
 +  "aiw.users.createAction": "Create user and key",
 +  "aiw.users.list": "Users",
 +  "aiw.users.empty": "No users found",
@@ -258,7 +281,7 @@ index 26aa5f653..39d31c553 100644
    "common.github": "GitHub",
    "common.save": "Save",
    "common.saving": "Saving…",
-@@ -1036,6 +1285,9 @@ export const en = {
+@@ -1036,6 +1308,9 @@ export const en = {
    "nav.codexAuth": "Codex Auth",
    "nav.api": "API",
    "nav.openMenu": "Open menu",

@@ -1,10 +1,10 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\main.py" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\profiles.py"
-index 6647bca55..16258d21c 100644
+index 6647bca55..1baac871a 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\main.py"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\profiles.py"	
-@@ -1,268 +1,39 @@
--import json
+@@ -1,268 +1,66 @@
 +import asyncio
+ import json
  import os
 -import time
 -import uuid
@@ -59,7 +59,27 @@ index 6647bca55..16258d21c 100644
 -
 -@app.post("/v1/chat/completions", dependencies=[Depends(rate_limiter), Depends(verify_api_key)])
 -async def chat_completions(req: ChatCompletionRequest):
--    try:
++from pathlib import Path
++
++from ..config import settings
++
++
++async def profile_diagnostics() -> dict:
++    """Execute codex-profile's original machine-readable doctor contract."""
++    env = os.environ.copy()
++    env["CODEX_PROFILE_NO_UPDATE_CHECK"] = "1"
++    script = str(Path(settings.aiwrapper_profile_script).resolve())
++    process = await asyncio.create_subprocess_exec(
++        settings.aiwrapper_profile_bash,
++        script,
++        "doctor",
++        "--json",
++        stdout=asyncio.subprocess.PIPE,
++        stderr=asyncio.subprocess.PIPE,
++        env=env,
++    )
++    stdout, stderr = await process.communicate()
+     try:
 -        model_name, alias_effort = choose_model(req.model)
 -    except ValueError as e:
 -        raise HTTPException(
@@ -272,9 +292,14 @@ index 6647bca55..16258d21c 100644
 -                os.remove(p)
 -            except Exception:
 -                pass
-+from pathlib import Path
-+
-+from ..config import settings
++        payload = json.loads(stdout.decode("utf-8"))
++    except (UnicodeDecodeError, json.JSONDecodeError) as error:
++        detail = stderr.decode("utf-8", errors="replace").strip()
++        raise RuntimeError(detail or "codex-profile doctor returned invalid JSON") from error
++    if not isinstance(payload, dict):
++        raise RuntimeError("codex-profile doctor returned an invalid payload")
++    payload["commandExitCode"] = process.returncode
++    return payload
 +
 +
 +async def ensure_profile(name: str) -> str:

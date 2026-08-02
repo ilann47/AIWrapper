@@ -1,8 +1,8 @@
-diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\codex-profiles\\bin\\codex-profile" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\profiles.py"
-index 7b0d70eb1..1baac871a 100644
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\codex-profiles\\bin\\codex-profile" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-users\\src\\ProfilesPage.tsx"
+index 7b0d70eb1..d88ef8f8c 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\codex-profiles\\bin\\codex-profile"	
-+++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\profiles.py"	
-@@ -1,2498 +1,66 @@
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-users\\src\\ProfilesPage.tsx"	
+@@ -1,2498 +1,62 @@
 -#!/usr/bin/env bash
 -
 -set -euo pipefail
@@ -1555,7 +1555,68 @@ index 7b0d70eb1..1baac871a 100644
 -  value=${value//\\/\\\\}
 -  value=${value//\'/\\\'}
 -  printf "'%s'" "$value"
--}
++import { IconHardDrive, IconRefresh, IconTerminal } from "../../../apps/opencodex-gui/src/icons";
++import { useKeyedClientResource } from "../../../apps/opencodex-gui/src/client-resource";
++import { useT } from "../../../apps/opencodex-gui/src/i18n/shared";
++import { EmptyState, Notice } from "../../../apps/opencodex-gui/src/ui";
++import { PageFrame } from "../../aiwrapper-admin/src/PageFrame";
++import { useAIWrapper } from "../../aiwrapper-admin/src/auth";
++import "./styles.css";
++
++interface ProfileStatus {
++  name: string;
++  home: string;
++  state: "ok" | "not_initialized" | "not_logged_in" | "error";
++  status: string;
++  exit_code: number;
++}
++
++interface ProfileDiagnostics {
++  commandExitCode: number;
++  cli: { found: boolean; path: string | null; version: string | null; source: string | null; healthy: boolean };
++  status: { skipped: boolean; reason?: string; profiles?: ProfileStatus[] };
++  workspaces: { guard_mode: string | null; registry_valid: boolean; binding_count: number; missing_paths: number; missing_profiles: number };
++}
++
++function stateTone(state: ProfileStatus["state"]): string {
++  if (state === "ok") return "badge-green";
++  if (state === "error") return "badge-red";
++  return "badge-muted";
++}
++
++export default function ProfilesPage() {
++  const t = useT();
++  const { client } = useAIWrapper();
++  const diagnostics = useKeyedClientResource<ProfileDiagnostics>(
++    `aiwrapper-profile-diagnostics:${client?.baseUrl ?? "anonymous"}`,
++    [client],
++    async () => {
++      if (!client) throw new Error(t("aiw.profiles.notConnected"));
++      return client.get<ProfileDiagnostics>("/admin/profiles");
++    },
++    { enabled: Boolean(client) },
++  );
++  const data = diagnostics.data;
++  const profiles = data?.status.profiles ?? [];
++
++  return (
++    <PageFrame title="aiw.profiles.title" subtitle="aiw.profiles.subtitle">
++      <div className="aiw-stack">
++        <div className="aiw-profile-actions"><button type="button" className="btn btn-sm btn-ghost" disabled={diagnostics.loading} onClick={() => diagnostics.refresh({ forceLoading: true })}><IconRefresh /> {t("common.retry")}</button></div>
++        {diagnostics.error ? <Notice tone="err">{diagnostics.error instanceof Error ? diagnostics.error.message : String(diagnostics.error)}</Notice> : null}
++        <section className="stat-row aiw-profile-stats">
++          <article className="stat"><span className="label"><IconTerminal />{t("aiw.profiles.cli")}</span><strong className="value">{data?.cli.found ? data.cli.version ?? t("aiw.profiles.available") : t("aiw.profiles.unavailable")}</strong><small>{data?.cli.path ?? data?.status.reason ?? "—"}</small></article>
++          <article className="stat"><span className="label"><IconHardDrive />{t("aiw.profiles.workspaceBindings")}</span><strong className="value">{data?.workspaces.binding_count ?? 0}</strong><small>{data?.workspaces.registry_valid === false ? t("aiw.profiles.registryInvalid") : t("aiw.profiles.guard", { mode: data?.workspaces.guard_mode ?? "off" })}</small></article>
++          <article className="stat"><span className="label"><IconRefresh />{t("aiw.profiles.health")}</span><strong className="value">{data?.cli.healthy ? t("aiw.profiles.healthy") : t("aiw.profiles.needsAttention")}</strong><small>{t("aiw.profiles.missingReferences", { paths: String(data?.workspaces.missing_paths ?? 0), profiles: String(data?.workspaces.missing_profiles ?? 0) })}</small></article>
++        </section>
++        <section className="panel">
++          <div className="panel-head"><div><h3 className="panel-title">{t("aiw.profiles.list")}</h3><p>{t("aiw.profiles.listDescription")}</p></div></div>
++          {diagnostics.loading && !data ? <EmptyState title={t("common.loading")} /> : profiles.length === 0 ? <EmptyState title={t("aiw.profiles.empty")}><span>{data?.status.reason ?? t("aiw.profiles.emptyHint")}</span></EmptyState> : <div className="aiw-table-wrap"><table className="tbl"><thead><tr><th>{t("aiw.profiles.name")}</th><th>{t("aiw.profiles.state")}</th><th>{t("aiw.profiles.home")}</th><th>{t("aiw.profiles.status")}</th></tr></thead><tbody>{profiles.map((profile) => <tr key={profile.name}><td><strong>{profile.name}</strong></td><td><span className={`badge ${stateTone(profile.state)}`}>{profile.state.replaceAll("_", " ")}</span></td><td><code>{profile.home}</code></td><td>{profile.status}</td></tr>)}</tbody></table></div>}
++        </section>
++      </div>
++    </PageFrame>
++  );
+ }
 -
 -command_env() {
 -  local profile="" shell="posix"
@@ -2501,69 +2562,3 @@ index 7b0d70eb1..1baac871a 100644
 -}
 -
 -main "$@"
-+import asyncio
-+import json
-+import os
-+from pathlib import Path
-+
-+from ..config import settings
-+
-+
-+async def profile_diagnostics() -> dict:
-+    """Execute codex-profile's original machine-readable doctor contract."""
-+    env = os.environ.copy()
-+    env["CODEX_PROFILE_NO_UPDATE_CHECK"] = "1"
-+    script = str(Path(settings.aiwrapper_profile_script).resolve())
-+    process = await asyncio.create_subprocess_exec(
-+        settings.aiwrapper_profile_bash,
-+        script,
-+        "doctor",
-+        "--json",
-+        stdout=asyncio.subprocess.PIPE,
-+        stderr=asyncio.subprocess.PIPE,
-+        env=env,
-+    )
-+    stdout, stderr = await process.communicate()
-+    try:
-+        payload = json.loads(stdout.decode("utf-8"))
-+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
-+        detail = stderr.decode("utf-8", errors="replace").strip()
-+        raise RuntimeError(detail or "codex-profile doctor returned invalid JSON") from error
-+    if not isinstance(payload, dict):
-+        raise RuntimeError("codex-profile doctor returned an invalid payload")
-+    payload["commandExitCode"] = process.returncode
-+    return payload
-+
-+
-+async def ensure_profile(name: str) -> str:
-+    env = os.environ.copy()
-+    env["CODEX_PROFILE_NO_UPDATE_CHECK"] = "1"
-+    script = str(Path(settings.aiwrapper_profile_script).resolve())
-+    process = await asyncio.create_subprocess_exec(
-+        settings.aiwrapper_profile_bash,
-+        script,
-+        "init",
-+        name,
-+        stdout=asyncio.subprocess.PIPE,
-+        stderr=asyncio.subprocess.PIPE,
-+        env=env,
-+    )
-+    _, stderr = await process.communicate()
-+    if process.returncode != 0 and b"already exists" not in stderr.lower():
-+        raise RuntimeError(stderr.decode("utf-8", errors="replace").strip() or "codex-profile init failed")
-+    path_process = await asyncio.create_subprocess_exec(
-+        settings.aiwrapper_profile_bash,
-+        script,
-+        "path",
-+        name,
-+        stdout=asyncio.subprocess.PIPE,
-+        stderr=asyncio.subprocess.PIPE,
-+        env=env,
-+    )
-+    stdout, path_stderr = await path_process.communicate()
-+    if path_process.returncode != 0:
-+        raise RuntimeError(path_stderr.decode("utf-8", errors="replace").strip() or "codex-profile path failed")
-+    posix_path = stdout.decode("utf-8").strip()
-+    if len(posix_path) > 3 and posix_path[0] == "/" and posix_path[2] == "/":
-+        return f"{posix_path[1].upper()}:{posix_path[2:]}"
-+    return posix_path

@@ -50,6 +50,8 @@ Use `Ctrl+K` (ou `Cmd+K`) para focar a busca global da barra lateral. Ela filtra
 
 No primeiro acesso de cada usuário, o onboarding derivado do Traycer apresenta Chat, Conversas, Consumo e Conectar aplicativos em quatro passos. O progresso aceita teclado (`←`, `→`, `Enter` e `Esc`), a conclusão é armazenada por usuário e o tour pode ser reaberto em **Primeiros passos**.
 
+Ao criar um usuário, o backend chama `codex-profile init` e `codex-profile path` diretamente; não é necessário informar `CODEX_HOME`. Em **Perfis**, administradores veem o resultado original de `codex-profile doctor --json`: versão e saúde do CLI, login por perfil, diretórios isolados, vínculos e referências ausentes de workspaces.
+
 Em **Conectar aplicativos**, cada usuário pode informar temporariamente sua chave individual, escolher o modelo e gerar os arquivos `~/.codex/config.toml` e `~/.codex/auth.json` para usar o Codex CLI através do AIWrapper. A tela também gera `OPENAI_BASE_URL` e `OPENAI_API_KEY` para outros clientes compatíveis. A chave permanece somente na memória da página; a gravação automática do 9router no host foi deliberadamente excluída porque alteraria o OAuth compartilhado do servidor em vez do computador do usuário.
 
 ## Fluxo de uma conversa

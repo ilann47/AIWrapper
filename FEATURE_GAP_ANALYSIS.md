@@ -6,6 +6,10 @@ Audit date: 2026-08-01. Exact line counts, reuse percentages and unified diffs a
 
 | Project | Commit | License | Decision |
 |---|---|---|---|
+| OpenCodex | `d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5` | MIT | Complete React/Vite GUI and provider/OAuth data plane incorporated as the product and execution base |
+| Codex-Wrapper | `e9353b8d29db0c00057f6c4f88e9d06fb27c61a6` | MIT | Complete FastAPI/OpenAI proxy, Codex execution and SSE service incorporated and extended at policy boundaries |
+| codex-multi-auth | `89ca9696d0f46cce48b28fdaa64a62d4bb521874` | MIT | Complete package incorporated; ledger, accounting and budget guard execute directly |
+| codex-profiles | `b0df2dd0ab955eb712436f234bbab984cc017992` | MIT | Complete package incorporated; profile init/path/doctor execute through a subprocess adapter without porting logic |
 | Traycer | `12b3bb82898af9d4eae333a7504f3005be96f577` | MIT | Complete snapshot incorporated; chat find and context-usage runtime directly imported |
 | 9router | `6fcd27337a7893642c7fe630840d0a641743f28f` | MIT | Snapshot incorporated with embedded OAuth credentials security-redacted; RTK/capability runtime directly executed and chat/usage components adapted |
 | Odysseus | `25c9e73543dece9a1d97cad55647ee4893920dff` | AGPL-3.0 | Audited but not copied into this MIT distribution; incorporation requires an explicit relicensing decision |
@@ -16,6 +20,10 @@ Audit date: 2026-08-01. Exact line counts, reuse percentages and unified diffs a
 
 | Project | Functionality | Existed | Valuable | Code reused | Incorporated files | Adaptation | Status |
 |---|---:|---:|---:|---:|---|---|---|
+| OpenCodex | Product GUI, provider/model administration, OAuth pools, fallback, logs, usage and settings | Partial | Yes | Yes | Complete `upstream/opencodex/gui` and `src/server` → `apps/opencodex-gui` and canonical OpenCodex runtime | AIWrapper role/session/policy pages are mounted into the unchanged shell; data-plane adapter keeps original provider execution | wired |
+| Codex-Wrapper | FastAPI OpenAI/Responses gateway, OAuth Codex CLI execution, models and SSE | No | Yes | Yes | Complete `upstream/codex-wrapper` → `services/codex-wrapper` | Multi-user authentication, quotas and OpenCodex execution are integration boundaries around the original service | wired |
+| codex-multi-auth | Ledger, token accounting, budget guard and usage grouping | No | Yes | Yes | Complete package plus `governance-bridge.mjs` | JSON subprocess executes compiled upstream functions unchanged | wired |
+| codex-profiles | Isolated CODEX_HOME creation, status and doctor diagnostics | Partial | Yes | Yes | Complete package, `profiles.py`, `ProfilesPage.tsx` | FastAPI invokes original `init`, `path` and `doctor --json`; admin UI renders the machine-readable contract | wired |
 | Traycer | In-chat mounted-range highlighting | No | Yes | Yes | `chat-find-highlighter.ts` → `traycer-chat-runtime.ts` | Re-export and message-container binding | wired |
 | Traycer | Context-window formatting/warning tone | Partial | Yes | Yes | `context-usage.ts` → `traycer-chat-runtime.ts` | Feed per-user quota data | wired |
 | Traycer | Fuzzy conversation search and favorite-first history ordering | Partial | Yes | Yes | `use-history-query.ts`, `home-page.data.ts` → `traycer-session-history.ts` | Traycer's host/cloud task boundary is replaced by authenticated AIWrapper sessions; Fuse thresholds, relevance flow and sorting architecture are retained | wired |
@@ -49,6 +57,7 @@ Audit date: 2026-08-01. Exact line counts, reuse percentages and unified diffs a
 - User navigation: Chat, Conversations, Sharing and personal Usage.
 - Connect apps: users generate Codex CLI `config.toml`/`auth.json` and OpenAI-compatible environment variables with endpoint guidance, live model discovery and memory-only individual-key handling.
 - First use: a Traycer-derived four-act tour introduces Chat, Conversations, Usage and Connect apps, remembers completion per user and remains replayable from the sidebar.
+- Profiles: creating a user automatically initializes an isolated `CODEX_HOME`; administrators can inspect original codex-profile CLI health, login state, paths and workspace-reference diagnostics without entering filesystem paths manually.
 - Global navigation search: filters every role-visible destination and focuses with `Ctrl+K`/`Cmd+K`, preserving the 9router registration/query lifecycle.
 - Conversation history uses Traycer's Fuse-based tolerant search, relevance ordering and favorite-first recent/oldest/title projections.
 - Notifications use Traycer's original lifecycle, category, popover-filter, occurrence, live-arrival, scroll-anchor and calendar-grouping modules with a persistent per-user quota/audit feed, unread badge, Attention/Recent center, N-new reveal control and live Sonner toasts.

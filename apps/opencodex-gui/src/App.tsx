@@ -26,6 +26,7 @@ import { AIWrapperProvider, useAIWrapper } from "../../../extensions/aiwrapper-a
 import ChatPage from "../../../extensions/aiwrapper-chat/src/ChatPage";
 import SessionsPage from "../../../extensions/aiwrapper-chat/src/SessionsPage";
 import UsersPage from "../../../extensions/aiwrapper-users/src/UsersPage";
+import ProfilesPage from "../../../extensions/aiwrapper-users/src/ProfilesPage";
 import OrganizationsPage from "../../../extensions/aiwrapper-users/src/OrganizationsPage";
 import SharingPage from "../../../extensions/aiwrapper-sharing/src/SharingPage";
 import BillingPage from "../../../extensions/aiwrapper-billing/src/BillingPage";
@@ -62,6 +63,7 @@ const PAGE_TKEY: Record<Page, TKey> = {
   grok: "nav.grok",
   "aiwrapper-chat": "nav.aiwrapperChat",
   "aiwrapper-users": "nav.aiwrapperUsers",
+  "aiwrapper-profiles": "nav.aiwrapperProfiles",
   "aiwrapper-organizations": "nav.aiwrapperOrganizations",
   "aiwrapper-sessions": "nav.aiwrapperSessions",
   "aiwrapper-sharing": "nav.aiwrapperSharing",
@@ -86,6 +88,7 @@ const NAV_GROUPS: { label: TKey; adminOnly?: boolean; items: NavEntry[] }[] = [
  ]},
  { label: "nav.section.admin", adminOnly: true, items: [
   { id: "aiwrapper-users", tkey: "nav.aiwrapperUsers", Icon: IconBot },
+  { id: "aiwrapper-profiles", tkey: "nav.aiwrapperProfiles", Icon: IconHardDrive },
   { id: "aiwrapper-organizations", tkey: "nav.aiwrapperOrganizations", Icon: IconBoxes },
  ]},
  { label: "nav.section.monitoring", adminOnly: true, items: [
@@ -403,6 +406,7 @@ function AppContent() {
             {page === "grok" && <Grok apiBase={API_BASE} />}
             {page === "aiwrapper-chat" && <ChatPage />}
             {page === "aiwrapper-users" && <UsersPage />}
+            {page === "aiwrapper-profiles" && <ProfilesPage />}
             {page === "aiwrapper-organizations" && <OrganizationsPage />}
             {page === "aiwrapper-sessions" && <SessionsPage />}
             {page === "aiwrapper-sharing" && <SharingPage />}

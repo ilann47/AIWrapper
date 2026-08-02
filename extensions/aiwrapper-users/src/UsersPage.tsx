@@ -31,7 +31,6 @@ export default function UsersPage() {
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [name, setName] = useState("");
   const [role, setRole] = useState("user");
-  const [codexHome, setCodexHome] = useState("");
   const [secret, setSecret] = useState("");
   const [error, setError] = useState("");
 
@@ -45,7 +44,7 @@ export default function UsersPage() {
   const create = async () => {
     if (!client) return;
     try {
-      const result = await client.send<{ apiKey?: { secret?: string }; secret?: string }>("/admin/users", "POST", { name, role, codexHome });
+      const result = await client.send<{ apiKey?: { secret?: string }; secret?: string }>("/admin/users", "POST", { name, role });
       setSecret(result.apiKey?.secret ?? result.secret ?? "");
       setName("");
       await load();
@@ -60,9 +59,9 @@ export default function UsersPage() {
           <div className="aiw-form-grid">
             <label className="aiw-field"><span>{t("aiw.users.name")}</span><input className="input" value={name} onChange={event => setName(event.target.value)} /></label>
             <label className="aiw-field"><span>{t("aiw.users.role")}</span><Select value={role} options={["user", "operator", "admin"].map(value => ({ value, label: value }))} onChange={setRole} /></label>
-            <label className="aiw-field"><span>{t("aiw.users.codexHome")}</span><input className="input" value={codexHome} onChange={event => setCodexHome(event.target.value)} placeholder="C:\\Users\\…\\.codex-profile" /></label>
+            <div className="aiw-field"><span>{t("aiw.users.profile")}</span><small>{t("aiw.users.profileAutomatic")}</small></div>
           </div>
-          <button type="button" className="btn btn-primary" disabled={!name.trim() || !codexHome.trim()} onClick={() => void create()}><IconPlus /> {t("aiw.users.createAction")}</button>
+          <button type="button" className="btn btn-primary" disabled={!name.trim()} onClick={() => void create()}><IconPlus /> {t("aiw.users.createAction")}</button>
           {secret && <code className="aiw-secret">{secret}</code>}
         </section>
         <section className="panel">
