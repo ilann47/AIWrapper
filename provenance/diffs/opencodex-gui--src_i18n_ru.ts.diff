@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ru.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ru.ts"
-index e0ae4bdf4..8f65bfb69 100644
+index e0ae4bdf4..31e6c9306 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ru.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ru.ts"	
-@@ -10,6 +10,162 @@ export const ru: Record<TKey, string> = {
+@@ -10,6 +10,169 @@ export const ru: Record<TKey, string> = {
    "nav.subagents": "Подагенты",
    "nav.logs": "Логи и отладка",
    "nav.usage": "Использование",
@@ -34,6 +34,13 @@ index e0ae4bdf4..8f65bfb69 100644
 +  "aiw.overview.event": "Событие",
 +  "aiw.overview.target": "Цель",
 +  "aiw.overview.when": "Время",
++  "aiw.tokenSaver.title": "Экономия токенов",
++  "aiw.tokenSaver.description": "Сжимает большие результаты инструментов перед отправкой модели, обычно сокращая входные токены на 60–90%.",
++  "aiw.tokenSaver.learnMore": "Как работает сжатие RTK",
++  "aiw.tokenSaver.active": "Активно",
++  "aiw.tokenSaver.inactive": "Неактивно",
++  "aiw.tokenSaver.environmentLocked": "Отключено защитной переменной окружения AIWRAPPER_RTK_ENABLED.",
++  "aiw.tokenSaver.toggle": "Включить сжатие токенов RTK",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -165,7 +172,7 @@ index e0ae4bdf4..8f65bfb69 100644
    "common.github": "GitHub",
    "common.save": "Сохранить",
    "common.saving": "Сохранение…",
-@@ -1035,6 +1191,9 @@ export const ru: Record<TKey, string> = {
+@@ -1035,6 +1198,9 @@ export const ru: Record<TKey, string> = {
    "nav.codexAuth": "Аутентификация Codex",
    "nav.api": "API",
    "nav.openMenu": "Открыть меню",

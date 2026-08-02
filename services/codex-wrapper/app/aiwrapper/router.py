@@ -7,9 +7,11 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 
 from .backups import create_backup as create_database_backup, list_backups, resolve_backup
 from .governance import governance
+from .nine_router import nine_router
 from .profiles import ensure_profile
 from .store import store
 from ..codex import codex_parallel_status
+from ..config import settings
 
 
 router = APIRouter()
@@ -128,6 +130,40 @@ async def download_backup(backup_id: str, request: Request):
     if not target:
         raise HTTPException(status_code=404, detail="Backup not found")
     return FileResponse(target, media_type="application/vnd.sqlite3", filename=f"aiwrapper-{backup_id}.sqlite")
+
+
+def _token_saver_response(runtime_settings: dict[str, Any]) -> dict[str, bool]:
+    configured = runtime_settings.get("rtkEnabled") is not False
+    environment_enabled = bool(settings.aiwrapper_rtk_enabled)
+    return {
+        "rtkEnabled": configured,
+        "environmentEnabled": environment_enabled,
+        "effectiveEnabled": configured and environment_enabled,
+    }
+
+
+@router.get("/admin/token-saver")
+async def token_saver_settings(request: Request):
+    administrator(request)
+    try:
+        return _token_saver_response(await nine_router("settings:get", {}))
+    except RuntimeError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+
+
+@router.patch("/admin/token-saver")
+async def update_token_saver_settings(request: Request):
+    user = administrator(request)
+    body = await request.json()
+    enabled = body.get("rtkEnabled")
+    if not isinstance(enabled, bool):
+        raise HTTPException(status_code=400, detail="rtkEnabled must be a boolean")
+    try:
+        runtime_settings = await nine_router("settings:update", {"updates": {"rtkEnabled": enabled}})
+    except RuntimeError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    store.audit_event(user["id"], "token_saver.updated", "setting", "rtkEnabled", {"enabled": enabled})
+    return _token_saver_response(runtime_settings)
 
 
 @router.post("/admin/users", status_code=201)

@@ -70,6 +70,7 @@ As cotas usam **tokens contabilizados pelo ledger interno**, pois a assinatura C
 - `GET /admin/overview`
 - `GET /admin/audit`
 - `GET/POST /admin/backups` e `GET /admin/backups/{id}`
+- `GET/PATCH /admin/token-saver`
 - `GET/POST/PATCH /admin/users`
 - `GET/POST /admin/organizations`
 - `GET/DELETE /v1/sessions`
@@ -94,6 +95,8 @@ docker compose up --build
 Os serviços são publicados somente em loopback: OpenCodex em `8765` e Codex-Wrapper em `8766`. `OPENCODEX_API_AUTH_TOKEN` é obrigatório no Compose e também autentica o canal interno configurado por `AIWRAPPER_OPENCODEX_API_KEY`. Proteja o volume OAuth, use segredos aleatórios e mantenha `AIWRAPPER_CORS_ORIGINS` restrito às origens reais. Em publicação HTTPS, configure `AIWRAPPER_SESSION_COOKIE_SECURE=true`; em HTTP local ele deve permanecer `false`.
 
 O botão **Download backup** no dashboard administrativo executa o algoritmo SQLite original do 9router, preserva esquema e dados e mantém somente as três cópias mais recentes em `AIWRAPPER_STATE_DIR/backups`.
+
+O card **Token Saver** no dashboard liga ou desliga a compressão RTK sem reiniciar os serviços. O repositório transacional original do 9router persiste a escolha na base AIWrapper; `AIWRAPPER_RTK_ENABLED=false` continua funcionando como trava mestra do ambiente.
 
 ## Validação e proveniência
 

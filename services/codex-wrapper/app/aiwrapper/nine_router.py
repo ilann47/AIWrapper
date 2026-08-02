@@ -17,7 +17,11 @@ async def nine_router(operation: str, payload: dict[str, Any], env_overrides: di
         stdin=asyncio.subprocess.PIPE,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
-        env={**os.environ, **(env_overrides or {})},
+        env={
+            **os.environ,
+            "AIWRAPPER_DATABASE_PATH": str(Path(settings.aiwrapper_database_path).resolve()),
+            **(env_overrides or {}),
+        },
     )
     stdout, stderr = await process.communicate(json.dumps(payload).encode("utf-8"))
     if process.returncode != 0:

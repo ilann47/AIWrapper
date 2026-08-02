@@ -27,6 +27,7 @@ Audit date: 2026-08-01. Exact line counts, reuse percentages and unified diffs a
 | 9router | Lightweight SQLite safety backup and bounded retention | No | Yes | Yes | `src/lib/db/backup.js` → `nine-router-db-backup.mjs` | Parameterized AIWrapper state path; original ATTACH copy and retention preserved | wired |
 | 9router | Provider pools/OAuth/fallback | Yes via OpenCodex | Yes | Yes, equivalent mature upstream runtime | `upstream/opencodex/src/server/` executed through `opencodex.py` | Avoid a conflicting second router while exposing the same multi-provider capability through the primary OpenCodex runtime | wired |
 | 9router | Grouping by model/day/outcome | Partial | Yes | Yes | codex-multi-auth summarizer + 9router-style UI | Existing bridge gained a grouping input | wired |
+| 9router | Persistent Token Saver settings and product control | No | Yes | Yes | `settingsRepo.js`, `nodeSqliteAdapter.js`, `TokenSaverClient.js` adapted into runtime repository, SQLite boundary and `TokenSaverPanel.tsx` | Canonical AIWrapper database, administrator auth and OpenCodex design tokens | wired |
 | 9router | Header/sidebar navigation search | No | Yes | Yes | `headerSearchStore.js` and `Header.js` adapted into `header-search-store.ts` and `NavigationSearch.tsx` | Strict TypeScript, OpenCodex hash navigation and existing SVG/CSS tokens | wired |
 | Traycer | Full command palette | No | Yes | No | `apps/desktop/src/renderer/components/command-palette/` | Depends on Traycer's Radix/cmdk stack, analytics, workspace stores and TanStack route graph; mounting it would import a second application shell. The portable global-search need is fulfilled with the smaller original 9router store/component instead. | audited |
 | Odysseus | Tauri shell, terminal and file tools | No | Conditional | No | None | AGPL and incompatible desktop topology | blocked |
@@ -42,6 +43,7 @@ Audit date: 2026-08-01. Exact line counts, reuse percentages and unified diffs a
 - Chat: search, favorites, history, recent/new/continued sessions, rename, delete, share, Markdown export, model, effort, streaming, cancel, copy, regenerate, edit/resend, Markdown/GFM, code and image attachments.
 - Usage: 5-hour/7-day quota bars, health, request/input/cache/output/cost cards, usage by day and usage by model.
 - RTK compression runs before Codex and reports saved bytes in `X-AIWrapper-RTK-Saved-Bytes`.
+- Administrators can enable or disable RTK from the dashboard; the complete 9router settings repository persists the choice transactionally, while `AIWRAPPER_RTK_ENABLED` remains a deployment-level safety lock.
 - The canonical Docker topology routes Codex-Wrapper through OpenCodex's original data plane, so provider OAuth, account pools, model visibility, fallback and measured token usage now affect AIWrapper chat requests instead of remaining a disconnected administration surface.
 
 ## Production integration increment (2026-08-02)
@@ -56,6 +58,7 @@ Audit date: 2026-08-01. Exact line counts, reuse percentages and unified diffs a
 - Conversation sharing is complete rather than decorative: public read-only routes, one-time secret links, hashed persistence, 1/7/30-day expiration, owner revocation and a themed public transcript are wired end to end.
 - SQLite startup migrations now add indexed auth, audit, message, session and share paths. Security/governance events are persisted and exposed to administrators in the existing dashboard extension.
 - The administrator dashboard now invokes 9router's original ATTACH-based lightweight SQLite backup, retains the newest three copies and downloads a portable database file. The runtime image includes the actual 9router source tree and Node 22 needed by the SQLite bridge.
+- The dashboard now exposes 9router's Token Saver as a commercial settings card. Its state is stored by the adapted original settings repository in the canonical SQLite database and takes effect on the next request without a restart.
 
 ## Parity audit
 

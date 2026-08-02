@@ -6,6 +6,7 @@
 import { compressMessages, formatRtkLog } from "../../../upstream/9router/open-sse/rtk/index.js";
 import { detectRequiredCapabilities } from "../../../upstream/9router/open-sse/services/combo.js";
 import { backupDbLite, makeBackupDir, pruneOldBackups } from "./nine-router-db-backup.mjs";
+import { getSettings, updateSettings } from "./nine-router-settings-repo.mjs";
 
 const operation = process.argv[2];
 const input = JSON.parse(await new Promise((resolve, reject) => {
@@ -19,10 +20,15 @@ const input = JSON.parse(await new Promise((resolve, reject) => {
 let result;
 if (operation === "compress") {
   const body = structuredClone(input.body ?? {});
-  const stats = compressMessages(body, input.enabled !== false);
+  const runtimeSettings = await getSettings();
+  const stats = compressMessages(body, input.enabled !== false && runtimeSettings.rtkEnabled !== false);
   result = { body, stats, log: formatRtkLog(stats) };
 } else if (operation === "capabilities") {
   result = { required: [...detectRequiredCapabilities(input.body ?? {})] };
+} else if (operation === "settings:get") {
+  result = await getSettings();
+} else if (operation === "settings:update") {
+  result = await updateSettings(input.updates ?? {});
 } else if (operation === "backup") {
   const { DatabaseSync } = await import("node:sqlite");
   const database = new DatabaseSync(input.databasePath);

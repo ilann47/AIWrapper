@@ -1,5 +1,5 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\App.tsx" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\App.tsx"
-index d60e839b8..daa0df527 100644
+index d60e839b8..dfcef8039 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\App.tsx"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\App.tsx"	
 @@ -1,4 +1,4 @@
@@ -8,7 +8,7 @@ index d60e839b8..daa0df527 100644
  import { setClientResourceData, useKeyedClientResource } from "./client-resource";
  import Dashboard from "./pages/Dashboard";
  import Providers from "./pages/Providers";
-@@ -14,14 +14,28 @@ import Claude from "./pages/Claude";
+@@ -14,14 +14,29 @@ import Claude from "./pages/Claude";
  import Grok from "./pages/Grok";
  import Startup from "./pages/Startup";
  import ErrorBoundary from "./components/ErrorBoundary";
@@ -32,6 +32,7 @@ index d60e839b8..daa0df527 100644
 +import SharedConversationPage from "../../../extensions/aiwrapper-sharing/src/SharedConversationPage";
 +import AdminOverviewPanel from "../../../extensions/aiwrapper-admin/src/AdminOverviewPanel";
 +import NavigationSearch from "../../../extensions/aiwrapper-admin/src/NavigationSearch";
++import TokenSaverPanel from "../../../extensions/aiwrapper-admin/src/TokenSaverPanel";
 +import { useHeaderSearchStore } from "../../../extensions/aiwrapper-admin/src/header-search-store";
 +import "../../../extensions/aiwrapper-admin/src/styles.css";
 +import "../../../extensions/aiwrapper-chat/src/styles.css";
@@ -39,7 +40,7 @@ index d60e839b8..daa0df527 100644
  
  installApiAuthFetch();
  
-@@ -41,27 +55,53 @@ const PAGE_TKEY: Record<Page, TKey> = {
+@@ -41,27 +56,53 @@ const PAGE_TKEY: Record<Page, TKey> = {
    api: "nav.api",
    claude: "nav.claude",
    grok: "nav.grok",
@@ -96,7 +97,7 @@ index d60e839b8..daa0df527 100644
  
  function readRuntimeVersion(data: unknown): string | null {
    if (!data || typeof data !== "object" || !("version" in data)) return null;
-@@ -74,11 +114,20 @@ function readStoredTheme(): Theme {
+@@ -74,11 +115,20 @@ function readStoredTheme(): Theme {
    return t === "light" || t === "dark" ? t : "system";
  }
  
@@ -118,7 +119,7 @@ index d60e839b8..daa0df527 100644
  
    // Narrow screens: the sidebar becomes an off-canvas drawer behind a hamburger toggle.
    const [navOpen, setNavOpen] = useState(false);
-@@ -118,6 +167,17 @@ export default function App() {
+@@ -118,6 +168,17 @@ export default function App() {
    const ThemeIcon = THEME_ICON[theme];
    const displayedVersion: string = healthPoll.data ?? __APP_VERSION__;
  
@@ -136,7 +137,7 @@ index d60e839b8..daa0df527 100644
    const [stopping, setStopping] = useState(false);
    // Claude navigation row also owns the connection toggle.
    const fetchClaudeEnabled = useCallback(async (signal: AbortSignal) => {
-@@ -198,6 +258,10 @@ export default function App() {
+@@ -198,6 +259,10 @@ export default function App() {
      }
    };
  
@@ -147,7 +148,7 @@ index d60e839b8..daa0df527 100644
    const brand = (
      <div className="brand">
        <span className="brand-logo" role="img" aria-label={t("app.logoAria")} />
-@@ -230,6 +294,13 @@ export default function App() {
+@@ -230,6 +295,13 @@ export default function App() {
              <IconX />
            </button>
          </div>
@@ -161,7 +162,7 @@ index d60e839b8..daa0df527 100644
          <nav>
            {/*
              Codex Auth was once filtered out of this list whenever the workspace layout
-@@ -237,7 +308,9 @@ export default function App() {
+@@ -237,7 +309,9 @@ export default function App() {
              account pool. It is now promoted to the second slot instead: there is only
              one layout, so that filter would have hidden the page permanently.
            */}
@@ -172,7 +173,7 @@ index d60e839b8..daa0df527 100644
              <div key={id} className={`nav-entry${id === "claude" ? ` nav-entry-claude${page === id ? " active" : ""}` : ""}`}>
                <button type="button" className={`nav-item${page === id ? " active" : ""}`} data-page={id}
                  onClick={() => {
-@@ -257,7 +330,9 @@ export default function App() {
+@@ -257,7 +331,9 @@ export default function App() {
                  />
                )}
              </div>
@@ -183,16 +184,16 @@ index d60e839b8..daa0df527 100644
          </nav>
          <div className="sidebar-foot">
            <div className="lang-toggle">
-@@ -296,7 +371,7 @@ export default function App() {
+@@ -296,7 +372,7 @@ export default function App() {
              detailsLabel={t("errorBoundary.details")}
              reloadLabel={t("errorBoundary.reload")}
            >
 -            {page === "dashboard" && <Dashboard apiBase={API_BASE} />}
-+            {page === "dashboard" && <Dashboard apiBase={API_BASE} beforeOverview={<AdminOverviewPanel />} />}
++            {page === "dashboard" && <Dashboard apiBase={API_BASE} beforeOverview={<><AdminOverviewPanel /><TokenSaverPanel /></>} />}
              {page === "startup" && <Startup apiBase={API_BASE} />}
              {page === "providers" && <Providers apiBase={API_BASE} />}
              {page === "models" && <Models apiBase={API_BASE} />}
-@@ -309,9 +384,19 @@ export default function App() {
+@@ -309,9 +385,19 @@ export default function App() {
              {page === "api" && <ApiKeys apiBase={API_BASE} />}
              {page === "claude" && <Claude apiBase={API_BASE} />}
              {page === "grok" && <Grok apiBase={API_BASE} />}

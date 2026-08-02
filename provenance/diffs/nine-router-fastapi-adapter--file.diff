@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\rtk\\index.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\nine_router.py"
-index dd1e50184..a9bc1dee0 100644
+index dd1e50184..97a7020db 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\rtk\\index.js"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\nine_router.py"	
-@@ -1,155 +1,36 @@
+@@ -1,155 +1,40 @@
 -// RTK port: compress tool_result content in LLM request bodies
 -// Injected at the top of translateRequest (before any format translation)
 -import { RAW_CAP, MIN_COMPRESS_SIZE } from "./constants.js";
@@ -177,7 +177,11 @@ index dd1e50184..a9bc1dee0 100644
 +        stdin=asyncio.subprocess.PIPE,
 +        stdout=asyncio.subprocess.PIPE,
 +        stderr=asyncio.subprocess.PIPE,
-+        env={**os.environ, **(env_overrides or {})},
++        env={
++            **os.environ,
++            "AIWRAPPER_DATABASE_PATH": str(Path(settings.aiwrapper_database_path).resolve()),
++            **(env_overrides or {}),
++        },
 +    )
 +    stdout, stderr = await process.communicate(json.dumps(payload).encode("utf-8"))
 +    if process.returncode != 0:

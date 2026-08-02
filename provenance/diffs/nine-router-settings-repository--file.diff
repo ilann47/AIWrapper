@@ -1,0 +1,12 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\lib\\db\\repos\\settingsRepo.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-runtime\\src\\nine-router-settings-repo.mjs"
+index 0f53eecf0..a5e7ad89f 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\lib\\db\\repos\\settingsRepo.js"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-runtime\\src\\nine-router-settings-repo.mjs"	
+@@ -1,5 +1,5 @@
+-import { getAdapter } from "../driver.js";
+-import { parseJson, stringifyJson } from "../helpers/jsonCol.js";
++import { getAdapter } from "./nine-router-settings-adapter.mjs";
++import { parseJson, stringifyJson } from "../../../upstream/9router/src/lib/db/helpers/jsonCol.js";
+ 
+ const DEFAULT_MITM_ROUTER_BASE = "http://localhost:20128";
+ const DEFAULT_HEADROOM_URL = process.env.HEADROOM_URL || "http://localhost:8787";

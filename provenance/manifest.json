@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-02T05:23:49.386Z",
+  "generatedAt": "2026-08-02T05:42:54.351Z",
   "generatorUpstream": {
     "project": "ndycode/codex-multi-auth",
     "commit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
@@ -387,16 +387,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "68d2ddf4ec49dae13487a4593c6ba25b906ff41f160fba96ff3e84d03ec63707",
-          "sha256": "8a2d2e5a6a2c2f5b50708a7bfbb0eb80f2b54f0bd9284d01f2af31fec88195fe",
+          "sha256": "14e7a750dfcbc5702cf1339d881a517d00022b484dd44f74523cc695a1ba6cce",
           "diff": "provenance/diffs/opencodex-gui--src_App.tsx.diff",
-          "diffSha256": "f640b595e47f3e589d3912e516a37b9c0823ca926844322f18c85477eafc59e0",
+          "diffSha256": "241660d57a6d0b3a5ba1a67bbd8b53a34438df6faa616d1032ac1892ff5feee6",
           "lines": {
             "source": 318,
-            "destination": 403,
+            "destination": 404,
             "preserved": 308,
             "changed": 10,
             "removed": 0,
-            "added": 85,
+            "added": 86,
             "reusePercent": 96.86
           }
         },
@@ -1698,16 +1698,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "3d0d5b807df91e18824f186caa190f69d146aed7cbb5a42ba12128e5ec74e480",
-          "sha256": "8559dc1dc03e0bc648d336957f047391b614147ac60d6aa61f9db3412a10de7f",
+          "sha256": "1307e6fa6d7fb55b8f74b653c024d0c13534c1ae24043c165409a9244cd6a542",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_de.ts.diff",
-          "diffSha256": "6f89a978cf21e06b2b4f087056cd247814b681f61187de6448d1657215868b14",
+          "diffSha256": "e13fd61625048e5b793a48812bb02f8969ca15b668e87ce56ba07ee68e840600",
           "lines": {
             "source": 1487,
-            "destination": 1646,
+            "destination": 1653,
             "preserved": 1487,
             "changed": 0,
             "removed": 0,
-            "added": 159,
+            "added": 166,
             "reusePercent": 100
           }
         },
@@ -1717,16 +1717,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "09084a0703ed3a9adc0ac00dea9aa372a1a2a4a0f7b800affead04fea5a1afa6",
-          "sha256": "fdb526f85efd9a8b15c399aed64554f2bc5ec06453e7ab96f0c3129787c1d5af",
+          "sha256": "a2b0e7206ddf3935e8e7b053cd56f328a126063c7984726c89fbb5cc802e9c78",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_en.ts.diff",
-          "diffSha256": "5afea5d1b306c829a15a51011cfe9f53ab4ba61dc8604aff45c62900f3de5719",
+          "diffSha256": "d484bfa7a415a79f4b6e3b99c0732f5e748ebea2f1f825a413b9f601eb6ec02f",
           "lines": {
             "source": 1514,
-            "destination": 1673,
+            "destination": 1680,
             "preserved": 1514,
             "changed": 0,
             "removed": 0,
-            "added": 159,
+            "added": 166,
             "reusePercent": 100
           }
         },
@@ -1755,16 +1755,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "d7449a464d2dc077af41b39d0c81e4d55f0b5589f58af181cbef3b34be0a54f0",
-          "sha256": "99936c97cf3117b11914eae38e0e3173ec543ebf21cb89b8da6fad55018c76c1",
+          "sha256": "631aa1f929cc2a6391884b25e357a8e53b868bcaa0c6ce8f0edcd08819742464",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_ja.ts.diff",
-          "diffSha256": "73536344749758d482be140f653385d6d505392822f7a8811d04ae5cf310fe46",
+          "diffSha256": "5fd960bc9e99e1042dc6e07239937c31aeea406255b61c54610fea4c0cef2cf5",
           "lines": {
             "source": 1508,
-            "destination": 1667,
+            "destination": 1674,
             "preserved": 1508,
             "changed": 0,
             "removed": 0,
-            "added": 159,
+            "added": 166,
             "reusePercent": 100
           }
         },
@@ -1774,16 +1774,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "5b2b64b2cd03ffbc16d15a6bad3c4163f7007927e3f602ee20e12fb96234e6e0",
-          "sha256": "1532bf052a746860be01790f8750a825170dbebc040fa2bd2859c18a1ff85d04",
+          "sha256": "9b79d0ec88e1af0cbe1fb70e164a348efe0966602d93f824d7f498be8574d313",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_ko.ts.diff",
-          "diffSha256": "471f3f299525d5710adae4ae13e78e45b0ccc9c6f658fce9d77357487f7697db",
+          "diffSha256": "8c6dc454e49941426699e357cb30c6d13b21b0d6d499152c1e362da11d033aaf",
           "lines": {
             "source": 1508,
-            "destination": 1667,
+            "destination": 1674,
             "preserved": 1508,
             "changed": 0,
             "removed": 0,
-            "added": 159,
+            "added": 166,
             "reusePercent": 100
           }
         },
@@ -1812,16 +1812,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "95c74a1b27980cfab1931395f5ffe800f3c0ddf9f101cb5badb360343de26e6a",
-          "sha256": "9962a18af26544a2aa73985c38e4a6dce6a02e733b959d2c7426f037f36325af",
+          "sha256": "b34d5add261d5b3d5b44d99b6552a37960ac92eb498337ebc76f5f8c92726ab4",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_ru.ts.diff",
-          "diffSha256": "5fa5b0dc09403ef8e20e009f85bb6eeeeab7a2166cdd638aadf6ed6c4f15aa6d",
+          "diffSha256": "35f0fab9386c395566ed1c6c4026051768a6c5eb23e7dbad6f78c8da93ef1475",
           "lines": {
             "source": 1510,
-            "destination": 1669,
+            "destination": 1676,
             "preserved": 1510,
             "changed": 0,
             "removed": 0,
-            "added": 159,
+            "added": 166,
             "reusePercent": 100
           }
         },
@@ -1850,16 +1850,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "b6b8fdb362c7a8a7d29ca6cc7c34772aec34b7ddfe66ba6521087990d644893f",
-          "sha256": "330b17dd11de7df0eba7bb4fc282aaf2259949b5e6cffdf463994f0ee37ee8c0",
+          "sha256": "c0d8387c05728e1c9c0fcdc4503f702f70e0273de99336cd589c66caea5f2db9",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_zh.ts.diff",
-          "diffSha256": "c775d4068cec5c918a58694bdd6138b98e93b551673020b8496b3c5b25de04cc",
+          "diffSha256": "c55150ab70d6ce5b1594dedb751bc3664ccf29d2cafb0b51875a1ce6561f123a",
           "lines": {
             "source": 1508,
-            "destination": 1667,
+            "destination": 1674,
             "preserved": 1508,
             "changed": 0,
             "removed": 0,
-            "added": 159,
+            "added": 166,
             "reusePercent": 100
           }
         },
@@ -24407,15 +24407,15 @@
           "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
           "license": "MIT / project adapter configuration",
           "sourceSha256": "ffcb7ba6b9a681dbbdb7e9c79f64ca2320188f7efede616735ceb4ec120113c3",
-          "sha256": "2acf8caf2640cc0895c96be58ad7c52c711c1d089e27ccddf53fd439b5b57fac",
+          "sha256": "aa07ba1fa6f36f8a3aa0ed044ce16a33307e03fbaba953180cf2708b1f1a61c5",
           "diff": "provenance/diffs/nine-router-oauth-security-boundary--file.diff",
-          "diffSha256": "d60827a496d2272c9bc6499aac502e472b895e1231971d7168db1a5e9be12fa2",
+          "diffSha256": "36fbf11247f1fb471fad371c3f52c12db51a92726ac5957c2e9282ae61c7e479",
           "lines": {
             "source": 86,
-            "destination": 52,
+            "destination": 53,
             "preserved": 2,
-            "changed": 50,
-            "removed": 34,
+            "changed": 51,
+            "removed": 33,
             "added": 0,
             "reusePercent": 2.33
           }
@@ -24445,15 +24445,15 @@
           "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
           "license": "MIT",
           "sourceSha256": "537c7a34d465f3875fa35809a16693337372d021f4f9a2cd4d4f878857149db2",
-          "sha256": "60fede05b670327dcc9c15dbf0dade81e031ed13e649105adf7ffbd86fb0516d",
+          "sha256": "8796a5c0066de861f4e3aead5c949ea5a36bb6c58f956c15840ca7c2ccec62ae",
           "diff": "provenance/diffs/nine-router-rtk-runtime--file.diff",
-          "diffSha256": "542835e883021412c5018b91099450f784435ad38ecbc4510802e643fcf32bdf",
+          "diffSha256": "7ab0076481baf57e57950f0558589629b33d679b7c3d9b52a180aa9c97a603d4",
           "lines": {
             "source": 156,
-            "destination": 57,
+            "destination": 63,
             "preserved": 8,
-            "changed": 49,
-            "removed": 99,
+            "changed": 55,
+            "removed": 93,
             "added": 0,
             "reusePercent": 5.13
           }
@@ -24483,15 +24483,15 @@
           "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
           "license": "MIT",
           "sourceSha256": "0e4066881c3e89f698c8c95d82e3e4d03141e63e91c8a7bbce13e852ab66e599",
-          "sha256": "60fede05b670327dcc9c15dbf0dade81e031ed13e649105adf7ffbd86fb0516d",
+          "sha256": "8796a5c0066de861f4e3aead5c949ea5a36bb6c58f956c15840ca7c2ccec62ae",
           "diff": "provenance/diffs/nine-router-capability-runtime--file.diff",
-          "diffSha256": "77cb92c6623c337348a4ce4348f2e272b670a22339f6563467800396a58f3356",
+          "diffSha256": "77435d27a3b70cfe318adb196292d69b61349fb30168818cb123ab126127f067",
           "lines": {
             "source": 572,
-            "destination": 57,
+            "destination": 63,
             "preserved": 10,
-            "changed": 47,
-            "removed": 515,
+            "changed": 53,
+            "removed": 509,
             "added": 0,
             "reusePercent": 1.75
           }
@@ -24769,17 +24769,186 @@
           "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
           "license": "MIT / project adapter code",
           "sourceSha256": "537c7a34d465f3875fa35809a16693337372d021f4f9a2cd4d4f878857149db2",
-          "sha256": "ddfdf8466b5f96b9d31aa17cfd39917ca42138877125b284447f8106d8e9108a",
+          "sha256": "66ad2adf0acc9dd48ecd34605dd7d1233928fe377bc84d1420a4c6e87c6e2c5a",
           "diff": "provenance/diffs/nine-router-fastapi-adapter--file.diff",
-          "diffSha256": "884bbe769ef3e99c4311fd2c7f03a37f6a17e6653619d210165ea4a34238021f",
+          "diffSha256": "ed4fe3cda76de2ba916f58fa2b508187146c4a40dfec3945bf91bd90889ea061",
           "lines": {
             "source": 156,
-            "destination": 37,
+            "destination": 41,
             "preserved": 6,
-            "changed": 31,
-            "removed": 119,
+            "changed": 35,
+            "removed": 115,
             "added": 0,
             "reusePercent": 3.85
+          }
+        }
+      ]
+    },
+    {
+      "id": "nine-router-settings-repository",
+      "functionality": "Persistent transactional token-saver settings with default merging and backward compatibility",
+      "project": "decolua/9router",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "The original repository imports 9router's Next.js @ alias and application-wide database driver. Plain Node cannot resolve that alias and AIWrapper must store settings in its canonical SQLite file. Only the adapter import is changed; defaults, read/merge behavior, atomic transaction and exported repository API are preserved.",
+      "parityAudit": {
+        "retained": [
+          "Complete default settings object",
+          "Backward-compatible default merge",
+          "Atomic read-merge-write transaction",
+          "getSettings",
+          "updateSettings",
+          "isCloudEnabled",
+          "getCloudUrl",
+          "exportSettings"
+        ],
+        "lost": [],
+        "decision": "Preserve the complete repository and replace only its database adapter import."
+      },
+      "files": [
+        {
+          "source": "upstream/9router/src/lib/db/repos/settingsRepo.js",
+          "destination": "extensions/aiwrapper-runtime/src/nine-router-settings-repo.mjs",
+          "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+          "license": "MIT",
+          "sourceSha256": "ed055ee5ba1d4bf586496955f5ac1e274c4b6fb4710ec5f4a3035766e2165ee0",
+          "sha256": "004cafae76455e70a82f14584630324068dafe60b558481b56ef5e18a5aa3ba0",
+          "diff": "provenance/diffs/nine-router-settings-repository--file.diff",
+          "diffSha256": "5965cff4ee7cedd201746021ddb1fbdaca675db2ed8b946c18743b9e97f78d32",
+          "lines": {
+            "source": 116,
+            "destination": 116,
+            "preserved": 114,
+            "changed": 2,
+            "removed": 0,
+            "added": 0,
+            "reusePercent": 98.28
+          }
+        }
+      ]
+    },
+    {
+      "id": "nine-router-settings-sqlite-boundary",
+      "functionality": "Bind 9router's original Node 22 SQLite adapter to the canonical AIWrapper state database",
+      "project": "decolua/9router",
+      "classification": "directly imported",
+      "referenceOnly": false,
+      "incompatibility": "9router's main driver selects a database through its DATA_DIR and Next.js alias graph. AIWrapper already owns one SQLite path, so this boundary imports and executes createNodeSqliteAdapter directly, supplies AIWRAPPER_DATABASE_PATH and bootstraps only the unchanged settings table contract.",
+      "parityAudit": {
+        "retained": [
+          "Original createNodeSqliteAdapter implementation",
+          "Original WAL, busy timeout and transaction behavior",
+          "Single settings row schema"
+        ],
+        "lost": [
+          "Multi-driver fallback, unnecessary because the production image requires Node 22"
+        ],
+        "decision": "Directly execute the original Node 22 adapter and keep path/schema selection in a minimal integration boundary."
+      },
+      "files": [
+        {
+          "source": "upstream/9router/src/lib/db/adapters/nodeSqliteAdapter.js",
+          "destination": "extensions/aiwrapper-runtime/src/nine-router-settings-adapter.mjs",
+          "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+          "license": "MIT / project adapter code",
+          "sourceSha256": "e99df8f5d73c7dd5540ed5dab6a5d363c5cbedbc319db7b413abda1b6c246f89",
+          "sha256": "457b8e642c30a7b7f5d7d42cf8e8eed458663b26593557b7001de86ed5caac7c",
+          "diff": "provenance/diffs/nine-router-settings-sqlite-boundary--file.diff",
+          "diffSha256": "e5139526bdbb111e3bee10cabb7d1d8be4471624e56c01d1c3392cf56fc9b9ad",
+          "lines": {
+            "source": 85,
+            "destination": 20,
+            "preserved": 5,
+            "changed": 15,
+            "removed": 65,
+            "added": 0,
+            "reusePercent": 5.88
+          }
+        }
+      ]
+    },
+    {
+      "id": "nine-router-token-saver-ui",
+      "functionality": "Administrator Token Saver card with persisted RTK toggle, effective status and environment safety lock",
+      "project": "decolua/9router",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "The original page is a Next.js/Tailwind administration suite for RTK, Headroom, Caveman, Ponytail and PXPIPE, including local installers and proxy processes that do not exist in AIWrapper's production image. The RTK block is the only feature whose original runtime is currently on AIWrapper's canonical request path; its load, toggle-after-success and explanatory interaction are adapted to the OpenCodex design system and authenticated administrator API.",
+      "parityAudit": {
+        "retained": [
+          "RTK enabled state",
+          "Load persisted setting",
+          "Persist toggle before changing effective state",
+          "60-90 percent savings explanation",
+          "RTK documentation link",
+          "Responsive card"
+        ],
+        "lost": [
+          "Headroom installer/proxy",
+          "Caveman and Ponytail prompt transforms",
+          "PXPIPE image compression and installer"
+        ],
+        "decision": "Expose the already executing RTK feature now. Preserve the complete upstream page in upstream/ and track its other runtimes as separate unwired candidates rather than presenting non-existent controls."
+      },
+      "files": [
+        {
+          "source": "upstream/9router/src/app/(dashboard)/dashboard/token-saver/TokenSaverClient.js",
+          "destination": "extensions/aiwrapper-admin/src/TokenSaverPanel.tsx",
+          "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+          "license": "MIT / project adapter code",
+          "sourceSha256": "67a58f9e0c9d59f9507774d756f4759baed44e483ed7f9ddfcbd10e5a26f35f8",
+          "sha256": "6dec01b1e9ba10bde74348f26b2a0d37562686e51b367084073dacb372470202",
+          "diff": "provenance/diffs/nine-router-token-saver-ui--file.diff",
+          "diffSha256": "b4edf955050c489cc349e151d8d1bb54c9c2979f7184e970c366f05dd6f9b766",
+          "lines": {
+            "source": 1016,
+            "destination": 76,
+            "preserved": 18,
+            "changed": 58,
+            "removed": 940,
+            "added": 0,
+            "reusePercent": 1.77
+          }
+        }
+      ]
+    },
+    {
+      "id": "nine-router-token-saver-fastapi-adapter",
+      "functionality": "Administrator-authorized GET/PATCH boundary for 9router token-saver settings and audit events",
+      "project": "decolua/9router",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "The source is a Next.js route bound to dashboard cookies, bcrypt and all 9router settings. AIWrapper is FastAPI and must enforce its existing administrator principal, expose only the non-secret RTK field, retain the environment master lock and write its audit ledger. The original settings repository remains the persistence implementation behind this transport adapter.",
+      "parityAudit": {
+        "retained": [
+          "No-store-style live settings read",
+          "PATCH persistence through updateSettings",
+          "Protected narrow response",
+          "Immediate runtime effect"
+        ],
+        "lost": [
+          "Password, OIDC, proxy and unrelated 9router settings fields"
+        ],
+        "decision": "Adapt only the HTTP/authentication boundary and delegate persistence to the preserved repository."
+      },
+      "files": [
+        {
+          "source": "upstream/9router/src/app/api/settings/route.js",
+          "destination": "services/codex-wrapper/app/aiwrapper/router.py",
+          "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+          "license": "MIT / project adapter code",
+          "sourceSha256": "636902a12d97c7f45c1fc598b1faac04dc2733d39a426d0ed5ab93517cdece6a",
+          "sha256": "5ea651bd1597acf83c1b19183a972e0d2f0c2d774e780158a50ea698e19cdc7c",
+          "diff": "provenance/diffs/nine-router-token-saver-fastapi-adapter--file.diff",
+          "diffSha256": "de0aaab1f3ce11df1198f042454147c69b273cf6b497cd82b78086e246a005b2",
+          "lines": {
+            "source": 119,
+            "destination": 315,
+            "preserved": 19,
+            "changed": 100,
+            "removed": 0,
+            "added": 196,
+            "reusePercent": 15.97
           }
         }
       ]
@@ -25117,17 +25286,36 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT / project code",
           "sourceSha256": "842638eabe899201df1e976b6ea9f7a633cd95fac861d47abbb747424e3d8398",
-          "sha256": "53b6abf432a5051b9575bc6da2f12d16f26ac11529a00f691152cf75718c89b2",
+          "sha256": "6db2097fc83b957a9ae2e46c5f84f2cb33cc42f80cc4b3060b0f9aa9d1fd7ebb",
           "diff": "provenance/diffs/aiwrapper-admin-extension--src_styles.css.diff",
-          "diffSha256": "650bdce4ae098e59509fd917f8eed170624f431bada7e203f1d5ac96bd86ddf3",
+          "diffSha256": "80a151e4abad2b242df049d7906eb39ac7229835f70b5ed283df7affede30983",
           "lines": {
             "source": 214,
-            "destination": 49,
+            "destination": 60,
             "preserved": 3,
-            "changed": 46,
-            "removed": 165,
+            "changed": 57,
+            "removed": 154,
             "added": 0,
             "reusePercent": 1.4
+          }
+        },
+        {
+          "source": "upstream/opencodex/gui/src/api.ts",
+          "destination": "extensions/aiwrapper-admin/src/TokenSaverPanel.tsx",
+          "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+          "license": "MIT / project code",
+          "sourceSha256": "842638eabe899201df1e976b6ea9f7a633cd95fac861d47abbb747424e3d8398",
+          "sha256": "6dec01b1e9ba10bde74348f26b2a0d37562686e51b367084073dacb372470202",
+          "diff": "provenance/diffs/aiwrapper-admin-extension--src_TokenSaverPanel.tsx.diff",
+          "diffSha256": "77b52bfe052abbefc61dc3d3ebe5c4a0901fe38eb95dd7a63df1c1d13819331a",
+          "lines": {
+            "source": 214,
+            "destination": 76,
+            "preserved": 10,
+            "changed": 66,
+            "removed": 138,
+            "added": 0,
+            "reusePercent": 4.67
           }
         }
       ]
@@ -25468,17 +25656,17 @@
           "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
           "license": "MIT / project code",
           "sourceSha256": "e40cdd42970dffd2148095756800d793475ee3daae61bc70fec39e7e9a3145af",
-          "sha256": "c0616710eebcb48b83abeb8a11f420e50fa3b3200884dc7f000499a3d9963a05",
+          "sha256": "5ea651bd1597acf83c1b19183a972e0d2f0c2d774e780158a50ea698e19cdc7c",
           "diff": "provenance/diffs/aiwrapper-fastapi-domain-extension--router.py.diff",
-          "diffSha256": "08ce2b65d54a8894b0e5aa071dabf5dd2cd3501551871dd6d85cc377719a11a4",
+          "diffSha256": "df47c56f57fb8c6c1f543a7a63477852480c5e54f0504c764ecbc787232bcf69",
           "lines": {
             "source": 269,
-            "destination": 279,
-            "preserved": 37,
-            "changed": 232,
+            "destination": 315,
+            "preserved": 38,
+            "changed": 231,
             "removed": 0,
-            "added": 10,
-            "reusePercent": 13.75
+            "added": 46,
+            "reusePercent": 14.13
           }
         },
         {

@@ -1,8 +1,8 @@
-diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\api.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\styles.css"
-index ec1546551..9cd236b30 100644
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\api.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\TokenSaverPanel.tsx"
+index ec1546551..1f7b20b9a 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\api.ts"	
-+++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\styles.css"	
-@@ -1,213 +1,59 @@
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\TokenSaverPanel.tsx"	
+@@ -1,213 +1,75 @@
 -let installed = false;
 -/** Shared 401 refresh gate — concurrent waiters join one prompt / token resolution. */
 -let resolutionInFlight: Promise<string | null> | null = null;
@@ -194,7 +194,54 @@ index ec1546551..9cd236b30 100644
 -      clearTokenIfCurrent(refreshed);
 -    } else {
 -      clearTokenIfCurrent(token);
--    }
++import { useEffect, useState } from "react";
++import { useKeyedClientResource } from "../../../apps/opencodex-gui/src/client-resource";
++import { IconSparkle } from "../../../apps/opencodex-gui/src/icons";
++import { useT } from "../../../apps/opencodex-gui/src/i18n/shared";
++import { Switch } from "../../../apps/opencodex-gui/src/ui";
++import { useAIWrapper } from "./auth";
++
++type TokenSaverSettings = {
++  rtkEnabled: boolean;
++  environmentEnabled: boolean;
++  effectiveEnabled: boolean;
++};
++
++export default function TokenSaverPanel() {
++  const t = useT();
++  const { client, principal } = useAIWrapper();
++  const [rtkEnabled, setRtkEnabledState] = useState(true);
++  const [saving, setSaving] = useState(false);
++  const [saveError, setSaveError] = useState("");
++  const isAdministrator = principal?.role === "admin" || principal?.role === "owner";
++  const resource = useKeyedClientResource<TokenSaverSettings>(
++    `aiwrapper-token-saver:${principal?.userId ?? "anonymous"}`,
++    [client, principal?.userId],
++    async () => {
++      if (!client) throw new Error(t("aiw.overview.notConnected"));
++      return client.get<TokenSaverSettings>("/admin/token-saver");
++    },
++    { enabled: Boolean(client && isAdministrator) },
++  );
++
++  useEffect(() => {
++    if (resource.data) setRtkEnabledState(resource.data.rtkEnabled);
++  }, [resource.data]);
++
++  if (!client || !isAdministrator) return null;
++
++  const handleRtkEnabled = async (value: boolean) => {
++    setSaving(true);
++    setSaveError("");
++    try {
++      const updated = await client.send<TokenSaverSettings>("/admin/token-saver", "PATCH", { rtkEnabled: value });
++      setRtkEnabledState(updated.rtkEnabled);
++      resource.refresh();
++    } catch (reason) {
++      setSaveError(reason instanceof Error ? reason.message : String(reason));
++    } finally {
++      setSaving(false);
+     }
 -
 -    const nextToken = await resolveTokenAfter401(token);
 -    if (!nextToken) return response;
@@ -203,9 +250,9 @@ index ec1546551..9cd236b30 100644
 -    const retry = await originalFetch(retryInput, retryInit);
 -    if (retry.status === 401) clearTokenIfCurrent(nextToken);
 -    return retry;
--  };
+   };
 -}
--
+ 
 -/** Test-only: allow a fresh `installApiAuthFetch()` in the same module instance. */
 -export function resetApiAuthFetchForTests(): void {
 -  installed = false;
@@ -215,63 +262,28 @@ index ec1546551..9cd236b30 100644
 -  resolutionInFlight = null;
 -  rawFetch = null;
 -  promptCancelled = false;
--}
-+.aiw-gate { max-width: 520px; margin: 9vh auto 0; display: grid; gap: var(--space-3); justify-items: start; }
-+.aiw-gate > svg { width: 28px; height: 28px; }
-+.aiw-gate h2, .aiw-gate .page-sub { margin: 0; }
-+.aiw-gate .btn { min-width: 140px; }
-+.aiw-field { display: grid; gap: var(--space-2); width: 100%; color: var(--muted); font-size: var(--text-label); }
-+.aiw-endpoint { color: var(--faint); font-size: var(--text-caption); overflow-wrap: anywhere; }
-+.aiw-identity { display: flex; align-items: center; gap: var(--space-2); }
-+.aiw-toolbar { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin-bottom: var(--space-4); }
-+.aiw-toolbar .custom-select { min-width: 180px; }
-+.aiw-table-wrap { overflow: auto; }
-+.aiw-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
-+.aiw-form-grid .aiw-field:last-of-type { grid-column: 1 / -1; }
-+.aiw-secret { display: block; margin-top: var(--space-3); padding: var(--space-3); border: 1px dashed var(--border); border-radius: var(--radius-sm); overflow-wrap: anywhere; }
-+.aiw-stack { display: grid; gap: var(--space-4); }
-+.aiw-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3); }
-+.aiw-admin-overview { display: grid; gap: var(--space-4); margin-bottom: var(--space-6); padding-bottom: var(--space-6); border-bottom: 1px solid var(--border); }
-+.aiw-admin-overview__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
-+.aiw-admin-overview__head h3, .aiw-admin-overview__head p { margin: 0; }
-+.aiw-admin-overview__head p { margin-top: 4px; color: var(--muted); }
-+.aiw-admin-overview__actions { display: flex; gap: var(--space-2); flex-wrap: wrap; justify-content: flex-end; }
-+.aiw-audit-strip h4 { margin: 0 0 var(--space-2); }
-+.aiw-token-saver { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-4); margin-bottom: var(--space-6); padding: var(--space-4); }
-+.aiw-token-saver__icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: var(--radius-md); background: color-mix(in srgb, var(--primary) 14%, transparent); color: var(--primary); }
-+.aiw-token-saver__icon svg { width: 21px; height: 21px; }
-+.aiw-token-saver__copy { display: grid; gap: 5px; }
-+.aiw-token-saver__copy h3, .aiw-token-saver__copy p { margin: 0; }
-+.aiw-token-saver__copy p { color: var(--muted); }
-+.aiw-token-saver__copy a { width: fit-content; color: var(--primary); font-size: var(--text-caption); }
-+.aiw-token-saver__title-row { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
-+.aiw-token-saver .notice { margin-top: var(--space-2); }
-+.aiw-quota-input { width: 112px; }
-+.aiw-navigation-search { position: relative; display: flex; align-items: center; gap: 7px; margin: 0 4px 10px; padding: 7px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--faint); }
-+.aiw-navigation-search:focus-within { border-color: var(--primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 18%, transparent); }
-+.aiw-navigation-search > svg { width: 15px; height: 15px; flex: 0 0 auto; }
-+.aiw-navigation-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; font-size: var(--text-control); }
-+.aiw-navigation-search input::-webkit-search-cancel-button { display: none; }
-+.aiw-navigation-search button { display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
-+.aiw-navigation-search button svg { width: 14px; height: 14px; }
-+.aiw-navigation-search kbd { padding: 1px 4px; border: 1px solid var(--border); border-radius: 4px; color: var(--faint); font-size: 9px; white-space: nowrap; }
-+.aiw-navigation-search__empty { margin: var(--space-4) var(--space-2); color: var(--muted); font-size: var(--text-control); text-align: center; }
-+@media (max-width: 700px) {
-+  .aiw-form-grid { grid-template-columns: 1fr; }
-+  .aiw-form-grid .aiw-field:last-of-type { grid-column: auto; }
-+  .aiw-identity { width: 100%; justify-content: space-between; }
-+  .aiw-token-saver { grid-template-columns: auto 1fr; }
-+  .aiw-token-saver > .switch { grid-column: 1 / -1; justify-self: end; }
-+}
-+
-+.aiw-usage-hero { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:var(--space-6); padding:var(--space-6); border:1px solid var(--border); border-radius:var(--radius-lg); background:radial-gradient(circle at 50% 0,color-mix(in srgb,var(--primary) 18%,transparent),transparent 48%),var(--surface); }
-+.aiw-usage-hero>div:not(.aiw-quota-ring){display:grid;gap:6px}.aiw-usage-hero span,.aiw-usage-hero small{color:var(--muted)}.aiw-usage-hero strong{font-size:1.6rem}.aiw-outcome{text-align:right}
-+.aiw-quota-ring{--quota:0deg;width:132px;aspect-ratio:1;border-radius:50%;display:grid;place-content:center;text-align:center;background:radial-gradient(circle,var(--surface) 58%,transparent 60%),conic-gradient(var(--primary) var(--quota),var(--border) 0)}
-+.aiw-quota-ring span{color:var(--text);font-size:1.45rem;font-weight:760}.aiw-window-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--space-3)}.aiw-window-grid .card{padding:var(--space-4)}.aiw-window-grid .card>div:first-child{display:flex;justify-content:space-between}.aiw-window-grid small{color:var(--muted)}
-+.aiw-progress{height:8px;margin:12px 0 8px;overflow:hidden;border-radius:999px;background:var(--border)}.aiw-progress span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--primary),#22c55e)}
-+.aiw-usage-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--space-3)}.aiw-usage-cards .stat{min-width:0}.aiw-usage-cards .value{overflow:hidden;text-overflow:ellipsis}.aiw-usage-cards .primary{color:var(--primary)}.aiw-usage-cards .info{color:#38bdf8}.aiw-usage-cards .success{color:#34d399}.aiw-usage-cards .warning{color:#f59e0b}.aiw-usage-cards small{color:var(--muted);font-size:10px}
-+.aiw-usage-grid{display:grid;gap:var(--space-4)}.aiw-usage-chart,.aiw-usage-table{padding:0;overflow:hidden}.aiw-card-heading{display:flex;justify-content:space-between;padding:var(--space-4);border-bottom:1px solid var(--border)}.aiw-card-heading h3,.aiw-card-heading p{margin:0}.aiw-card-heading p{margin-top:4px;color:var(--muted)}
-+.aiw-bar-chart{min-height:230px;display:flex;align-items:end;gap:10px;padding:24px}.aiw-bar-column{flex:1;min-width:24px;display:grid;gap:8px;text-align:center;color:var(--muted);font-size:11px}.aiw-bar-track{height:170px;display:flex;align-items:end;border-radius:8px;overflow:hidden;background:color-mix(in srgb,var(--border) 55%,transparent)}.aiw-bar-track span{width:100%;border-radius:8px 8px 0 0;background:linear-gradient(180deg,var(--primary),color-mix(in srgb,var(--primary) 55%,#22c55e));transition:height .25s ease}
-+.aiw-usage-table table{width:100%;border-collapse:collapse}.aiw-usage-table th,.aiw-usage-table td{padding:12px 16px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}.aiw-usage-table th:first-child,.aiw-usage-table td:first-child{text-align:left}.aiw-usage-table th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}.aiw-usage-table tr:hover td{background:color-mix(in srgb,var(--primary) 5%,transparent)}
-+@media(max-width:700px){.aiw-usage-hero{grid-template-columns:1fr;text-align:center}.aiw-quota-ring{margin:auto}.aiw-outcome{text-align:center}.aiw-window-grid{grid-template-columns:1fr}.aiw-usage-cards{grid-template-columns:repeat(2,1fr)}}
-+.aiw-area-chart{padding:18px 12px 8px}.aiw-chart-empty{min-height:230px;display:grid;place-content:center}
++  const environmentLocked = resource.data?.environmentEnabled === false;
++  return (
++    <section className="aiw-token-saver card" aria-labelledby="aiw-token-saver-title">
++      <div className="aiw-token-saver__icon"><IconSparkle aria-hidden /></div>
++      <div className="aiw-token-saver__copy">
++        <div className="aiw-token-saver__title-row">
++          <h3 id="aiw-token-saver-title">{t("aiw.tokenSaver.title")}</h3>
++          <span className={`badge ${resource.data?.effectiveEnabled ? "badge-green" : "badge-muted"}`}>
++            {resource.data?.effectiveEnabled ? t("aiw.tokenSaver.active") : t("aiw.tokenSaver.inactive")}
++          </span>
++        </div>
++        <p>{t("aiw.tokenSaver.description")}</p>
++        <a href="https://github.com/rtk-ai/rtk" target="_blank" rel="noreferrer">{t("aiw.tokenSaver.learnMore")}</a>
++        {environmentLocked ? <div className="notice notice-warn" role="status">{t("aiw.tokenSaver.environmentLocked")}</div> : null}
++        {saveError || resource.error ? <div className="notice notice-err" role="alert">{saveError || String(resource.error)}</div> : null}
++      </div>
++      <Switch
++        on={rtkEnabled && !environmentLocked}
++        onClick={() => void handleRtkEnabled(!rtkEnabled)}
++        disabled={saving || resource.loading || environmentLocked}
++        label={t("aiw.tokenSaver.toggle")}
++      />
++    </section>
++  );
+ }

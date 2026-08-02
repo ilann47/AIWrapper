@@ -178,7 +178,8 @@ def test_governance_bridge_executes_upstream_ledger_and_budget(tmp_path):
     assert decision["allowed"] is False
 
 
-def test_nine_router_bridge_executes_upstream_rtk():
+def test_nine_router_bridge_executes_upstream_rtk(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "aiwrapper_database_path", str(tmp_path / "rtk.sqlite"))
     noisy_log = "\n".join([f"src/file.py:{line}: repeated diagnostic payload" for line in range(1, 160)])
     result = asyncio.run(nine_router("compress", {
         "body": {"messages": [{"role": "tool", "content": noisy_log}]},
@@ -187,6 +188,52 @@ def test_nine_router_bridge_executes_upstream_rtk():
 
     assert result["stats"]["bytesAfter"] < result["stats"]["bytesBefore"]
     assert len(result["body"]["messages"][0]["content"]) < len(noisy_log)
+
+
+def test_nine_router_settings_repo_persists_and_controls_rtk(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "aiwrapper_database_path", str(tmp_path / "settings.sqlite"))
+    initial = asyncio.run(nine_router("settings:get", {}))
+    assert initial["rtkEnabled"] is True
+
+    updated = asyncio.run(nine_router("settings:update", {"updates": {"rtkEnabled": False}}))
+    disabled = asyncio.run(nine_router("compress", {
+        "body": {"messages": [{"role": "tool", "content": "x" * 5000}]},
+        "enabled": True,
+    }))
+    assert updated["rtkEnabled"] is False
+    assert disabled["stats"] is None
+    assert asyncio.run(nine_router("settings:get", {}))["rtkEnabled"] is False
+
+
+def test_administrator_can_update_token_saver_setting(tmp_path, monkeypatch):
+    store_module = importlib.import_module("app.aiwrapper.store")
+    auth_module = importlib.import_module("app.aiwrapper.auth")
+    router_module = importlib.import_module("app.aiwrapper.router")
+    database = tmp_path / "token-saver.sqlite"
+    local_store = AIWrapperStore(str(database))
+    administrator = local_store.create_user("RTK Admin", "admin", "rtk-admin", str(tmp_path / ".codex-admin"))
+    regular_user = local_store.create_user("RTK User", "user", "rtk-user", str(tmp_path / ".codex-user"))
+    monkeypatch.setattr(store_module, "store", local_store)
+    monkeypatch.setattr(auth_module, "store", local_store)
+    monkeypatch.setattr(router_module, "store", local_store)
+    monkeypatch.setattr(settings, "aiwrapper_database_path", str(database))
+    monkeypatch.setattr(settings, "aiwrapper_rtk_enabled", True)
+    monkeypatch.setattr(settings, "aiwrapper_cors_origins", "http://127.0.0.1:8765")
+
+    origin = "http://127.0.0.1:8765"
+    client = TestClient(app)
+    login = client.post("/auth/sessions", headers={"Authorization": f"Bearer {administrator['apiKey']['secret']}", "Origin": origin})
+    headers = {"Authorization": f"Bearer {login.json()['accessToken']}", "Origin": origin}
+
+    assert client.get("/admin/token-saver", headers=headers).json()["effectiveEnabled"] is True
+    updated = client.patch("/admin/token-saver", headers=headers, json={"rtkEnabled": False})
+    assert updated.status_code == 200
+    assert updated.json() == {"rtkEnabled": False, "environmentEnabled": True, "effectiveEnabled": False}
+    assert local_store.list_audit_events()[0]["action"] == "token_saver.updated"
+
+    user_login = client.post("/auth/sessions", headers={"Authorization": f"Bearer {regular_user['apiKey']['secret']}", "Origin": origin})
+    user_headers = {"Authorization": f"Bearer {user_login.json()['accessToken']}", "Origin": origin}
+    assert client.get("/admin/token-saver", headers=user_headers).status_code == 403
 
 
 def test_nine_router_backup_preserves_schema_and_data(tmp_path):

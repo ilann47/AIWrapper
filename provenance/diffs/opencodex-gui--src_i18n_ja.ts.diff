@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ja.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ja.ts"
-index 47b1de3f0..4346c4bc2 100644
+index 47b1de3f0..4a626e80d 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ja.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ja.ts"	
-@@ -10,6 +10,162 @@ export const ja: Record<TKey, string> = {
+@@ -10,6 +10,169 @@ export const ja: Record<TKey, string> = {
    "nav.subagents": "サブエージェント",
    "nav.logs": "ログ & デバッグ",
    "nav.usage": "使用量",
@@ -34,6 +34,13 @@ index 47b1de3f0..4346c4bc2 100644
 +  "aiw.overview.event": "イベント",
 +  "aiw.overview.target": "対象",
 +  "aiw.overview.when": "日時",
++  "aiw.tokenSaver.title": "トークンセーバー",
++  "aiw.tokenSaver.description": "大きなツール出力をモデルへ送る前に圧縮し、通常は入力トークンを60～90%削減します。",
++  "aiw.tokenSaver.learnMore": "RTK圧縮の仕組み",
++  "aiw.tokenSaver.active": "有効",
++  "aiw.tokenSaver.inactive": "無効",
++  "aiw.tokenSaver.environmentLocked": "環境変数 AIWRAPPER_RTK_ENABLED の安全ロックにより無効です。",
++  "aiw.tokenSaver.toggle": "RTKトークン圧縮を有効にする",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -165,7 +172,7 @@ index 47b1de3f0..4346c4bc2 100644
    "common.github": "GitHub",
    "common.save": "保存",
    "common.saving": "保存中…",
-@@ -993,6 +1149,9 @@ export const ja: Record<TKey, string> = {
+@@ -993,6 +1156,9 @@ export const ja: Record<TKey, string> = {
    "nav.codexAuth": "Codex 認証",
    "nav.api": "API",
    "nav.openMenu": "メニューを開く",

@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\de.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\de.ts"
-index 5e85333ed..f156b59e8 100644
+index 5e85333ed..127fc50f5 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\de.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\de.ts"	
-@@ -10,6 +10,162 @@ export const de: Record<TKey, string> = {
+@@ -10,6 +10,169 @@ export const de: Record<TKey, string> = {
    "nav.subagents": "Sub-Agenten",
    "nav.logs": "Protokolle & Diagnose",
    "nav.usage": "Nutzung",
@@ -34,6 +34,13 @@ index 5e85333ed..f156b59e8 100644
 +  "aiw.overview.event": "Ereignis",
 +  "aiw.overview.target": "Ziel",
 +  "aiw.overview.when": "Zeitpunkt",
++  "aiw.tokenSaver.title": "Token Saver",
++  "aiw.tokenSaver.description": "Komprimiert große Werkzeugausgaben vor dem Modell und benötigt typischerweise 60–90 % weniger Eingabetokens.",
++  "aiw.tokenSaver.learnMore": "So funktioniert die RTK-Komprimierung",
++  "aiw.tokenSaver.active": "Aktiv",
++  "aiw.tokenSaver.inactive": "Inaktiv",
++  "aiw.tokenSaver.environmentLocked": "Durch die Umgebungs-Sicherheitssperre AIWRAPPER_RTK_ENABLED deaktiviert.",
++  "aiw.tokenSaver.toggle": "RTK-Tokenkomprimierung aktivieren",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -165,7 +172,7 @@ index 5e85333ed..f156b59e8 100644
    "common.github": "GitHub",
    "common.save": "Speichern",
    "common.saving": "Speichern…",
-@@ -622,6 +778,9 @@ export const de: Record<TKey, string> = {
+@@ -622,6 +785,9 @@ export const de: Record<TKey, string> = {
    "nav.codexAuth": "Codex-Auth",
    "nav.api": "API",
    "nav.openMenu": "Menü öffnen",

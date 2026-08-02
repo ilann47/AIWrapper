@@ -1,69 +1,92 @@
-diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\main.py" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"
-index 6647bca55..0badad1cb 100644
---- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\main.py"	
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\app\\api\\settings\\route.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"
+index 6a7134331..0badad1cb 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\app\\api\\settings\\route.js"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"	
-@@ -1,268 +1,314 @@
--import json
--import os
+@@ -1,118 +1,314 @@
+-import { NextResponse } from "next/server";
+-import { getSettings, updateSettings } from "@/lib/localDb";
+-import { applyOutboundProxyEnv } from "@/lib/network/outboundProxy";
+-import { resetComboRotation } from "open-sse/services/combo.js";
+-import bcrypt from "bcryptjs";
+-
+-export const dynamic = "force-dynamic";
+-export const revalidate = 0;
+-
+-const SETTINGS_RESPONSE_HEADERS = {
+-  "Cache-Control": "no-store"
+-};
+-
+-// Secrets must never be mass-assigned from request body (CWE-915)
+-const PROTECTED_SETTING_KEYS = ["password", "mitmSudoEncrypted"];
+-
+-export async function GET() {
+-  try {
+-    const settings = await getSettings();
+-    const { password, oidcClientSecret, ...safeSettings } = settings;
+-    safeSettings.oidcConfigured = !!(safeSettings.oidcIssuerUrl && safeSettings.oidcClientId && oidcClientSecret);
+-    
+-    const enableRequestLogs = process.env.ENABLE_REQUEST_LOGS === "true";
+-    const enableTranslator = process.env.ENABLE_TRANSLATOR === "true";
+-    
+-    return NextResponse.json({ 
+-      ...safeSettings, 
+-      enableRequestLogs,
+-      enableTranslator,
+-      hasPassword: !!password
+-    }, { headers: SETTINGS_RESPONSE_HEADERS });
+-  } catch (error) {
+-    console.log("Error getting settings:", error);
+-    return NextResponse.json({ error: error.message }, { status: 500 });
+-  }
+-}
+-
+-export async function PATCH(request) {
+-  try {
+-    const body = await request.json();
+-
+-    // Strip protected secrets before any internal handling sets them
+-    for (const key of PROTECTED_SETTING_KEYS) delete body[key];
+-
+-    // If updating password, hash it
+-    if (body.newPassword) {
+-      const settings = await getSettings();
+-      const currentHash = settings.password;
+-
+-      // Verify current password if it exists
+-      if (currentHash) {
+-        if (!body.currentPassword) {
+-          return NextResponse.json({ error: "Current password required" }, { status: 400 });
+-        }
+-        const isValid = await bcrypt.compare(body.currentPassword, currentHash);
+-        if (!isValid) {
+-          return NextResponse.json({ error: "Invalid current password" }, { status: 401 });
+-        }
+-      } else {
+-        // First time setting password, no current password needed
+-        // Allow empty currentPassword or default "123456"
+-        if (body.currentPassword && body.currentPassword !== "123456") {
+-           return NextResponse.json({ error: "Invalid current password" }, { status: 401 });
+-        }
+-      }
+-
+-      const salt = await bcrypt.genSalt(10);
+-      body.password = await bcrypt.hash(body.newPassword, salt);
+-      delete body.newPassword;
+-      delete body.currentPassword;
+-    }
 +import re
- import time
--import uuid
--from typing import AsyncIterator, List
--
--from fastapi import Depends, FastAPI, HTTPException
--from fastapi.middleware.cors import CORSMiddleware
--from fastapi.responses import StreamingResponse
--
--from .codex import CodexError, run_codex, run_codex_last_message
--from .config import settings
--from .deps import rate_limiter, verify_api_key
--from .model_registry import (
--    choose_model,
--    get_available_models,
--    initialize_model_registry,
--)
--from .security import assert_local_only_or_raise
--from .prompt import build_prompt_and_images, normalize_responses_input
--from .images import save_image_to_temp
--from .schemas import (
--    ChatChoice,
--    ChatCompletionRequest,
--    ChatCompletionResponse,
--    ChatMessageResponse,
--    ResponsesRequest,
--    ResponsesObject,
--    ResponsesMessage,
--    ResponsesOutputText,
--)
--
--app = FastAPI()
--
--app.add_middleware(
--    CORSMiddleware,
--    allow_origins=["*"],
--    allow_methods=["*"],
--    allow_headers=["*"],
--)
--
--
--@app.on_event("startup")
--async def startup_event() -> None:
--    await initialize_model_registry()
--
--
--@app.get("/v1/models", dependencies=[Depends(rate_limiter), Depends(verify_api_key)])
--async def list_models():
--    """Return available model list."""
--    return {"data": [{"id": model} for model in get_available_models(include_reasoning_aliases=True)]}
--
--
--@app.post("/v1/chat/completions", dependencies=[Depends(rate_limiter), Depends(verify_api_key)])
--async def chat_completions(req: ChatCompletionRequest):
++import time
 +from typing import Any
-+
+ 
+-    if (Object.prototype.hasOwnProperty.call(body, "oidcClientSecret")) {
+-      if (!body.oidcClientSecret || !String(body.oidcClientSecret).trim()) {
+-        delete body.oidcClientSecret;
+-      }
+-    }
 +from fastapi import APIRouter, HTTPException, Request
 +from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
-+
+ 
+-    const settings = await updateSettings(body);
 +from .backups import create_backup as create_database_backup, list_backups, resolve_backup
 +from .governance import governance
 +from .nine_router import nine_router
@@ -71,8 +94,23 @@ index 6647bca55..0badad1cb 100644
 +from .store import store
 +from ..codex import codex_parallel_status
 +from ..config import settings
-+
-+
+ 
+-    // Apply outbound proxy settings immediately (no restart required)
+-    if (
+-      Object.prototype.hasOwnProperty.call(body, "outboundProxyEnabled") ||
+-      Object.prototype.hasOwnProperty.call(body, "outboundProxyUrl") ||
+-      Object.prototype.hasOwnProperty.call(body, "outboundNoProxy")
+-    ) {
+-      applyOutboundProxyEnv(settings);
+-    }
+ 
+-    // Invalidate combo rotation state when strategy settings change
+-    if (
+-      Object.prototype.hasOwnProperty.call(body, "comboStrategy") ||
+-      Object.prototype.hasOwnProperty.call(body, "comboStickyRoundRobinLimit") ||
+-      Object.prototype.hasOwnProperty.call(body, "comboStrategies")
+-    ) {
+-      resetComboRotation();
 +router = APIRouter()
 +public_router = APIRouter()
 +
@@ -119,8 +157,16 @@ index 6647bca55..0badad1cb 100644
 +        "models": summary_7d["buckets"],
 +        "days": summary_days["buckets"],
 +        "outcomes": summary_outcomes["buckets"],
-+    }
-+
+     }
+ 
+-    if (
+-      Object.prototype.hasOwnProperty.call(body, "claudeAutoPing") ||
+-      Object.prototype.hasOwnProperty.call(body, "codexAutoPing")
+-    ) {
+-      // Keep the scheduler absent when no account opted in; load its provider graph only on demand.
+-      import("@/shared/services/quotaAutoPing")
+-        .then(({ configureQuotaAutoPing }) => {
+-          configureQuotaAutoPing(settings);
 +
 +@router.get("/admin/users")
 +async def users(request: Request):
@@ -133,7 +179,8 @@ index 6647bca55..0badad1cb 100644
 +            "profile_id": user["profile_name"],
 +            "backend_id": "codex-wrapper",
 +            "weighted_units": summary["totals"]["totalTokens"],
-+        })
+         })
+-        .catch((error) => console.warn("[AutoPing] settings update failed:", error.message));
 +    return {"data": data}
 +
 +
@@ -152,47 +199,26 @@ index 6647bca55..0badad1cb 100644
 +        "audit": store.list_audit_events(10),
 +        "throughputPerMinute": round(float(totals.get("requests", 0)) / elapsed_minutes, 3),
 +        "window": {"since": since_ms, "until": now_ms},
-+    }
-+
+     }
+ 
+-    const { password, oidcClientSecret, ...safeSettings } = settings;
+-    safeSettings.oidcConfigured = !!(safeSettings.oidcIssuerUrl && safeSettings.oidcClientId && oidcClientSecret);
+-    return NextResponse.json(safeSettings, { headers: SETTINGS_RESPONSE_HEADERS });
+-  } catch (error) {
+-    console.log("Error updating settings:", error);
+-    return NextResponse.json({ error: error.message }, { status: 500 });
+-  }
+-}
 +
 +@router.get("/admin/audit")
 +async def audit_events(request: Request):
 +    administrator(request)
-     try:
--        model_name, alias_effort = choose_model(req.model)
--    except ValueError as e:
--        raise HTTPException(
--            status_code=404,
--            detail={
--                "message": str(e),
--                "type": "invalid_request_error",
--                "code": "model_not_found",
--            },
--        )
++    try:
 +        limit = int(request.query_params.get("limit", "200"))
 +    except ValueError as error:
 +        raise HTTPException(status_code=400, detail="limit must be an integer") from error
 +    return {"data": store.list_audit_events(limit)}
- 
--    prompt, image_urls = build_prompt_and_images([m.dict() for m in req.messages])
--    x_overrides = req.x_codex.dict(exclude_none=True) if req.x_codex else {}
--    if alias_effort and "reasoning_effort" not in x_overrides:
--        x_overrides["reasoning_effort"] = alias_effort
--    overrides = x_overrides or None
--
--    # Safety gate: only allow danger-full-access when explicitly enabled
--    if overrides and overrides.get("sandbox") == "danger-full-access":
--        if not settings.allow_danger_full_access:
--            raise HTTPException(status_code=400, detail="danger-full-access is disabled by server policy")
--
--    # Enforce local-only model provider when enabled
--    if settings.local_only:
--        try:
--            assert_local_only_or_raise()
--        except ValueError as e:
--            raise HTTPException(status_code=400, detail=str(e))
--
--    image_paths: List[str] = []
++
 +
 +@router.get("/admin/backups")
 +async def database_backups(request: Request):
@@ -203,23 +229,14 @@ index 6647bca55..0badad1cb 100644
 +@router.post("/admin/backups", status_code=201)
 +async def create_backup(request: Request):
 +    user = administrator(request)
-     try:
--        for u in image_urls:
--            image_paths.append(save_image_to_temp(u))
--    except ValueError as e:
--        for p in image_paths:
--            try:
--                os.remove(p)
--            except Exception:
--                pass
--        raise HTTPException(status_code=400, detail=str(e))
++    try:
 +        result = await create_database_backup()
 +    except (OSError, RuntimeError, KeyError) as error:
 +        raise HTTPException(status_code=500, detail=str(error)) from error
 +    store.audit_event(user["id"], "backup.created", "database_backup", result["id"], {"sizeBytes": result["sizeBytes"]})
 +    return result
 +
- 
++
 +@router.get("/admin/backups/{backup_id}")
 +async def download_backup(backup_id: str, request: Request):
 +    administrator(request)
@@ -242,49 +259,12 @@ index 6647bca55..0badad1cb 100644
 +@router.get("/admin/token-saver")
 +async def token_saver_settings(request: Request):
 +    administrator(request)
-     try:
--        if req.stream:
--            async def event_gen() -> AsyncIterator[bytes]:
--                async for text in run_codex(prompt, overrides, image_paths, model=model_name):
--                    if text:
--                        chunk = {
--                            "choices": [
--                                {"delta": {"content": text}, "index": 0, "finish_reason": None}
--                            ]
--                        }
--                        yield f"data: {json.dumps(chunk)}\n\n".encode()
--                yield b"data: [DONE]\n\n"
--
--            return StreamingResponse(event_gen(), media_type="text/event-stream")
--        else:
--            final = await run_codex_last_message(prompt, overrides, image_paths, model=model_name)
--            resp = ChatCompletionResponse(
--                choices=[ChatChoice(message=ChatMessageResponse(content=final))]
--            )
--            return resp
--    except CodexError as e:
--        status = getattr(e, "status_code", None) or 500
--        raise HTTPException(
--            status_code=status,
--            detail={
--                "message": str(e),
--                "type": "server_error" if status >= 500 else "upstream_error",
--                "code": None,
--            },
--        )
--    finally:
--        for p in image_paths:
--            try:
--                os.remove(p)
--            except Exception:
--                pass
++    try:
 +        return _token_saver_response(await nine_router("settings:get", {}))
 +    except RuntimeError as error:
 +        raise HTTPException(status_code=503, detail=str(error)) from error
- 
- 
--@app.post("/v1/responses", dependencies=[Depends(rate_limiter), Depends(verify_api_key)])
--async def responses_endpoint(req: ResponsesRequest):
++
++
 +@router.patch("/admin/token-saver")
 +async def update_token_saver_settings(request: Request):
 +    user = administrator(request)
@@ -292,25 +272,14 @@ index 6647bca55..0badad1cb 100644
 +    enabled = body.get("rtkEnabled")
 +    if not isinstance(enabled, bool):
 +        raise HTTPException(status_code=400, detail="rtkEnabled must be a boolean")
-     try:
--        model, alias_effort = choose_model(req.model)
--    except ValueError as e:
--        raise HTTPException(
--            status_code=404,
--            detail={
--                "message": str(e),
--                "type": "invalid_request_error",
--                "code": "model_not_found",
--            },
--        )
++    try:
 +        runtime_settings = await nine_router("settings:update", {"updates": {"rtkEnabled": enabled}})
 +    except RuntimeError as error:
 +        raise HTTPException(status_code=503, detail=str(error)) from error
 +    store.audit_event(user["id"], "token_saver.updated", "setting", "rtkEnabled", {"enabled": enabled})
 +    return _token_saver_response(runtime_settings)
 +
- 
--    # Normalize input → messages
++
 +@router.post("/admin/users", status_code=201)
 +async def create_user(request: Request):
 +    administrator(request)
@@ -319,33 +288,7 @@ index 6647bca55..0badad1cb 100644
 +    if not name:
 +        raise HTTPException(status_code=400, detail="name is required")
 +    profile_name = re.sub(r"[^a-z0-9-]+", "-", name.lower()).strip("-")
-     try:
--        messages = normalize_responses_input(req.input)
--    except ValueError as e:
--        raise HTTPException(status_code=400, detail=str(e))
--
--    overrides = {}
--    if alias_effort:
--        overrides["reasoning_effort"] = alias_effort
--    if req.reasoning and req.reasoning.effort:
--        overrides["reasoning_effort"] = req.reasoning.effort
--
--    # Enforce local-only model provider when enabled
--    if settings.local_only:
--        try:
--            assert_local_only_or_raise()
--        except ValueError as e:
--            raise HTTPException(status_code=400, detail=str(e))
--
--    prompt, image_urls = build_prompt_and_images(messages)
--
--    resp_id = f"resp_{uuid.uuid4().hex}"
--    msg_id = f"msg_{uuid.uuid4().hex}"
--    created = int(time.time())
--    response_model = req.model or model
--    codex_overrides = overrides or None
--
--    image_paths: List[str] = []
++    try:
 +        codex_home = await ensure_profile(profile_name)
 +        return store.create_user(
 +            name,
@@ -380,16 +323,7 @@ index 6647bca55..0badad1cb 100644
 +@router.post("/admin/users/{user_id}/keys", status_code=201)
 +async def rotate_user_key(user_id: str, request: Request):
 +    administrator(request)
-     try:
--        for u in image_urls:
--            image_paths.append(save_image_to_temp(u))
--    except ValueError as e:
--        for p in image_paths:
--            try:
--                os.remove(p)
--            except Exception:
--                pass
--        raise HTTPException(status_code=400, detail=str(e))
++    try:
 +        return store.rotate_key(user_id)
 +    except ValueError as error:
 +        raise HTTPException(status_code=404, detail=str(error)) from error
@@ -426,7 +360,7 @@ index 6647bca55..0badad1cb 100644
 +    if not result:
 +        raise HTTPException(status_code=404, detail="Session not found")
 +    return result
- 
++
 +
 +@router.delete("/v1/sessions/{session_id}", status_code=204)
 +async def archive_session(session_id: str, request: Request):
@@ -469,86 +403,7 @@ index 6647bca55..0badad1cb 100644
 +async def create_share(request: Request):
 +    user = principal(request)
 +    body = await request.json()
-     try:
--        if req.stream:
--            async def event_gen() -> AsyncIterator[bytes]:
--                try:
--                    created_evt = {
--                        "id": resp_id,
--                        "object": "response",
--                        "created": created,
--                        "model": response_model,
--                        "status": "in_progress",
--                    }
--                    yield f"event: response.created\ndata: {json.dumps(created_evt)}\n\n".encode()
--
--                    buf: list[str] = []
--                    async for text in run_codex(prompt, codex_overrides, image_paths, model=model):
--                        if text:
--                            buf.append(text)
--                            delta_evt = {"id": resp_id, "delta": text}
--                            yield f"event: response.output_text.delta\ndata: {json.dumps(delta_evt)}\n\n".encode()
--
--                    final_text = "".join(buf)
--                    done_evt = {"id": resp_id, "text": final_text}
--                    yield f"event: response.output_text.done\ndata: {json.dumps(done_evt)}\n\n".encode()
--
--                    final_obj = ResponsesObject(
--                        id=resp_id,
--                        created=created,
--                        model=response_model,
--                        status="completed",
--                        output=[
--                            ResponsesMessage(
--                                id=msg_id,
--                                content=[ResponsesOutputText(text=final_text)],
--                            )
--                        ],
--                    ).model_dump()
--                    yield f"event: response.completed\ndata: {json.dumps(final_obj)}\n\n".encode()
--                except CodexError as e:
--                    err_evt = {"id": resp_id, "error": {"message": str(e)}}
--                    yield f"event: response.error\ndata: {json.dumps(err_evt)}\n\n".encode()
--                finally:
--                    yield b"data: [DONE]\n\n"
--
--            headers = {
--                "Cache-Control": "no-cache",
--                "X-Accel-Buffering": "no",
--                "Connection": "keep-alive",
--            }
--            return StreamingResponse(event_gen(), media_type="text/event-stream", headers=headers)
--        else:
--            final = await run_codex_last_message(prompt, codex_overrides, image_paths, model=model)
--            resp = ResponsesObject(
--                id=resp_id,
--                created=created,
--                model=response_model,
--                status="completed",
--                output=[
--                    ResponsesMessage(
--                        id=msg_id,
--                        content=[ResponsesOutputText(text=final)],
--                    )
--                ],
--            )
--            return resp
--    except CodexError as e:
--        status = getattr(e, "status_code", None) or 500
--        raise HTTPException(
--            status_code=status,
--            detail={
--                "message": str(e),
--                "type": "server_error" if status >= 500 else "upstream_error",
--                "code": None,
--            },
--        )
--    finally:
--        for p in image_paths:
--            try:
--                os.remove(p)
--            except Exception:
--                pass
++    try:
 +        expires = body.get("expiresInHours")
 +        expires_in_hours = int(expires) if expires is not None else None
 +        if expires_in_hours is not None and not 1 <= expires_in_hours <= 720:

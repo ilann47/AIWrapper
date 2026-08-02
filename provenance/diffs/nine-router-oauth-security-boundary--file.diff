@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\providers\\registry\\gemini.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\.env.example"
-index 40dedaf7f..8a30a6cbe 100644
+index 40dedaf7f..11ec22700 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\providers\\registry\\gemini.js"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\.env.example"	
-@@ -1,85 +1,51 @@
+@@ -1,85 +1,52 @@
 -import { GOOGLE_OAUTH_CLIENT } from "../shared.js";
 +# AIWrapper Lab — copie para .env e ajuste somente o necessário.
 +# Nunca versione .env, auth.json, chaves individuais ou o diretório .aiwrapper.
@@ -106,6 +106,7 @@ index 40dedaf7f..8a30a6cbe 100644
 +AIWRAPPER_MULTI_AUTH_DIR=.aiwrapper/multi-auth
 +AIWRAPPER_GOVERNANCE_BRIDGE=../../extensions/aiwrapper-admin/src/governance-bridge.mjs
 +AIWRAPPER_NINE_ROUTER_BRIDGE=../../extensions/aiwrapper-runtime/src/nine-router-bridge.mjs
++# Trava mestra: false impede RTK mesmo que o administrador o ative no dashboard.
 +AIWRAPPER_RTK_ENABLED=true
 +AIWRAPPER_EXECUTION_BACKEND=opencodex
 +AIWRAPPER_OPENCODEX_BASE_URL=http://127.0.0.1:8765

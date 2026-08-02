@@ -19,7 +19,7 @@
       "kind": "directory",
       "source": "upstream/opencodex/gui",
       "destination": "apps/opencodex-gui",
-      "exclude": ["dist"]
+      "exclude": ["dist", "tests/aiwrapper-token-saver.test.ts"]
     },
     {
       "id": "opencodex-data-plane-execution",
@@ -407,6 +407,74 @@
       "destination": "services/codex-wrapper/app/aiwrapper/nine_router.py",
       "incompatibility": "Python/FastAPI cannot import the ESM runtime; an asynchronous subprocess adapter is required and must fail open if the optional optimization is unavailable.",
       "parityAudit": { "retained": ["Original RTK remains the only compression implementation"], "lost": [], "decision": "Python owns process lifecycle only and delegates all compression behavior." }
+    },
+    {
+      "id": "nine-router-settings-repository",
+      "functionality": "Persistent transactional token-saver settings with default merging and backward compatibility",
+      "project": "decolua/9router",
+      "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+      "license": "MIT",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/9router/src/lib/db/repos/settingsRepo.js",
+      "destination": "extensions/aiwrapper-runtime/src/nine-router-settings-repo.mjs",
+      "incompatibility": "The original repository imports 9router's Next.js @ alias and application-wide database driver. Plain Node cannot resolve that alias and AIWrapper must store settings in its canonical SQLite file. Only the adapter import is changed; defaults, read/merge behavior, atomic transaction and exported repository API are preserved.",
+      "parityAudit": {
+        "retained": ["Complete default settings object", "Backward-compatible default merge", "Atomic read-merge-write transaction", "getSettings", "updateSettings", "isCloudEnabled", "getCloudUrl", "exportSettings"],
+        "lost": [],
+        "decision": "Preserve the complete repository and replace only its database adapter import."
+      }
+    },
+    {
+      "id": "nine-router-settings-sqlite-boundary",
+      "functionality": "Bind 9router's original Node 22 SQLite adapter to the canonical AIWrapper state database",
+      "project": "decolua/9router",
+      "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+      "license": "MIT / project adapter code",
+      "classification": "directly imported",
+      "kind": "file",
+      "source": "upstream/9router/src/lib/db/adapters/nodeSqliteAdapter.js",
+      "destination": "extensions/aiwrapper-runtime/src/nine-router-settings-adapter.mjs",
+      "incompatibility": "9router's main driver selects a database through its DATA_DIR and Next.js alias graph. AIWrapper already owns one SQLite path, so this boundary imports and executes createNodeSqliteAdapter directly, supplies AIWRAPPER_DATABASE_PATH and bootstraps only the unchanged settings table contract.",
+      "parityAudit": {
+        "retained": ["Original createNodeSqliteAdapter implementation", "Original WAL, busy timeout and transaction behavior", "Single settings row schema"],
+        "lost": ["Multi-driver fallback, unnecessary because the production image requires Node 22"],
+        "decision": "Directly execute the original Node 22 adapter and keep path/schema selection in a minimal integration boundary."
+      }
+    },
+    {
+      "id": "nine-router-token-saver-ui",
+      "functionality": "Administrator Token Saver card with persisted RTK toggle, effective status and environment safety lock",
+      "project": "decolua/9router",
+      "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/9router/src/app/(dashboard)/dashboard/token-saver/TokenSaverClient.js",
+      "destination": "extensions/aiwrapper-admin/src/TokenSaverPanel.tsx",
+      "incompatibility": "The original page is a Next.js/Tailwind administration suite for RTK, Headroom, Caveman, Ponytail and PXPIPE, including local installers and proxy processes that do not exist in AIWrapper's production image. The RTK block is the only feature whose original runtime is currently on AIWrapper's canonical request path; its load, toggle-after-success and explanatory interaction are adapted to the OpenCodex design system and authenticated administrator API.",
+      "parityAudit": {
+        "retained": ["RTK enabled state", "Load persisted setting", "Persist toggle before changing effective state", "60-90 percent savings explanation", "RTK documentation link", "Responsive card"],
+        "lost": ["Headroom installer/proxy", "Caveman and Ponytail prompt transforms", "PXPIPE image compression and installer"],
+        "decision": "Expose the already executing RTK feature now. Preserve the complete upstream page in upstream/ and track its other runtimes as separate unwired candidates rather than presenting non-existent controls."
+      }
+    },
+    {
+      "id": "nine-router-token-saver-fastapi-adapter",
+      "functionality": "Administrator-authorized GET/PATCH boundary for 9router token-saver settings and audit events",
+      "project": "decolua/9router",
+      "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/9router/src/app/api/settings/route.js",
+      "destination": "services/codex-wrapper/app/aiwrapper/router.py",
+      "incompatibility": "The source is a Next.js route bound to dashboard cookies, bcrypt and all 9router settings. AIWrapper is FastAPI and must enforce its existing administrator principal, expose only the non-secret RTK field, retain the environment master lock and write its audit ledger. The original settings repository remains the persistence implementation behind this transport adapter.",
+      "parityAudit": {
+        "retained": ["No-store-style live settings read", "PATCH persistence through updateSettings", "Protected narrow response", "Immediate runtime effect"],
+        "lost": ["Password, OIDC, proxy and unrelated 9router settings fields"],
+        "decision": "Adapt only the HTTP/authentication boundary and delegate persistence to the preserved repository."
+      }
     },
     {
       "id": "nine-router-sqlite-backup-runtime",

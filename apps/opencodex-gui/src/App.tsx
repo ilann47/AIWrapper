@@ -32,6 +32,7 @@ import BillingPage from "../../../extensions/aiwrapper-billing/src/BillingPage";
 import SharedConversationPage from "../../../extensions/aiwrapper-sharing/src/SharedConversationPage";
 import AdminOverviewPanel from "../../../extensions/aiwrapper-admin/src/AdminOverviewPanel";
 import NavigationSearch from "../../../extensions/aiwrapper-admin/src/NavigationSearch";
+import TokenSaverPanel from "../../../extensions/aiwrapper-admin/src/TokenSaverPanel";
 import { useHeaderSearchStore } from "../../../extensions/aiwrapper-admin/src/header-search-store";
 import "../../../extensions/aiwrapper-admin/src/styles.css";
 import "../../../extensions/aiwrapper-chat/src/styles.css";
@@ -371,7 +372,7 @@ function AppContent() {
             detailsLabel={t("errorBoundary.details")}
             reloadLabel={t("errorBoundary.reload")}
           >
-            {page === "dashboard" && <Dashboard apiBase={API_BASE} beforeOverview={<AdminOverviewPanel />} />}
+            {page === "dashboard" && <Dashboard apiBase={API_BASE} beforeOverview={<><AdminOverviewPanel /><TokenSaverPanel /></>} />}
             {page === "startup" && <Startup apiBase={API_BASE} />}
             {page === "providers" && <Providers apiBase={API_BASE} />}
             {page === "models" && <Models apiBase={API_BASE} />}
