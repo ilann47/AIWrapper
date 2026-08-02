@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ja.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ja.ts"
-index 47b1de3f0..6afa91e2e 100644
+index 47b1de3f0..34a016307 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ja.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ja.ts"	
-@@ -10,6 +10,159 @@ export const ja: Record<TKey, string> = {
+@@ -10,6 +10,162 @@ export const ja: Record<TKey, string> = {
    "nav.subagents": "サブエージェント",
    "nav.logs": "ログ & デバッグ",
    "nav.usage": "使用量",
@@ -17,6 +17,9 @@ index 47b1de3f0..6afa91e2e 100644
 +  "aiw.overview.notConnected": "運用状況を表示するには管理者キーで接続してください。",
 +  "aiw.overview.refresh": "更新",
 +  "aiw.overview.refreshing": "更新中…",
++  "aiw.overview.backup": "バックアップをダウンロード",
++  "aiw.overview.backingUp": "バックアップを作成中…",
++  "aiw.overview.backupReady": "バックアップを作成してダウンロードしました。",
 +  "aiw.overview.users": "有効ユーザー",
 +  "aiw.overview.conversations": "会話",
 +  "aiw.overview.active": "実行中のリクエスト",

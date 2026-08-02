@@ -3,8 +3,9 @@ import time
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 
+from .backups import create_backup as create_database_backup, list_backups, resolve_backup
 from .governance import governance
 from .profiles import ensure_profile
 from .store import store
@@ -101,6 +102,32 @@ async def audit_events(request: Request):
     except ValueError as error:
         raise HTTPException(status_code=400, detail="limit must be an integer") from error
     return {"data": store.list_audit_events(limit)}
+
+
+@router.get("/admin/backups")
+async def database_backups(request: Request):
+    administrator(request)
+    return {"data": list_backups()}
+
+
+@router.post("/admin/backups", status_code=201)
+async def create_backup(request: Request):
+    user = administrator(request)
+    try:
+        result = await create_database_backup()
+    except (OSError, RuntimeError, KeyError) as error:
+        raise HTTPException(status_code=500, detail=str(error)) from error
+    store.audit_event(user["id"], "backup.created", "database_backup", result["id"], {"sizeBytes": result["sizeBytes"]})
+    return result
+
+
+@router.get("/admin/backups/{backup_id}")
+async def download_backup(backup_id: str, request: Request):
+    administrator(request)
+    target = resolve_backup(backup_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="Backup not found")
+    return FileResponse(target, media_type="application/vnd.sqlite3", filename=f"aiwrapper-{backup_id}.sqlite")
 
 
 @router.post("/admin/users", status_code=201)

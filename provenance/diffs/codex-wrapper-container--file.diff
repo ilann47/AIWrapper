@@ -1,11 +1,11 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\Dockerfile" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\Dockerfile.codex-wrapper"
-index 31ed23325..1b3a0a7bd 100644
+index 31ed23325..e2a91756d 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\Dockerfile"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\Dockerfile.codex-wrapper"	
-@@ -1,45 +1,36 @@
+@@ -1,45 +1,37 @@
  # syntax=docker/dockerfile:1
 +# The runtime stages preserve circlemouth/Codex-Wrapper's Docker architecture.
-+FROM node:20-bookworm-slim AS governance
++FROM node:22-bookworm-slim AS governance
 +WORKDIR /src
 +COPY packages/codex-multi-auth/package*.json ./packages/codex-multi-auth/
 +RUN cd packages/codex-multi-auth && npm ci --ignore-scripts
@@ -24,8 +24,9 @@ index 31ed23325..1b3a0a7bd 100644
 -# Install system dependencies and Codex CLI runtime
  RUN apt-get update \
 -    && apt-get install -y --no-install-recommends curl ca-certificates gnupg git build-essential \
+-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
 +    && apt-get install -y --no-install-recommends curl ca-certificates gnupg git bash \
-     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
++    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
      && apt-get install -y --no-install-recommends nodejs \
      && npm install -g @openai/codex \
      && npm cache clean --force \
@@ -59,6 +60,7 @@ index 31ed23325..1b3a0a7bd 100644
 +COPY --from=governance /src/packages/codex-multi-auth /opt/aiwrapper/packages/codex-multi-auth
 +COPY extensions/aiwrapper-admin /opt/aiwrapper/extensions/aiwrapper-admin
 +COPY extensions/aiwrapper-runtime /opt/aiwrapper/extensions/aiwrapper-runtime
++COPY upstream/9router /opt/aiwrapper/upstream/9router
 +RUN mkdir -p /workspace /data /home/codex/.codex \
 +    && chown -R codex:codex /workspace /data /home/codex
 +ENV CODEX_PATH=codex CODEX_WORKDIR=/workspace CODEX_CONFIG_DIR=/home/codex/.codex

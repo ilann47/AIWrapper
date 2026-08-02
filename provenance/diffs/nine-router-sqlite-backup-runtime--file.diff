@@ -1,0 +1,59 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\lib\\db\\backup.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-runtime\\src\\nine-router-db-backup.mjs"
+index f3a7ed15c..468a8c45b 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\lib\\db\\backup.js"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-runtime\\src\\nine-router-db-backup.mjs"	
+@@ -1,26 +1,27 @@
+-// DB safety backups — taken ONLY before a schema change (see migrate.js).
+-//
+-// ⚠️ AGENT/DEV NOTES:
+-// - Backups are a best-effort safety net before schema migrations. There is NO
+-//   automated restore path; recovery is manual (copy a backup file back).
+-// - Backups intentionally EXCLUDE the `requestDetails` table (observability log,
+-//   auto-pruned, non-critical) so a multi-hundred-MB DB backs up as a few MB.
+-// - Only the newest KEEP_BACKUPS are kept; older ones are pruned automatically.
++// Adapted from 9router src/lib/db/backup.js.
++// The backup algorithm is preserved; only the data-directory boundary is
++// parameterized because AIWrapper owns a different SQLite database.
+ import fs from "node:fs";
+ import path from "node:path";
+-import { BACKUPS_DIR, ensureDirs } from "./paths.js";
+-import { timestampSlug, getAppVersion } from "./version.js";
++import { timestampSlug, getAppVersion } from "../../../upstream/9router/src/lib/db/version.js";
+ 
+ const KEEP_BACKUPS = 3;
+ 
+ // Tables excluded from safety backups (large, non-critical, reproducible).
+ const BACKUP_EXCLUDE_TABLES = ["requestDetails"];
+ 
++function backupsDir() {
++  const configured = process.env.AIWRAPPER_BACKUPS_DIR;
++  if (!configured) throw new Error("AIWRAPPER_BACKUPS_DIR is required");
++  return path.resolve(configured);
++}
++
+ export function makeBackupDir(label) {
+-  ensureDirs();
++  const root = backupsDir();
++  fs.mkdirSync(root, { recursive: true });
+   const ver = getAppVersion();
+   const slug = `${label}-${ver}-${timestampSlug()}`;
+-  const dir = path.join(BACKUPS_DIR, slug);
++  const dir = path.join(root, slug);
+   fs.mkdirSync(dir, { recursive: true });
+   return dir;
+ }
+@@ -63,10 +64,11 @@ export function backupDbLite(adapter, destDir, destName = "data.sqlite") {
+ }
+ 
+ export function pruneOldBackups() {
+-  if (!fs.existsSync(BACKUPS_DIR)) return;
+-  const entries = fs.readdirSync(BACKUPS_DIR, { withFileTypes: true })
++  const root = backupsDir();
++  if (!fs.existsSync(root)) return;
++  const entries = fs.readdirSync(root, { withFileTypes: true })
+     .filter((e) => e.isDirectory())
+-    .map((e) => ({ name: e.name, full: path.join(BACKUPS_DIR, e.name), mtime: fs.statSync(path.join(BACKUPS_DIR, e.name)).mtimeMs }))
++    .map((e) => ({ name: e.name, full: path.join(root, e.name), mtime: fs.statSync(path.join(root, e.name)).mtimeMs }))
+     .sort((a, b) => b.mtime - a.mtime);
+ 
+   for (const old of entries.slice(KEEP_BACKUPS)) {

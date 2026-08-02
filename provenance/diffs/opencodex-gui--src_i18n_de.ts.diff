@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\de.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\de.ts"
-index 5e85333ed..b6d27eb41 100644
+index 5e85333ed..7c0492723 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\de.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\de.ts"	
-@@ -10,6 +10,159 @@ export const de: Record<TKey, string> = {
+@@ -10,6 +10,162 @@ export const de: Record<TKey, string> = {
    "nav.subagents": "Sub-Agenten",
    "nav.logs": "Protokolle & Diagnose",
    "nav.usage": "Nutzung",
@@ -17,6 +17,9 @@ index 5e85333ed..b6d27eb41 100644
 +  "aiw.overview.notConnected": "Mit einem Administratorschlüssel verbinden, um den Betrieb anzuzeigen.",
 +  "aiw.overview.refresh": "Aktualisieren",
 +  "aiw.overview.refreshing": "Wird aktualisiert…",
++  "aiw.overview.backup": "Sicherung herunterladen",
++  "aiw.overview.backingUp": "Sicherung wird erstellt…",
++  "aiw.overview.backupReady": "Sicherung erstellt und heruntergeladen.",
 +  "aiw.overview.users": "Aktive Benutzer",
 +  "aiw.overview.conversations": "Unterhaltungen",
 +  "aiw.overview.active": "Aktive Anfragen",

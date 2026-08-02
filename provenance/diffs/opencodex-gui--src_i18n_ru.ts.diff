@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ru.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ru.ts"
-index e0ae4bdf4..e1e39d433 100644
+index e0ae4bdf4..5582dbce9 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ru.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ru.ts"	
-@@ -10,6 +10,159 @@ export const ru: Record<TKey, string> = {
+@@ -10,6 +10,162 @@ export const ru: Record<TKey, string> = {
    "nav.subagents": "Подагенты",
    "nav.logs": "Логи и отладка",
    "nav.usage": "Использование",
@@ -17,6 +17,9 @@ index e0ae4bdf4..e1e39d433 100644
 +  "aiw.overview.notConnected": "Подключитесь с ключом администратора для просмотра.",
 +  "aiw.overview.refresh": "Обновить",
 +  "aiw.overview.refreshing": "Обновление…",
++  "aiw.overview.backup": "Скачать резервную копию",
++  "aiw.overview.backingUp": "Создание резервной копии…",
++  "aiw.overview.backupReady": "Резервная копия создана и загружена.",
 +  "aiw.overview.users": "Активные пользователи",
 +  "aiw.overview.conversations": "Диалоги",
 +  "aiw.overview.active": "Активные запросы",

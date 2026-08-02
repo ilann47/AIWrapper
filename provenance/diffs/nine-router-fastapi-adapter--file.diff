@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\rtk\\index.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\nine_router.py"
-index dd1e50184..386ed6692 100644
+index dd1e50184..a9bc1dee0 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\rtk\\index.js"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\nine_router.py"	
-@@ -1,155 +1,34 @@
+@@ -1,155 +1,36 @@
 -// RTK port: compress tool_result content in LLM request bodies
 -// Injected at the top of translateRequest (before any format translation)
 -import { RAW_CAP, MIN_COMPRESS_SIZE } from "./constants.js";
@@ -160,13 +160,14 @@ index dd1e50184..386ed6692 100644
 -}
 +import asyncio
 +import json
++import os
 +from pathlib import Path
 +from typing import Any
 +
 +from ..config import settings
 +
 +
-+async def nine_router(operation: str, payload: dict[str, Any]) -> dict[str, Any]:
++async def nine_router(operation: str, payload: dict[str, Any], env_overrides: dict[str, str] | None = None) -> dict[str, Any]:
 +    """Run the MIT-licensed 9router module through its minimal Node boundary."""
 +    bridge = Path(settings.aiwrapper_nine_router_bridge).resolve()
 +    process = await asyncio.create_subprocess_exec(
@@ -176,6 +177,7 @@ index dd1e50184..386ed6692 100644
 +        stdin=asyncio.subprocess.PIPE,
 +        stdout=asyncio.subprocess.PIPE,
 +        stderr=asyncio.subprocess.PIPE,
++        env={**os.environ, **(env_overrides or {})},
 +    )
 +    stdout, stderr = await process.communicate(json.dumps(payload).encode("utf-8"))
 +    if process.returncode != 0:

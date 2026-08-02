@@ -1,5 +1,6 @@
 import asyncio
 import importlib
+import sqlite3
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -95,6 +96,37 @@ def test_browser_session_and_public_share_end_to_end(tmp_path, monkeypatch):
     assert client.get(f"/public/shares/{share_token}").status_code == 404
 
 
+def test_administrator_can_create_list_and_download_database_backup(tmp_path, monkeypatch):
+    store_module = importlib.import_module("app.aiwrapper.store")
+    auth_module = importlib.import_module("app.aiwrapper.auth")
+    router_module = importlib.import_module("app.aiwrapper.router")
+    database = tmp_path / "platform.sqlite"
+    local_store = AIWrapperStore(str(database))
+    administrator = local_store.create_user("Backup Admin", "admin", "backup-admin", str(tmp_path / ".codex-admin"))
+    monkeypatch.setattr(store_module, "store", local_store)
+    monkeypatch.setattr(auth_module, "store", local_store)
+    monkeypatch.setattr(router_module, "store", local_store)
+    monkeypatch.setattr(settings, "aiwrapper_database_path", str(database))
+    monkeypatch.setattr(settings, "aiwrapper_state_dir", str(tmp_path / "state"))
+    monkeypatch.setattr(settings, "aiwrapper_cors_origins", "http://127.0.0.1:8765")
+
+    origin = "http://127.0.0.1:8765"
+    client = TestClient(app)
+    login = client.post("/auth/sessions", headers={"Authorization": f"Bearer {administrator['apiKey']['secret']}", "Origin": origin})
+    headers = {"Authorization": f"Bearer {login.json()['accessToken']}", "Origin": origin}
+
+    created = client.post("/admin/backups", headers=headers)
+    assert created.status_code == 201
+    backup_id = created.json()["id"]
+    listed = client.get("/admin/backups", headers=headers)
+    assert listed.status_code == 200
+    assert listed.json()["data"][0]["id"] == backup_id
+    downloaded = client.get(f"/admin/backups/{backup_id}", headers=headers)
+    assert downloaded.status_code == 200
+    assert downloaded.headers["content-type"].startswith("application/vnd.sqlite3")
+    assert local_store.list_audit_events()[0]["action"] == "backup.created"
+
+
 def test_rotating_owner_key_updates_the_local_recovery_file(tmp_path):
     original_state_dir = settings.aiwrapper_state_dir
     original_owner_key = settings.aiwrapper_owner_key
@@ -155,3 +187,20 @@ def test_nine_router_bridge_executes_upstream_rtk():
 
     assert result["stats"]["bytesAfter"] < result["stats"]["bytesBefore"]
     assert len(result["body"]["messages"][0]["content"]) < len(noisy_log)
+
+
+def test_nine_router_backup_preserves_schema_and_data(tmp_path):
+    database = tmp_path / "source.sqlite"
+    with sqlite3.connect(database) as connection:
+        connection.execute("CREATE TABLE example (id INTEGER PRIMARY KEY, value TEXT NOT NULL)")
+        connection.execute("INSERT INTO example(value) VALUES ('preserved')")
+
+    result = asyncio.run(nine_router("backup", {
+        "databasePath": str(database),
+        "label": "test",
+    }, {"AIWRAPPER_BACKUPS_DIR": str(tmp_path / "backups")}))
+
+    backup = Path(result["backupPath"])
+    assert backup.is_file()
+    with sqlite3.connect(backup) as connection:
+        assert connection.execute("SELECT value FROM example").fetchone()[0] == "preserved"

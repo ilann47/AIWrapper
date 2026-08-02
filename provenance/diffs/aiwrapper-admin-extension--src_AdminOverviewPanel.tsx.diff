@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\api.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\AdminOverviewPanel.tsx"
-index ec1546551..7118403a4 100644
+index ec1546551..af927b821 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\api.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\AdminOverviewPanel.tsx"	
-@@ -1,213 +1,72 @@
+@@ -1,213 +1,104 @@
 -let installed = false;
 -/** Shared 401 refresh gate — concurrent waiters join one prompt / token resolution. */
 -let resolutionInFlight: Promise<string | null> | null = null;
@@ -90,8 +90,35 @@ index ec1546551..7118403a4 100644
 -    return contentMatch?.[1]?.trim() || null;
 -  }
 -  return null;
--}
--
++import { useState } from "react";
++import { useKeyedClientResource } from "../../../apps/opencodex-gui/src/client-resource";
++import { IconHardDrive } from "../../../apps/opencodex-gui/src/icons";
++import { useT } from "../../../apps/opencodex-gui/src/i18n/shared";
++import { useAIWrapper } from "./auth";
++
++type Totals = {
++  requests?: number;
++  totalTokens?: number;
++  failures?: number;
++  blocked?: number;
++};
++
++type AdminOverview = {
++  counts: { users: number; conversations: number; messages: number; shares: number };
++  runtime: { active: number; queued: number; limit: number };
++  usage: { totals?: Totals; latency?: { averageMs: number; p95Ms: number; measuredRequests: number } };
++  throughputPerMinute: number;
++  audit: { id: number; action: string; target_type?: string; target_id?: string; created_at: string }[];
++};
++
++type BackupRecord = { id: string; filename: string; sizeBytes: number; createdAt: string };
++
++function formatDuration(value?: number) {
++  if (value === undefined) return "—";
++  if (value < 1_000) return `${Math.round(value)} ms`;
++  return `${(value / 1_000).toFixed(1)} s`;
+ }
+ 
 -/**
 - * Silently renew the GUI session from a freshly served document. Loopback servers mint
 - * short-lived sessions into the HTML on every page load, so an expired session (5-minute
@@ -159,7 +186,43 @@ index ec1546551..7118403a4 100644
 -    if (prompted) {
 -      storeToken(prompted);
 -      return prompted;
--    }
++export default function AdminOverviewPanel() {
++  const t = useT();
++  const { client, principal } = useAIWrapper();
++  const [backupBusy, setBackupBusy] = useState(false);
++  const [backupStatus, setBackupStatus] = useState("");
++  const isAdministrator = principal?.role === "admin" || principal?.role === "owner";
++  const resource = useKeyedClientResource<AdminOverview>(
++    `aiwrapper-admin-overview:${principal?.userId ?? "anonymous"}`,
++    [client, principal?.userId],
++    async () => {
++      if (!client) throw new Error(t("aiw.overview.notConnected"));
++      return client.get<AdminOverview>("/admin/overview");
++    },
++    { enabled: Boolean(client && isAdministrator), pollMs: 10_000 },
++  );
++
++  if (!client || !isAdministrator) return null;
++  const totals = resource.data?.usage.totals;
++  const downloadBackup = async () => {
++    setBackupBusy(true);
++    setBackupStatus("");
++    try {
++      const backup = await client.send<BackupRecord>("/admin/backups", "POST");
++      const blob = await client.download(`/admin/backups/${encodeURIComponent(backup.id)}`);
++      const url = URL.createObjectURL(blob);
++      const anchor = document.createElement("a");
++      anchor.href = url;
++      anchor.download = backup.filename;
++      anchor.click();
++      URL.revokeObjectURL(url);
++      setBackupStatus(t("aiw.overview.backupReady"));
++      resource.refresh();
++    } catch (reason) {
++      setBackupStatus(reason instanceof Error ? reason.message : String(reason));
++    } finally {
++      setBackupBusy(false);
+     }
 -    promptCancelled = true;
 -    return null;
 -  })().finally(() => {
@@ -203,32 +266,9 @@ index ec1546551..7118403a4 100644
 -    const retry = await originalFetch(retryInput, retryInit);
 -    if (retry.status === 401) clearTokenIfCurrent(nextToken);
 -    return retry;
--  };
-+import { useKeyedClientResource } from "../../../apps/opencodex-gui/src/client-resource";
-+import { useT } from "../../../apps/opencodex-gui/src/i18n/shared";
-+import { useAIWrapper } from "./auth";
-+
-+type Totals = {
-+  requests?: number;
-+  totalTokens?: number;
-+  failures?: number;
-+  blocked?: number;
-+};
-+
-+type AdminOverview = {
-+  counts: { users: number; conversations: number; messages: number; shares: number };
-+  runtime: { active: number; queued: number; limit: number };
-+  usage: { totals?: Totals; latency?: { averageMs: number; p95Ms: number; measuredRequests: number } };
-+  throughputPerMinute: number;
-+  audit: { id: number; action: string; target_type?: string; target_id?: string; created_at: string }[];
-+};
-+
-+function formatDuration(value?: number) {
-+  if (value === undefined) return "—";
-+  if (value < 1_000) return `${Math.round(value)} ms`;
-+  return `${(value / 1_000).toFixed(1)} s`;
- }
- 
+   };
+-}
+-
 -/** Test-only: allow a fresh `installApiAuthFetch()` in the same module instance. */
 -export function resetApiAuthFetchForTests(): void {
 -  installed = false;
@@ -238,22 +278,6 @@ index ec1546551..7118403a4 100644
 -  resolutionInFlight = null;
 -  rawFetch = null;
 -  promptCancelled = false;
-+export default function AdminOverviewPanel() {
-+  const t = useT();
-+  const { client, principal } = useAIWrapper();
-+  const isAdministrator = principal?.role === "admin" || principal?.role === "owner";
-+  const resource = useKeyedClientResource<AdminOverview>(
-+    `aiwrapper-admin-overview:${principal?.userId ?? "anonymous"}`,
-+    [client, principal?.userId],
-+    async () => {
-+      if (!client) throw new Error(t("aiw.overview.notConnected"));
-+      return client.get<AdminOverview>("/admin/overview");
-+    },
-+    { enabled: Boolean(client && isAdministrator), pollMs: 10_000 },
-+  );
-+
-+  if (!client || !isAdministrator) return null;
-+  const totals = resource.data?.usage.totals;
 +  return (
 +    <section className="aiw-admin-overview" aria-labelledby="aiw-admin-overview-title">
 +      <div className="aiw-admin-overview__head">
@@ -261,11 +285,17 @@ index ec1546551..7118403a4 100644
 +          <h3 id="aiw-admin-overview-title">{t("aiw.overview.title")}</h3>
 +          <p>{t("aiw.overview.subtitle")}</p>
 +        </div>
-+        <button className="btn btn-sm" type="button" onClick={() => resource.refresh()} disabled={resource.loading}>
-+          {resource.loading ? t("aiw.overview.refreshing") : t("aiw.overview.refresh")}
-+        </button>
++        <div className="aiw-admin-overview__actions">
++          <button className="btn btn-sm" type="button" onClick={() => void downloadBackup()} disabled={backupBusy}>
++            <IconHardDrive /> {backupBusy ? t("aiw.overview.backingUp") : t("aiw.overview.backup")}
++          </button>
++          <button className="btn btn-sm" type="button" onClick={() => resource.refresh()} disabled={resource.loading}>
++            {resource.loading ? t("aiw.overview.refreshing") : t("aiw.overview.refresh")}
++          </button>
++        </div>
 +      </div>
 +      {resource.error ? <div className="notice notice-err" role="alert">{String(resource.error)}</div> : null}
++      {backupStatus ? <div className="notice" role="status">{backupStatus}</div> : null}
 +      <div className="stat-row">
 +        <div className="stat"><div className="label">{t("aiw.overview.users")}</div><div className="value">{resource.data?.counts.users ?? "—"}</div></div>
 +        <div className="stat"><div className="label">{t("aiw.overview.conversations")}</div><div className="value">{resource.data?.counts.conversations ?? "—"}</div></div>

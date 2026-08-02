@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\main.py" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"
-index 6647bca55..8a3d57744 100644
+index 6647bca55..da693a342 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\main.py"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"	
-@@ -1,268 +1,251 @@
+@@ -1,268 +1,278 @@
 -import json
 -import os
 +import re
@@ -59,11 +59,23 @@ index 6647bca55..8a3d57744 100644
 -
 -@app.post("/v1/chat/completions", dependencies=[Depends(rate_limiter), Depends(verify_api_key)])
 -async def chat_completions(req: ChatCompletionRequest):
+-    try:
+-        model_name, alias_effort = choose_model(req.model)
+-    except ValueError as e:
+-        raise HTTPException(
+-            status_code=404,
+-            detail={
+-                "message": str(e),
+-                "type": "invalid_request_error",
+-                "code": "model_not_found",
+-            },
+-        )
 +from typing import Any
 +
 +from fastapi import APIRouter, HTTPException, Request
-+from fastapi.responses import JSONResponse, PlainTextResponse
++from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 +
++from .backups import create_backup as create_database_backup, list_backups, resolve_backup
 +from .governance import governance
 +from .profiles import ensure_profile
 +from .store import store
@@ -117,7 +129,26 @@ index 6647bca55..8a3d57744 100644
 +        "days": summary_days["buckets"],
 +        "outcomes": summary_outcomes["buckets"],
 +    }
-+
+ 
+-    prompt, image_urls = build_prompt_and_images([m.dict() for m in req.messages])
+-    x_overrides = req.x_codex.dict(exclude_none=True) if req.x_codex else {}
+-    if alias_effort and "reasoning_effort" not in x_overrides:
+-        x_overrides["reasoning_effort"] = alias_effort
+-    overrides = x_overrides or None
+-
+-    # Safety gate: only allow danger-full-access when explicitly enabled
+-    if overrides and overrides.get("sandbox") == "danger-full-access":
+-        if not settings.allow_danger_full_access:
+-            raise HTTPException(status_code=400, detail="danger-full-access is disabled by server policy")
+-
+-    # Enforce local-only model provider when enabled
+-    if settings.local_only:
+-        try:
+-            assert_local_only_or_raise()
+-        except ValueError as e:
+-            raise HTTPException(status_code=400, detail=str(e))
+-
+-    image_paths: List[str] = []
 +
 +@router.get("/admin/users")
 +async def users(request: Request):
@@ -156,62 +187,6 @@ index 6647bca55..8a3d57744 100644
 +async def audit_events(request: Request):
 +    administrator(request)
      try:
--        model_name, alias_effort = choose_model(req.model)
--    except ValueError as e:
--        raise HTTPException(
--            status_code=404,
--            detail={
--                "message": str(e),
--                "type": "invalid_request_error",
--                "code": "model_not_found",
--            },
-+        limit = int(request.query_params.get("limit", "200"))
-+    except ValueError as error:
-+        raise HTTPException(status_code=400, detail="limit must be an integer") from error
-+    return {"data": store.list_audit_events(limit)}
-+
-+
-+@router.post("/admin/users", status_code=201)
-+async def create_user(request: Request):
-+    administrator(request)
-+    body = await request.json()
-+    name = str(body.get("name", "")).strip()
-+    if not name:
-+        raise HTTPException(status_code=400, detail="name is required")
-+    profile_name = re.sub(r"[^a-z0-9-]+", "-", name.lower()).strip("-")
-+    try:
-+        codex_home = await ensure_profile(profile_name)
-+        return store.create_user(
-+            name,
-+            str(body.get("role", "user")),
-+            profile_name,
-+            codex_home,
-+            int(body.get("quota5h", body.get("quota_5h", 100000))),
-+            int(body.get("quota7d", body.get("quota_7d", 500000))),
-         )
-+    except (RuntimeError, ValueError) as error:
-+        raise HTTPException(status_code=400, detail=str(error)) from error
- 
--    prompt, image_urls = build_prompt_and_images([m.dict() for m in req.messages])
--    x_overrides = req.x_codex.dict(exclude_none=True) if req.x_codex else {}
--    if alias_effort and "reasoning_effort" not in x_overrides:
--        x_overrides["reasoning_effort"] = alias_effort
--    overrides = x_overrides or None
--
--    # Safety gate: only allow danger-full-access when explicitly enabled
--    if overrides and overrides.get("sandbox") == "danger-full-access":
--        if not settings.allow_danger_full_access:
--            raise HTTPException(status_code=400, detail="danger-full-access is disabled by server policy")
--
--    # Enforce local-only model provider when enabled
--    if settings.local_only:
--        try:
--            assert_local_only_or_raise()
--        except ValueError as e:
--            raise HTTPException(status_code=400, detail=str(e))
--
--    image_paths: List[str] = []
--    try:
 -        for u in image_urls:
 -            image_paths.append(save_image_to_temp(u))
 -    except ValueError as e:
@@ -221,8 +196,22 @@ index 6647bca55..8a3d57744 100644
 -            except Exception:
 -                pass
 -        raise HTTPException(status_code=400, detail=str(e))
++        limit = int(request.query_params.get("limit", "200"))
++    except ValueError as error:
++        raise HTTPException(status_code=400, detail="limit must be an integer") from error
++    return {"data": store.list_audit_events(limit)}
++
++
++@router.get("/admin/backups")
++async def database_backups(request: Request):
++    administrator(request)
++    return {"data": list_backups()}
  
--    try:
++
++@router.post("/admin/backups", status_code=201)
++async def create_backup(request: Request):
++    user = administrator(request)
+     try:
 -        if req.stream:
 -            async def event_gen() -> AsyncIterator[bytes]:
 -                async for text in run_codex(prompt, overrides, image_paths, model=model_name):
@@ -258,19 +247,33 @@ index 6647bca55..8a3d57744 100644
 -                os.remove(p)
 -            except Exception:
 -                pass
-+@router.patch("/admin/users/{user_id}")
-+async def update_user(user_id: str, request: Request):
-+    administrator(request)
-+    body = await request.json()
-+    user = store.update_user(user_id, body)
-+    if not user:
-+        raise HTTPException(status_code=404, detail="User not found")
-+    return {key: value for key, value in user.items() if key != "api_key_hash"}
++        result = await create_database_backup()
++    except (OSError, RuntimeError, KeyError) as error:
++        raise HTTPException(status_code=500, detail=str(error)) from error
++    store.audit_event(user["id"], "backup.created", "database_backup", result["id"], {"sizeBytes": result["sizeBytes"]})
++    return result
++
  
++@router.get("/admin/backups/{backup_id}")
++async def download_backup(backup_id: str, request: Request):
++    administrator(request)
++    target = resolve_backup(backup_id)
++    if not target:
++        raise HTTPException(status_code=404, detail="Backup not found")
++    return FileResponse(target, media_type="application/vnd.sqlite3", filename=f"aiwrapper-{backup_id}.sqlite")
  
 -@app.post("/v1/responses", dependencies=[Depends(rate_limiter), Depends(verify_api_key)])
 -async def responses_endpoint(req: ResponsesRequest):
--    try:
++
++@router.post("/admin/users", status_code=201)
++async def create_user(request: Request):
++    administrator(request)
++    body = await request.json()
++    name = str(body.get("name", "")).strip()
++    if not name:
++        raise HTTPException(status_code=400, detail="name is required")
++    profile_name = re.sub(r"[^a-z0-9-]+", "-", name.lower()).strip("-")
+     try:
 -        model, alias_effort = choose_model(req.model)
 -    except ValueError as e:
 -        raise HTTPException(
@@ -280,13 +283,17 @@ index 6647bca55..8a3d57744 100644
 -                "type": "invalid_request_error",
 -                "code": "model_not_found",
 -            },
--        )
-+@router.patch("/admin/users/{user_id}/status", status_code=204)
-+async def update_user_status(user_id: str, request: Request):
-+    administrator(request)
-+    body = await request.json()
-+    if not store.update_user(user_id, {"status": body.get("status")}):
-+        raise HTTPException(status_code=404, detail="User not found")
++        codex_home = await ensure_profile(profile_name)
++        return store.create_user(
++            name,
++            str(body.get("role", "user")),
++            profile_name,
++            codex_home,
++            int(body.get("quota5h", body.get("quota_5h", 100000))),
++            int(body.get("quota7d", body.get("quota_7d", 500000))),
+         )
++    except (RuntimeError, ValueError) as error:
++        raise HTTPException(status_code=400, detail=str(error)) from error
  
 -    # Normalize input → messages
 -    try:
@@ -316,7 +323,29 @@ index 6647bca55..8a3d57744 100644
 -    codex_overrides = overrides or None
 -
 -    image_paths: List[str] = []
--    try:
++
++@router.patch("/admin/users/{user_id}")
++async def update_user(user_id: str, request: Request):
++    administrator(request)
++    body = await request.json()
++    user = store.update_user(user_id, body)
++    if not user:
++        raise HTTPException(status_code=404, detail="User not found")
++    return {key: value for key, value in user.items() if key != "api_key_hash"}
++
++
++@router.patch("/admin/users/{user_id}/status", status_code=204)
++async def update_user_status(user_id: str, request: Request):
++    administrator(request)
++    body = await request.json()
++    if not store.update_user(user_id, {"status": body.get("status")}):
++        raise HTTPException(status_code=404, detail="User not found")
++
++
++@router.post("/admin/users/{user_id}/keys", status_code=201)
++async def rotate_user_key(user_id: str, request: Request):
++    administrator(request)
+     try:
 -        for u in image_urls:
 -            image_paths.append(save_image_to_temp(u))
 -    except ValueError as e:
@@ -326,10 +355,85 @@ index 6647bca55..8a3d57744 100644
 -            except Exception:
 -                pass
 -        raise HTTPException(status_code=400, detail=str(e))
- 
-+@router.post("/admin/users/{user_id}/keys", status_code=201)
-+async def rotate_user_key(user_id: str, request: Request):
++        return store.rotate_key(user_id)
++    except ValueError as error:
++        raise HTTPException(status_code=404, detail=str(error)) from error
++
++
++@router.get("/admin/organizations")
++async def organizations(request: Request):
 +    administrator(request)
++    return {"data": store.list_organizations()}
++
++
++@router.post("/admin/organizations", status_code=201)
++async def create_organization(request: Request):
++    administrator(request)
++    body = await request.json()
++    name = str(body.get("name", "")).strip()
++    if not name:
++        raise HTTPException(status_code=400, detail="name is required")
++    return store.create_organization(name)
++
++
++@router.get("/v1/sessions")
++async def sessions(request: Request):
++    user = principal(request)
++    query = request.query_params.get("q", "")
++    favorites_only = request.query_params.get("favorite", "").lower() in {"1", "true", "yes"}
++    return {"data": store.list_sessions(user["id"], query, favorites_only)}
++
++
++@router.get("/v1/sessions/{session_id}")
++async def get_session(session_id: str, request: Request):
++    user = principal(request)
++    result = store.get_session(user["id"], session_id)
++    if not result:
++        raise HTTPException(status_code=404, detail="Session not found")
++    return result
++
+ 
++@router.delete("/v1/sessions/{session_id}", status_code=204)
++async def archive_session(session_id: str, request: Request):
++    user = principal(request)
++    store.archive_session(user["id"], session_id)
++
++
++@router.patch("/v1/sessions/{session_id}")
++async def update_session(session_id: str, request: Request):
++    user = principal(request)
++    result = store.update_session(user["id"], session_id, await request.json())
++    if not result:
++        raise HTTPException(status_code=404, detail="Session not found")
++    return result
++
++
++@router.get("/v1/sessions/{session_id}/export")
++async def export_session(session_id: str, request: Request):
++    user = principal(request)
++    result = store.get_session(user["id"], session_id)
++    if not result:
++        raise HTTPException(status_code=404, detail="Session not found")
++    if request.query_params.get("format", "markdown") == "json":
++        return JSONResponse(result)
++    lines = [f"# {result['session']['title']}", ""]
++    for message in store.session_messages(session_id):
++        lines.extend([f"## {'You' if message['role'] == 'user' else 'Codex'}", "", message["content"], ""])
++    return PlainTextResponse("\n".join(lines), media_type="text/markdown", headers={
++        "Content-Disposition": f"attachment; filename=aiwrapper-{session_id}.md"
++    })
++
++
++@router.get("/v1/shares")
++async def shares(request: Request):
++    user = principal(request)
++    return {"data": store.list_shares(user["id"])}
++
++
++@router.post("/v1/shares", status_code=201)
++async def create_share(request: Request):
++    user = principal(request)
++    body = await request.json()
      try:
 -        if req.stream:
 -            async def event_gen() -> AsyncIterator[bytes]:
@@ -410,86 +514,6 @@ index 6647bca55..8a3d57744 100644
 -                os.remove(p)
 -            except Exception:
 -                pass
-+        return store.rotate_key(user_id)
-+    except ValueError as error:
-+        raise HTTPException(status_code=404, detail=str(error)) from error
-+
-+
-+@router.get("/admin/organizations")
-+async def organizations(request: Request):
-+    administrator(request)
-+    return {"data": store.list_organizations()}
-+
-+
-+@router.post("/admin/organizations", status_code=201)
-+async def create_organization(request: Request):
-+    administrator(request)
-+    body = await request.json()
-+    name = str(body.get("name", "")).strip()
-+    if not name:
-+        raise HTTPException(status_code=400, detail="name is required")
-+    return store.create_organization(name)
-+
-+
-+@router.get("/v1/sessions")
-+async def sessions(request: Request):
-+    user = principal(request)
-+    query = request.query_params.get("q", "")
-+    favorites_only = request.query_params.get("favorite", "").lower() in {"1", "true", "yes"}
-+    return {"data": store.list_sessions(user["id"], query, favorites_only)}
-+
-+
-+@router.get("/v1/sessions/{session_id}")
-+async def get_session(session_id: str, request: Request):
-+    user = principal(request)
-+    result = store.get_session(user["id"], session_id)
-+    if not result:
-+        raise HTTPException(status_code=404, detail="Session not found")
-+    return result
-+
-+
-+@router.delete("/v1/sessions/{session_id}", status_code=204)
-+async def archive_session(session_id: str, request: Request):
-+    user = principal(request)
-+    store.archive_session(user["id"], session_id)
-+
-+
-+@router.patch("/v1/sessions/{session_id}")
-+async def update_session(session_id: str, request: Request):
-+    user = principal(request)
-+    result = store.update_session(user["id"], session_id, await request.json())
-+    if not result:
-+        raise HTTPException(status_code=404, detail="Session not found")
-+    return result
-+
-+
-+@router.get("/v1/sessions/{session_id}/export")
-+async def export_session(session_id: str, request: Request):
-+    user = principal(request)
-+    result = store.get_session(user["id"], session_id)
-+    if not result:
-+        raise HTTPException(status_code=404, detail="Session not found")
-+    if request.query_params.get("format", "markdown") == "json":
-+        return JSONResponse(result)
-+    lines = [f"# {result['session']['title']}", ""]
-+    for message in store.session_messages(session_id):
-+        lines.extend([f"## {'You' if message['role'] == 'user' else 'Codex'}", "", message["content"], ""])
-+    return PlainTextResponse("\n".join(lines), media_type="text/markdown", headers={
-+        "Content-Disposition": f"attachment; filename=aiwrapper-{session_id}.md"
-+    })
-+
-+
-+@router.get("/v1/shares")
-+async def shares(request: Request):
-+    user = principal(request)
-+    return {"data": store.list_shares(user["id"])}
-+
-+
-+@router.post("/v1/shares", status_code=201)
-+async def create_share(request: Request):
-+    user = principal(request)
-+    body = await request.json()
-+    try:
 +        expires = body.get("expiresInHours")
 +        expires_in_hours = int(expires) if expires is not None else None
 +        if expires_in_hours is not None and not 1 <= expires_in_hours <= 720:

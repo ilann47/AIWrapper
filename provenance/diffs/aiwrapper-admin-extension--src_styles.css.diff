@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\api.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\styles.css"
-index ec1546551..84b817e08 100644
+index ec1546551..1833a8c18 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\api.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\styles.css"	
-@@ -1,213 +1,38 @@
+@@ -1,213 +1,39 @@
 -let installed = false;
 -/** Shared 401 refresh gate — concurrent waiters join one prompt / token resolution. */
 -let resolutionInFlight: Promise<string | null> | null = null;
@@ -235,6 +235,7 @@ index ec1546551..84b817e08 100644
 +.aiw-admin-overview__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
 +.aiw-admin-overview__head h3, .aiw-admin-overview__head p { margin: 0; }
 +.aiw-admin-overview__head p { margin-top: 4px; color: var(--muted); }
++.aiw-admin-overview__actions { display: flex; gap: var(--space-2); flex-wrap: wrap; justify-content: flex-end; }
 +.aiw-audit-strip h4 { margin: 0 0 var(--space-2); }
 +.aiw-quota-input { width: 112px; }
 +@media (max-width: 700px) {

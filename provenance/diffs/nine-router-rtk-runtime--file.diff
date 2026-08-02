@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\rtk\\index.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-runtime\\src\\nine-router-bridge.mjs"
-index dd1e50184..821e93bcb 100644
+index dd1e50184..9fa6aa6b2 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\rtk\\index.js"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-runtime\\src\\nine-router-bridge.mjs"	
-@@ -1,155 +1,29 @@
+@@ -1,155 +1,56 @@
 -// RTK port: compress tool_result content in LLM request bodies
 -// Injected at the top of translateRequest (before any format translation)
 -import { RAW_CAP, MIN_COMPRESS_SIZE } from "./constants.js";
@@ -50,7 +50,47 @@ index dd1e50184..821e93bcb 100644
 -      if (msg.role === "tool" && typeof msg.content === "string") {
 -        msg.content = compressText(msg.content, stats, "openai-tool");
 -        continue;
--      }
++#!/usr/bin/env node
++/**
++ * Process boundary for unmodified 9router runtime modules.
++ * Compression and capability detection execute directly from upstream/9router.
++ */
++import { compressMessages, formatRtkLog } from "../../../upstream/9router/open-sse/rtk/index.js";
++import { detectRequiredCapabilities } from "../../../upstream/9router/open-sse/services/combo.js";
++import { backupDbLite, makeBackupDir, pruneOldBackups } from "./nine-router-db-backup.mjs";
++
++const operation = process.argv[2];
++const input = JSON.parse(await new Promise((resolve, reject) => {
++  let body = "";
++  process.stdin.setEncoding("utf8");
++  process.stdin.on("data", chunk => { body += chunk; });
++  process.stdin.on("end", () => resolve(body || "{}"));
++  process.stdin.on("error", reject);
++}));
++
++let result;
++if (operation === "compress") {
++  const body = structuredClone(input.body ?? {});
++  const stats = compressMessages(body, input.enabled !== false);
++  result = { body, stats, log: formatRtkLog(stats) };
++} else if (operation === "capabilities") {
++  result = { required: [...detectRequiredCapabilities(input.body ?? {})] };
++} else if (operation === "backup") {
++  const { DatabaseSync } = await import("node:sqlite");
++  const database = new DatabaseSync(input.databasePath);
++  const adapter = {
++    exec(sql) { database.exec(sql); },
++    all(sql) { return database.prepare(sql).all(); },
++    transaction(callback) {
++      database.exec("BEGIN IMMEDIATE");
++      try {
++        const value = callback();
++        database.exec("COMMIT");
++        return value;
++      } catch (error) {
++        try { database.exec("ROLLBACK"); } catch {}
++        throw error;
+       }
 -
 -      if (!Array.isArray(msg.content)) continue;
 -
@@ -90,38 +130,14 @@ index dd1e50184..821e93bcb 100644
 -    return null;
 -  }
 -  return stats;
-+#!/usr/bin/env node
-+/**
-+ * Process boundary for unmodified 9router runtime modules.
-+ * Compression and capability detection execute directly from upstream/9router.
-+ */
-+import { compressMessages, formatRtkLog } from "../../../upstream/9router/open-sse/rtk/index.js";
-+import { detectRequiredCapabilities } from "../../../upstream/9router/open-sse/services/combo.js";
-+
-+const operation = process.argv[2];
-+const input = JSON.parse(await new Promise((resolve, reject) => {
-+  let body = "";
-+  process.stdin.setEncoding("utf8");
-+  process.stdin.on("data", chunk => { body += chunk; });
-+  process.stdin.on("end", () => resolve(body || "{}"));
-+  process.stdin.on("error", reject);
-+}));
-+
-+let result;
-+if (operation === "compress") {
-+  const body = structuredClone(input.body ?? {});
-+  const stats = compressMessages(body, input.enabled !== false);
-+  result = { body, stats, log: formatRtkLog(stats) };
-+} else if (operation === "capabilities") {
-+  result = { required: [...detectRequiredCapabilities(input.body ?? {})] };
-+} else {
-+  throw new Error(`Unsupported 9router operation: ${operation}`);
- }
- 
+-}
+-
 -// Compress Kiro format: conversationState.history[].userInputMessage.userInputMessageContext.toolResults[].content[].text
 -function compressKiroFormat(body, enabled) {
 -  const stats = { bytesBefore: 0, bytesAfter: 0, hits: [] };
--  try {
++    },
++  };
+   try {
 -    const state = body.conversationState;
 -    const allMessages = [...(Array.isArray(state?.history) ? state.history : [])];
 -    if (state?.currentMessage) allMessages.push(state.currentMessage);
@@ -169,13 +185,21 @@ index dd1e50184..821e93bcb 100644
 -  if (!out || out.length === 0 || out.length >= bytesIn) {
 -    stats.bytesAfter += bytesIn;
 -    return text;
--  }
++    const directory = makeBackupDir(input.label || "manual");
++    const backupPath = backupDbLite(adapter, directory, "aiwrapper.sqlite");
++    pruneOldBackups();
++    result = { directory, backupPath };
++  } finally {
++    database.close();
+   }
 -
 -  stats.bytesAfter += out.length;
 -  stats.hits.push({ shape, filter: fn.filterName || fn.name, saved: bytesIn - out.length });
 -  return out;
--}
--
++} else {
++  throw new Error(`Unsupported 9router operation: ${operation}`);
+ }
+ 
 -// Convenience: format a log line from stats
 -export function formatRtkLog(stats) {
 -  if (!stats || !stats.hits || stats.hits.length === 0) return null;

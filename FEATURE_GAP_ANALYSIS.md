@@ -24,6 +24,7 @@ Audit date: 2026-08-01. Exact line counts, reuse percentages and unified diffs a
 | 9router | Required capability detection | No | Yes | Yes | `open-sse/services/combo.js` → same bridge | JSON operation selector | wired |
 | 9router | Chat attachments, IDs, dates, content normalization | Partial | Yes | Yes | `BasicChatPageClient.js` → `nine-router-chat-core.ts` | Type contracts and gateway binding | wired |
 | 9router | Usage overview cards/table | Partial | Yes | Yes | `OverviewCards.js`/`UsageTable.js` → `nine-router-usage.tsx` | OpenCodex tokens and authenticated ledger | wired |
+| 9router | Lightweight SQLite safety backup and bounded retention | No | Yes | Yes | `src/lib/db/backup.js` → `nine-router-db-backup.mjs` | Parameterized AIWrapper state path; original ATTACH copy and retention preserved | wired |
 | 9router | Provider pools/OAuth/fallback | Yes via OpenCodex | Yes | Yes, equivalent mature upstream runtime | `upstream/opencodex/src/server/` executed through `opencodex.py` | Avoid a conflicting second router while exposing the same multi-provider capability through the primary OpenCodex runtime | wired |
 | 9router | Grouping by model/day/outcome | Partial | Yes | Yes | codex-multi-auth summarizer + 9router-style UI | Existing bridge gained a grouping input | wired |
 | Odysseus | Tauri shell, terminal and file tools | No | Conditional | No | None | AGPL and incompatible desktop topology | blocked |
@@ -51,6 +52,7 @@ Audit date: 2026-08-01. Exact line counts, reuse percentages and unified diffs a
 - OpenCodex's memory-only, origin-bound GUI-session architecture now protects AIWrapper users: the individual key is exchanged once, access credentials stay in memory, an HttpOnly refresh is rotated, and user disable/key rotation revokes active sessions.
 - Conversation sharing is complete rather than decorative: public read-only routes, one-time secret links, hashed persistence, 1/7/30-day expiration, owner revocation and a themed public transcript are wired end to end.
 - SQLite startup migrations now add indexed auth, audit, message, session and share paths. Security/governance events are persisted and exposed to administrators in the existing dashboard extension.
+- The administrator dashboard now invokes 9router's original ATTACH-based lightweight SQLite backup, retains the newest three copies and downloads a portable database file. The runtime image includes the actual 9router source tree and Node 22 needed by the SQLite bridge.
 
 ## Parity audit
 

@@ -1,12 +1,13 @@
 import asyncio
 import json
+import os
 from pathlib import Path
 from typing import Any
 
 from ..config import settings
 
 
-async def nine_router(operation: str, payload: dict[str, Any]) -> dict[str, Any]:
+async def nine_router(operation: str, payload: dict[str, Any], env_overrides: dict[str, str] | None = None) -> dict[str, Any]:
     """Run the MIT-licensed 9router module through its minimal Node boundary."""
     bridge = Path(settings.aiwrapper_nine_router_bridge).resolve()
     process = await asyncio.create_subprocess_exec(
@@ -16,6 +17,7 @@ async def nine_router(operation: str, payload: dict[str, Any]) -> dict[str, Any]
         stdin=asyncio.subprocess.PIPE,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
+        env={**os.environ, **(env_overrides or {})},
     )
     stdout, stderr = await process.communicate(json.dumps(payload).encode("utf-8"))
     if process.returncode != 0:

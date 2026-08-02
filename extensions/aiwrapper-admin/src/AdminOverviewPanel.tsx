@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { useKeyedClientResource } from "../../../apps/opencodex-gui/src/client-resource";
+import { IconHardDrive } from "../../../apps/opencodex-gui/src/icons";
 import { useT } from "../../../apps/opencodex-gui/src/i18n/shared";
 import { useAIWrapper } from "./auth";
 
@@ -17,6 +19,8 @@ type AdminOverview = {
   audit: { id: number; action: string; target_type?: string; target_id?: string; created_at: string }[];
 };
 
+type BackupRecord = { id: string; filename: string; sizeBytes: number; createdAt: string };
+
 function formatDuration(value?: number) {
   if (value === undefined) return "—";
   if (value < 1_000) return `${Math.round(value)} ms`;
@@ -26,6 +30,8 @@ function formatDuration(value?: number) {
 export default function AdminOverviewPanel() {
   const t = useT();
   const { client, principal } = useAIWrapper();
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [backupStatus, setBackupStatus] = useState("");
   const isAdministrator = principal?.role === "admin" || principal?.role === "owner";
   const resource = useKeyedClientResource<AdminOverview>(
     `aiwrapper-admin-overview:${principal?.userId ?? "anonymous"}`,
@@ -39,6 +45,26 @@ export default function AdminOverviewPanel() {
 
   if (!client || !isAdministrator) return null;
   const totals = resource.data?.usage.totals;
+  const downloadBackup = async () => {
+    setBackupBusy(true);
+    setBackupStatus("");
+    try {
+      const backup = await client.send<BackupRecord>("/admin/backups", "POST");
+      const blob = await client.download(`/admin/backups/${encodeURIComponent(backup.id)}`);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = backup.filename;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      setBackupStatus(t("aiw.overview.backupReady"));
+      resource.refresh();
+    } catch (reason) {
+      setBackupStatus(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setBackupBusy(false);
+    }
+  };
   return (
     <section className="aiw-admin-overview" aria-labelledby="aiw-admin-overview-title">
       <div className="aiw-admin-overview__head">
@@ -46,11 +72,17 @@ export default function AdminOverviewPanel() {
           <h3 id="aiw-admin-overview-title">{t("aiw.overview.title")}</h3>
           <p>{t("aiw.overview.subtitle")}</p>
         </div>
-        <button className="btn btn-sm" type="button" onClick={() => resource.refresh()} disabled={resource.loading}>
-          {resource.loading ? t("aiw.overview.refreshing") : t("aiw.overview.refresh")}
-        </button>
+        <div className="aiw-admin-overview__actions">
+          <button className="btn btn-sm" type="button" onClick={() => void downloadBackup()} disabled={backupBusy}>
+            <IconHardDrive /> {backupBusy ? t("aiw.overview.backingUp") : t("aiw.overview.backup")}
+          </button>
+          <button className="btn btn-sm" type="button" onClick={() => resource.refresh()} disabled={resource.loading}>
+            {resource.loading ? t("aiw.overview.refreshing") : t("aiw.overview.refresh")}
+          </button>
+        </div>
       </div>
       {resource.error ? <div className="notice notice-err" role="alert">{String(resource.error)}</div> : null}
+      {backupStatus ? <div className="notice" role="status">{backupStatus}</div> : null}
       <div className="stat-row">
         <div className="stat"><div className="label">{t("aiw.overview.users")}</div><div className="value">{resource.data?.counts.users ?? "—"}</div></div>
         <div className="stat"><div className="label">{t("aiw.overview.conversations")}</div><div className="value">{resource.data?.counts.conversations ?? "—"}</div></div>

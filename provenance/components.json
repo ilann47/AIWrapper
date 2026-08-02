@@ -409,6 +409,40 @@
       "parityAudit": { "retained": ["Original RTK remains the only compression implementation"], "lost": [], "decision": "Python owns process lifecycle only and delegates all compression behavior." }
     },
     {
+      "id": "nine-router-sqlite-backup-runtime",
+      "functionality": "Consistent lightweight SQLite backup with bounded retention, exposed as an administrator download",
+      "project": "decolua/9router",
+      "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/9router/src/lib/db/backup.js",
+      "destination": "extensions/aiwrapper-runtime/src/nine-router-db-backup.mjs",
+      "incompatibility": "9router binds its backup paths to a Next.js alias and its own DATA_DIR/schema. AIWrapper has a FastAPI-owned SQLite file and a separately mounted state directory, so direct import fails under plain Node and would back up the wrong database. The backup algorithm, excluded-table policy and three-copy retention are preserved; only the path boundary is parameterized.",
+      "parityAudit": {
+        "retained": ["ATTACH-based consistent table copy", "Schema and row preservation", "Large reproducible table exclusion", "Three-backup retention", "Timestamped version-labelled directory"],
+        "lost": ["Automatic invocation during 9router schema migration"],
+        "decision": "Invoke the preserved algorithm on demand through the existing 9router process bridge and expose the resulting SQLite file to administrators."
+      }
+    },
+    {
+      "id": "nine-router-backup-fastapi-adapter",
+      "functionality": "FastAPI administration boundary for creating, listing and downloading 9router-format SQLite safety backups",
+      "project": "decolua/9router",
+      "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/9router/src/lib/db/backup.js",
+      "destination": "services/codex-wrapper/app/aiwrapper/backups.py",
+      "incompatibility": "The upstream module is JavaScript and expects 9router's synchronous adapter and filesystem layout. FastAPI must authorize the administrator, launch the original JavaScript algorithm, validate its returned path and stream the file over HTTP; those cross-runtime responsibilities do not exist upstream.",
+      "parityAudit": {
+        "retained": ["Original backup is the sole database-copy implementation", "Original retention remains authoritative"],
+        "lost": [],
+        "decision": "Keep Python limited to process lifecycle, path containment, metadata and HTTP delivery."
+      }
+    },
+    {
       "id": "aiwrapper-admin-extension",
       "functionality": "Individual-key gate, AIWrapper API client and page integration frame",
       "project": "lidge-jun/OpenCodex (reviewed integration boundary)",

@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\zh.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\zh.ts"
-index 3a50a7658..220d04140 100644
+index 3a50a7658..0b99ba8c4 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\zh.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\zh.ts"	
-@@ -10,6 +10,159 @@ export const zh: Record<TKey, string> = {
+@@ -10,6 +10,162 @@ export const zh: Record<TKey, string> = {
    "nav.subagents": "子代理",
    "nav.logs": "日志与调试",
    "nav.usage": "用量",
@@ -17,6 +17,9 @@ index 3a50a7658..220d04140 100644
 +  "aiw.overview.notConnected": "请使用管理员密钥连接以查看运行状况。",
 +  "aiw.overview.refresh": "刷新",
 +  "aiw.overview.refreshing": "刷新中…",
++  "aiw.overview.backup": "下载备份",
++  "aiw.overview.backingUp": "正在创建备份…",
++  "aiw.overview.backupReady": "备份已创建并下载。",
 +  "aiw.overview.users": "活跃用户",
 +  "aiw.overview.conversations": "对话",
 +  "aiw.overview.active": "活动请求",

@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\en.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\en.ts"
-index 26aa5f653..ebdada388 100644
+index 26aa5f653..cc7df140b 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\en.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\en.ts"	
-@@ -10,6 +10,159 @@ export const en = {
+@@ -10,6 +10,162 @@ export const en = {
    "nav.subagents": "Subagents",
    "nav.logs": "Logs & Debug",
    "nav.usage": "Usage",
@@ -17,6 +17,9 @@ index 26aa5f653..ebdada388 100644
 +  "aiw.overview.notConnected": "Connect with an administrator key to view operations.",
 +  "aiw.overview.refresh": "Refresh",
 +  "aiw.overview.refreshing": "Refreshing…",
++  "aiw.overview.backup": "Download backup",
++  "aiw.overview.backingUp": "Creating backup…",
++  "aiw.overview.backupReady": "Backup created and downloaded.",
 +  "aiw.overview.users": "Active users",
 +  "aiw.overview.conversations": "Conversations",
 +  "aiw.overview.active": "Active requests",
