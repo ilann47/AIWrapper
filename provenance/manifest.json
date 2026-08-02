@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-02T08:34:47.428Z",
+  "generatedAt": "2026-08-02T08:40:28.675Z",
   "generatorUpstream": {
     "project": "ndycode/codex-multi-auth",
     "commit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
@@ -26870,7 +26870,7 @@
     },
     {
       "id": "provenance-generator",
-      "functionality": "Pairwise source/destination provenance manifest, metrics and unified diff generation",
+      "functionality": "Pairwise and component-aggregate source/destination provenance manifest, metrics, evidence report and unified diff generation",
       "project": "ndycode/codex-multi-auth",
       "classification": "adapter",
       "referenceOnly": false,
@@ -26879,10 +26879,11 @@
         "retained": [
           "Declarative manifest",
           "SHA-256 evidence",
-          "fail-closed file traversal"
+          "fail-closed file traversal",
+          "Per-file origin and destination evidence"
         ],
         "lost": [],
-        "decision": "The upstream manifest architecture is preserved and extended with required pairwise evidence rather than replaced."
+        "decision": "The upstream manifest architecture is preserved and extended with required pairwise evidence, component-level aggregate metrics and direct links to every unified diff rather than replaced."
       },
       "files": [
         {
@@ -26891,16 +26892,16 @@
           "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
           "license": "MIT",
           "sourceSha256": "213412a53958eec4becde6126ea6ed3f240c381538ed611995bc93aeeb03d693",
-          "sha256": "c1850608ceed2979531b392da8e08d95d8539328eb89f765f8461d52cd428a9c",
+          "sha256": "5f9d68411a4021a1bb9b7529cd8bce98dad39b2da230aeb26051118fc47fbf96",
           "diff": "provenance/diffs/provenance-generator--file.diff",
-          "diffSha256": "4080babff9a28e065c7637380ac0d0b12f0f68b8dc334ede05a61bfcb148eab0",
+          "diffSha256": "7b68d5d7d002e5d4b3a2f6918ac902e9ba5daf959ddaa80ad931f77f92c41ee6",
           "lines": {
             "source": 97,
-            "destination": 120,
+            "destination": 137,
             "preserved": 13,
             "changed": 84,
             "removed": 0,
-            "added": 23,
+            "added": 40,
             "reusePercent": 13.4
           }
         }

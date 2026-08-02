@@ -1,6 +1,6 @@
 # Feature gap analysis
 
-Audit date: 2026-08-01. Exact line counts, reuse percentages and unified diffs are generated from `provenance/components.json` into `docs/generated/PROVENANCE_EVIDENCE.md`.
+Audit date: 2026-08-02. The comparison below records product decisions. The generated [component-level proof](docs/generated/PROVENANCE_EVIDENCE.md#component-summary) records, for every delivered functionality, its project, source and destination files, upstream commit, license, literal classification, preserved/changed/removed/added lines, reuse percentage and links to the exact unified diffs. It is generated from `provenance/components.json` by `pnpm provenance:update` and verified fail-closed by `pnpm provenance:verify`.
 
 ## Sources and licensing
 

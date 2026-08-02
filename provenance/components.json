@@ -1021,7 +1021,7 @@
     },
     {
       "id": "provenance-generator",
-      "functionality": "Pairwise source/destination provenance manifest, metrics and unified diff generation",
+      "functionality": "Pairwise and component-aggregate source/destination provenance manifest, metrics, evidence report and unified diff generation",
       "project": "ndycode/codex-multi-auth",
       "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
       "license": "MIT",
@@ -1031,9 +1031,9 @@
       "destination": "scripts/provenance/update.mjs",
       "incompatibility": "The upstream generator verifies vendored SHA-256 values but does not compare arbitrary origin/destination pairs or emit line metrics and unified diffs required by AIWrapper.",
       "parityAudit": {
-        "retained": ["Declarative manifest", "SHA-256 evidence", "fail-closed file traversal"],
+        "retained": ["Declarative manifest", "SHA-256 evidence", "fail-closed file traversal", "Per-file origin and destination evidence"],
         "lost": [],
-        "decision": "The upstream manifest architecture is preserved and extended with required pairwise evidence rather than replaced."
+        "decision": "The upstream manifest architecture is preserved and extended with required pairwise evidence, component-level aggregate metrics and direct links to every unified diff rather than replaced."
       }
     },
     {
