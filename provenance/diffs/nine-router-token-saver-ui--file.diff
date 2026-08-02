@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\app\\(dashboard)\\dashboard\\token-saver\\TokenSaverClient.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\TokenSaverPanel.tsx"
-index 4e641f3da..1f7b20b9a 100644
+index 4e641f3da..252994fde 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\app\\(dashboard)\\dashboard\\token-saver\\TokenSaverClient.js"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\TokenSaverPanel.tsx"	
-@@ -1,1015 +1,75 @@
+@@ -1,1015 +1,137 @@
 -"use client";
 -
 -import { useState, useEffect, useCallback, useRef } from "react";
@@ -20,14 +20,21 @@ index 4e641f3da..1f7b20b9a 100644
 +import { useKeyedClientResource } from "../../../apps/opencodex-gui/src/client-resource";
 +import { IconSparkle } from "../../../apps/opencodex-gui/src/icons";
 +import { useT } from "../../../apps/opencodex-gui/src/i18n/shared";
-+import { Switch } from "../../../apps/opencodex-gui/src/ui";
++import { Select, Switch } from "../../../apps/opencodex-gui/src/ui";
 +import { useAIWrapper } from "./auth";
 +
 +type TokenSaverSettings = {
 +  rtkEnabled: boolean;
 +  environmentEnabled: boolean;
 +  effectiveEnabled: boolean;
++  cavemanEnabled: boolean;
++  cavemanLevel: string;
++  ponytailEnabled: boolean;
++  ponytailLevel: string;
 +};
++
++const CAVEMAN_LEVELS = ["lite", "full", "ultra", "wenyan-lite", "wenyan", "wenyan-ultra"];
++const PONYTAIL_LEVELS = ["lite", "full", "ultra"];
 +
 +export default function TokenSaverPanel() {
 +  const t = useT();
@@ -61,10 +68,10 @@ index 4e641f3da..1f7b20b9a 100644
 -  const [kompress, setKompress] = useState(true);
 -  const [restartingProxy, setRestartingProxy] = useState(false);
 -  const logPollRef = useRef(null);
--  const [cavemanEnabled, setCavemanEnabled] = useState(false);
--  const [cavemanLevel, setCavemanLevel] = useState("full");
--  const [ponytailEnabled, setPonytailEnabled] = useState(false);
--  const [ponytailLevel, setPonytailLevel] = useState("full");
+   const [cavemanEnabled, setCavemanEnabled] = useState(false);
+   const [cavemanLevel, setCavemanLevel] = useState("full");
+   const [ponytailEnabled, setPonytailEnabled] = useState(false);
+   const [ponytailLevel, setPonytailLevel] = useState("full");
 -  const [pxpipeEnabled, setPxpipeEnabled] = useState(false);
 -  const [pxpipeMinChars, setPxpipeMinChars] = useState(25000);
 -  const [pxpipeStatus, setPxpipeStatus] = useState({
@@ -297,9 +304,7 @@ index 4e641f3da..1f7b20b9a 100644
 -      setExtrasActionLoading(false);
 -    }
 -  }, [pendingExtras, startLogPolling, stopLogPolling]);
-+    if (resource.data) setRtkEnabledState(resource.data.rtkEnabled);
-+  }, [resource.data]);
- 
+-
 -  const removeExtraConfirmed = useCallback(async (extra) => {
 -    setRemovingExtra(extra);
 -    setExtrasActionError("");
@@ -324,8 +329,7 @@ index 4e641f3da..1f7b20b9a 100644
 -      setRemovingExtra(null);
 -    }
 -  }, [startLogPolling, stopLogPolling]);
-+  if (!client || !isAdministrator) return null;
- 
+-
 -  const handleInstallExtras = useCallback(() => {
 -    if (pendingExtras.length === 0) return;
 -    // Warn about the heavy ~1GB torch download before installing [ml].
@@ -338,10 +342,17 @@ index 4e641f3da..1f7b20b9a 100644
 -        onConfirm: installExtrasConfirmed,
 -      });
 -      return;
--    }
++    if (resource.data) {
++      setRtkEnabledState(resource.data.rtkEnabled);
++      setCavemanEnabled(resource.data.cavemanEnabled);
++      setCavemanLevel(resource.data.cavemanLevel);
++      setPonytailEnabled(resource.data.ponytailEnabled);
++      setPonytailLevel(resource.data.ponytailLevel);
+     }
 -    installExtrasConfirmed();
 -  }, [pendingExtras, installExtrasConfirmed]);
--
++  }, [resource.data]);
+ 
 -  const handleRemoveExtra = useCallback((extra) => {
 -    setExtrasConfirm({
 -      title: `Remove [${extra}]`,
@@ -351,7 +362,8 @@ index 4e641f3da..1f7b20b9a 100644
 -      onConfirm: () => removeExtraConfirmed(extra),
 -    });
 -  }, [removeExtraConfirmed]);
--
++  if (!client || !isAdministrator) return null;
+ 
 -  // Toggle an extra's active state (persist setting), then restart the proxy so
 -  // the new --code-aware / --disable-kompress flags take effect.
 -  const toggleExtraActive = useCallback(async (extra, value) => {
@@ -362,7 +374,7 @@ index 4e641f3da..1f7b20b9a 100644
 -    await patchSetting({ [key]: value });
 -    if (!headroomStatus.running) return;
 -    setRestartingProxy(true);
-+  const handleRtkEnabled = async (value: boolean) => {
++  const savePatch = async (patch: Partial<TokenSaverSettings>) => {
 +    setSaving(true);
 +    setSaveError("");
      try {
@@ -372,8 +384,12 @@ index 4e641f3da..1f7b20b9a 100644
 -      await refreshHeadroomStatus();
 -    } catch (e) {
 -      setExtrasActionError(e.message);
-+      const updated = await client.send<TokenSaverSettings>("/admin/token-saver", "PATCH", { rtkEnabled: value });
++      const updated = await client.send<TokenSaverSettings>("/admin/token-saver", "PATCH", patch);
 +      setRtkEnabledState(updated.rtkEnabled);
++      setCavemanEnabled(updated.cavemanEnabled);
++      setCavemanLevel(updated.cavemanLevel);
++      setPonytailEnabled(updated.ponytailEnabled);
++      setPonytailLevel(updated.ponytailLevel);
 +      resource.refresh();
 +    } catch (reason) {
 +      setSaveError(reason instanceof Error ? reason.message : String(reason));
@@ -391,8 +407,8 @@ index 4e641f3da..1f7b20b9a 100644
 -  const handlePonytailEnabled = (value) => {
 -    setPonytailEnabled(value);
 -    patchSetting({ ponytailEnabled: value });
--  };
--
+   };
+ 
 -  const handlePonytailLevel = (level) => {
 -    setPonytailLevel(level);
 -    patchSetting({ ponytailLevel: level });
@@ -443,8 +459,8 @@ index 4e641f3da..1f7b20b9a 100644
 -  const handlePxpipeEnabled = (value) => {
 -    setPxpipeEnabled(value);
 -    patchSetting({ pxpipeEnabled: value });
-   };
- 
+-  };
+-
 -  const handlePxpipeMinCharsBlur = () => {
 -    const next = Math.max(0, Number(pxpipeMinChars) || 25000);
 -    setPxpipeMinChars(next);
@@ -510,6 +526,7 @@ index 4e641f3da..1f7b20b9a 100644
 -      : "bg-warning/15 text-warning";
 -
 +  const environmentLocked = resource.data?.environmentEnabled === false;
++  const effectiveRtk = rtkEnabled && !environmentLocked;
    return (
 -    <div className="space-y-6 p-6">
 -      <Card id="rtk">
@@ -520,7 +537,13 @@ index 4e641f3da..1f7b20b9a 100644
 -            </span>
 -            Token Saver
 -          </h2>
--        </div>
++    <section className="aiw-token-saver card" aria-labelledby="aiw-token-saver-title">
++      <header className="aiw-token-saver__head">
++        <div className="aiw-token-saver__icon"><IconSparkle aria-hidden /></div>
++        <div className="aiw-token-saver__copy">
++          <h3 id="aiw-token-saver-title">{t("aiw.tokenSaver.title")}</h3>
++          <p>{t("aiw.tokenSaver.description")}</p>
+         </div>
 -        <div className="flex items-center justify-between pt-2 pb-4 border-b border-border gap-4">
 -          <div className="min-w-0 flex-1">
 -            <p className="font-medium">
@@ -579,15 +602,7 @@ index 4e641f3da..1f7b20b9a 100644
 -            disabled={!headroomRunning}
 -            onChange={() => handleHeadroomEnabled(!headroomEnabled)}
 -          />
-+    <section className="aiw-token-saver card" aria-labelledby="aiw-token-saver-title">
-+      <div className="aiw-token-saver__icon"><IconSparkle aria-hidden /></div>
-+      <div className="aiw-token-saver__copy">
-+        <div className="aiw-token-saver__title-row">
-+          <h3 id="aiw-token-saver-title">{t("aiw.tokenSaver.title")}</h3>
-+          <span className={`badge ${resource.data?.effectiveEnabled ? "badge-green" : "badge-muted"}`}>
-+            {resource.data?.effectiveEnabled ? t("aiw.tokenSaver.active") : t("aiw.tokenSaver.inactive")}
-+          </span>
-         </div>
+-        </div>
 -        {headroomStatus.installed && (
 -          <div className="mb-3 ml-1 pl-3 pb-4 border-l-2 border-border">
 -            <div className="flex items-center gap-2 flex-wrap">
@@ -734,8 +749,19 @@ index 4e641f3da..1f7b20b9a 100644
 -              checked={cavemanEnabled}
 -              onChange={() => handleCavemanEnabled(!cavemanEnabled)}
 -            />
--          </div>
--        </div>
++      </header>
++      <div className="aiw-token-saver__feature">
++        <div className="aiw-token-saver__copy">
++          <div className="aiw-token-saver__title-row">
++            <strong>RTK</strong>
++            <span className={`badge ${effectiveRtk ? "badge-green" : "badge-muted"}`}>
++              {effectiveRtk ? t("aiw.tokenSaver.active") : t("aiw.tokenSaver.inactive")}
++            </span>
+           </div>
++          <p>{t("aiw.tokenSaver.rtkDescription")}</p>
++          <a href="https://github.com/rtk-ai/rtk" target="_blank" rel="noreferrer">{t("aiw.tokenSaver.learnMore")}</a>
++          {environmentLocked ? <div className="notice notice-warn" role="status">{t("aiw.tokenSaver.environmentLocked")}</div> : null}
+         </div>
 -        <div className="flex items-center justify-between pt-4 mt-4 border-t border-border gap-4 flex-wrap">
 -          <div className="min-w-0 flex-1">
 -            <p className="font-medium">
@@ -786,7 +812,18 @@ index 4e641f3da..1f7b20b9a 100644
 -              onChange={() => handlePonytailEnabled(!ponytailEnabled)}
 -            />
 -          </div>
--        </div>
++        <Switch
++          on={effectiveRtk}
++          onClick={() => void savePatch({ rtkEnabled: !rtkEnabled })}
++          disabled={saving || resource.loading || environmentLocked}
++          label={t("aiw.tokenSaver.toggle")}
++        />
++      </div>
++      <div className="aiw-token-saver__feature">
++        <div className="aiw-token-saver__copy">
++          <strong>{t("aiw.tokenSaver.caveman")}</strong>
++          <p>{t("aiw.tokenSaver.cavemanDescription")}</p>
+         </div>
 -        {/* PXPIPE hidden from UI — experimental, not exposed to users yet */}
 -        {false && (
 -        <div className="flex items-center justify-between pt-4 mt-4 border-t border-border gap-4 flex-wrap">
@@ -830,8 +867,16 @@ index 4e641f3da..1f7b20b9a 100644
 -            checked={pxpipeEnabled}
 -            disabled={!pxpipeStatus.installed}
 -            onChange={() => handlePxpipeEnabled(!pxpipeEnabled)}
--          />
--        </div>
++        <div className="aiw-token-saver__controls">
++          <Select
++            value={cavemanLevel}
++            options={CAVEMAN_LEVELS.map(value => ({ value, label: value }))}
++            onChange={value => void savePatch({ cavemanLevel: value })}
++            disabled={saving || !cavemanEnabled}
++            label={t("aiw.tokenSaver.level")}
+           />
++          <Switch on={cavemanEnabled} onClick={() => void savePatch({ cavemanEnabled: !cavemanEnabled })} disabled={saving || resource.loading} label={t("aiw.tokenSaver.caveman")} />
+         </div>
 -        )}
 -      </Card>
 -
@@ -940,7 +985,12 @@ index 4e641f3da..1f7b20b9a 100644
 -              Done
 -            </Button>
 -          </div>
--        </div>
++      </div>
++      <div className="aiw-token-saver__feature">
++        <div className="aiw-token-saver__copy">
++          <strong>{t("aiw.tokenSaver.ponytail")}</strong>
++          <p>{t("aiw.tokenSaver.ponytailDescription")}</p>
+         </div>
 -      </Modal>
 -
 -      <Modal
@@ -1048,7 +1098,16 @@ index 4e641f3da..1f7b20b9a 100644
 -              Done
 -            </Button>
 -          </div>
--        </div>
++        <div className="aiw-token-saver__controls">
++          <Select
++            value={ponytailLevel}
++            options={PONYTAIL_LEVELS.map(value => ({ value, label: value }))}
++            onChange={value => void savePatch({ ponytailLevel: value })}
++            disabled={saving || !ponytailEnabled}
++            label={t("aiw.tokenSaver.level")}
++          />
++          <Switch on={ponytailEnabled} onClick={() => void savePatch({ ponytailEnabled: !ponytailEnabled })} disabled={saving || resource.loading} label={t("aiw.tokenSaver.ponytail")} />
+         </div>
 -      </Modal>
 -
 -      <ConfirmModal
@@ -1063,18 +1122,10 @@ index 4e641f3da..1f7b20b9a 100644
 -        message={extrasConfirm?.message}
 -        confirmText={extrasConfirm?.confirmText}
 -        variant={extrasConfirm?.variant}
-+        <p>{t("aiw.tokenSaver.description")}</p>
-+        <a href="https://github.com/rtk-ai/rtk" target="_blank" rel="noreferrer">{t("aiw.tokenSaver.learnMore")}</a>
-+        {environmentLocked ? <div className="notice notice-warn" role="status">{t("aiw.tokenSaver.environmentLocked")}</div> : null}
-+        {saveError || resource.error ? <div className="notice notice-err" role="alert">{saveError || String(resource.error)}</div> : null}
-+      </div>
-+      <Switch
-+        on={rtkEnabled && !environmentLocked}
-+        onClick={() => void handleRtkEnabled(!rtkEnabled)}
-+        disabled={saving || resource.loading || environmentLocked}
-+        label={t("aiw.tokenSaver.toggle")}
-       />
+-      />
 -    </div>
++      </div>
++      {saveError || resource.error ? <div className="notice notice-err" role="alert">{saveError || String(resource.error)}</div> : null}
 +    </section>
    );
  }

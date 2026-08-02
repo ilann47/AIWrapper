@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\zh.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\zh.ts"
-index 3a50a7658..1f2aeda31 100644
+index 3a50a7658..2d050d2d8 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\zh.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\zh.ts"	
-@@ -10,6 +10,169 @@ export const zh: Record<TKey, string> = {
+@@ -10,6 +10,175 @@ export const zh: Record<TKey, string> = {
    "nav.subagents": "子代理",
    "nav.logs": "日志与调试",
    "nav.usage": "用量",
@@ -35,12 +35,18 @@ index 3a50a7658..1f2aeda31 100644
 +  "aiw.overview.target": "目标",
 +  "aiw.overview.when": "时间",
 +  "aiw.tokenSaver.title": "令牌节省",
-+  "aiw.tokenSaver.description": "在发送到模型前压缩大型工具输出，通常可减少60–90%的输入令牌。",
++  "aiw.tokenSaver.description": "使用原始 9router 优化管线减少请求和响应令牌。",
++  "aiw.tokenSaver.rtkDescription": "在发送到模型前压缩大型工具输出，通常可减少60–90%的输入令牌。",
 +  "aiw.tokenSaver.learnMore": "RTK 压缩如何工作",
 +  "aiw.tokenSaver.active": "已启用",
 +  "aiw.tokenSaver.inactive": "未启用",
 +  "aiw.tokenSaver.environmentLocked": "已被 AIWRAPPER_RTK_ENABLED 环境安全锁禁用。",
 +  "aiw.tokenSaver.toggle": "启用 RTK 令牌压缩",
++  "aiw.tokenSaver.caveman": "精简回复",
++  "aiw.tokenSaver.cavemanDescription": "注入精简回复风格，同时保留技术细节。",
++  "aiw.tokenSaver.ponytail": "最小代码",
++  "aiw.tokenSaver.ponytailDescription": "优先采用最小安全实现和最短有效说明。",
++  "aiw.tokenSaver.level": "压缩级别",
 +  "nav.section.chat": "Chat",
 +  "nav.section.admin": "Administration",
 +  "nav.section.monitoring": "Monitoring",
@@ -172,7 +178,7 @@ index 3a50a7658..1f2aeda31 100644
    "common.github": "GitHub",
    "common.save": "保存",
    "common.saving": "保存中…",
-@@ -639,6 +802,9 @@ export const zh: Record<TKey, string> = {
+@@ -639,6 +808,9 @@ export const zh: Record<TKey, string> = {
    "nav.api": "API",
    "nav.codexAuth": "Codex 认证",
    "nav.openMenu": "打开菜单",

@@ -1,11 +1,14 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\services\\combo.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-runtime\\src\\nine-router-bridge.mjs"
-index 9216ab2fc..08ce2b015 100644
+index 9216ab2fc..100233a13 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\services\\combo.js"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-runtime\\src\\nine-router-bridge.mjs"	
-@@ -1,571 +1,62 @@
--/**
+@@ -1,571 +1,73 @@
++#!/usr/bin/env node
+ /**
 - * Shared combo (model combo) handling with fallback support
-- */
++ * Process boundary for unmodified 9router runtime modules.
++ * Compression and capability detection execute directly from upstream/9router.
+  */
 -
 -import { checkFallbackError, formatRetryAfter } from "./accountFallback.js";
 -import { unavailableResponse } from "../utils/error.js";
@@ -267,12 +270,9 @@ index 9216ab2fc..08ce2b015 100644
 -      // Extract error info from response
 -      let errorText = result.statusText || "";
 -      let retryAfter = null;
-+#!/usr/bin/env node
-+/**
-+ * Process boundary for unmodified 9router runtime modules.
-+ * Compression and capability detection execute directly from upstream/9router.
-+ */
 +import { compressMessages, formatRtkLog } from "../../../upstream/9router/open-sse/rtk/index.js";
++import { injectCaveman } from "../../../upstream/9router/open-sse/rtk/caveman.js";
++import { injectPonytail } from "../../../upstream/9router/open-sse/rtk/ponytail.js";
 +import { detectRequiredCapabilities } from "../../../upstream/9router/open-sse/services/combo.js";
 +import { backupDbLite, makeBackupDir, pruneOldBackups } from "./nine-router-db-backup.mjs";
 +import { getSettings, updateSettings } from "./nine-router-settings-repo.mjs";
@@ -291,7 +291,16 @@ index 9216ab2fc..08ce2b015 100644
 +  const body = structuredClone(input.body ?? {});
 +  const runtimeSettings = await getSettings();
 +  const stats = compressMessages(body, input.enabled !== false && runtimeSettings.rtkEnabled !== false);
-+  result = { body, stats, log: formatRtkLog(stats) };
++  const transforms = [];
++  if (runtimeSettings.cavemanEnabled && runtimeSettings.cavemanLevel) {
++    injectCaveman(body, "openai", runtimeSettings.cavemanLevel);
++    transforms.push(`CAVEMAN:${runtimeSettings.cavemanLevel}`);
++  }
++  if (runtimeSettings.ponytailEnabled && runtimeSettings.ponytailLevel) {
++    injectPonytail(body, "openai", runtimeSettings.ponytailLevel);
++    transforms.push(`PONYTAIL:${runtimeSettings.ponytailLevel}`);
++  }
++  result = { body, stats, transforms, log: formatRtkLog(stats) };
 +} else if (operation === "capabilities") {
 +  result = { required: [...detectRequiredCapabilities(input.body ?? {})] };
 +} else if (operation === "settings:get") {
@@ -312,7 +321,13 @@ index 9216ab2fc..08ce2b015 100644
 -        retryAfter = errorBody?.retryAfter || null;
 -      } catch {
 -        // Ignore JSON parse errors
--      }
++        const value = callback();
++        database.exec("COMMIT");
++        return value;
++      } catch (error) {
++        try { database.exec("ROLLBACK"); } catch {}
++        throw error;
+       }
 -
 -      // Track earliest retryAfter across all combo models
 -      if (retryAfter && (!earliestRetryAfter || new Date(retryAfter) < new Date(earliestRetryAfter))) {
@@ -428,13 +443,6 @@ index 9216ab2fc..08ce2b015 100644
 -    next.contents = [...body.contents, { role: "user", parts: [{ text }] }];
 -  } else {
 -    next.messages = [{ role: "user", content: text }];
-+        const value = callback();
-+        database.exec("COMMIT");
-+        return value;
-+      } catch (error) {
-+        try { database.exec("ROLLBACK"); } catch {}
-+        throw error;
-+      }
 +    },
 +  };
 +  try {
@@ -446,8 +454,10 @@ index 9216ab2fc..08ce2b015 100644
 +    database.close();
    }
 -  return next;
--}
--
++} else {
++  throw new Error(`Unsupported 9router operation: ${operation}`);
+ }
+ 
 -/**
 - * Build the judge directive. Per OpenRouter's Fusion design, the judge does NOT
 - * merge — it analyzes (consensus / contradictions / partial coverage / unique
@@ -528,10 +538,8 @@ index 9216ab2fc..08ce2b015 100644
 -        });
 -    });
 -  });
-+} else {
-+  throw new Error(`Unsupported 9router operation: ${operation}`);
- }
- 
+-}
+-
 -/**
 - * Handle a fusion combo: fan the prompt out to every panel model in parallel,
 - * then a judge model synthesizes one final answer from all panel responses.

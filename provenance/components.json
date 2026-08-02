@@ -444,7 +444,7 @@
     },
     {
       "id": "nine-router-token-saver-ui",
-      "functionality": "Administrator Token Saver card with persisted RTK toggle, effective status and environment safety lock",
+      "functionality": "Administrator Token Saver card with persisted RTK, Caveman and Ponytail controls, levels, effective status and environment safety lock",
       "project": "decolua/9router",
       "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
       "license": "MIT / project adapter code",
@@ -452,11 +452,11 @@
       "kind": "file",
       "source": "upstream/9router/src/app/(dashboard)/dashboard/token-saver/TokenSaverClient.js",
       "destination": "extensions/aiwrapper-admin/src/TokenSaverPanel.tsx",
-      "incompatibility": "The original page is a Next.js/Tailwind administration suite for RTK, Headroom, Caveman, Ponytail and PXPIPE, including local installers and proxy processes that do not exist in AIWrapper's production image. The RTK block is the only feature whose original runtime is currently on AIWrapper's canonical request path; its load, toggle-after-success and explanatory interaction are adapted to the OpenCodex design system and authenticated administrator API.",
+      "incompatibility": "The original page is a Next.js/Tailwind administration suite for RTK, Headroom, Caveman, Ponytail and PXPIPE, including local installers and proxy processes that do not exist in AIWrapper's production image. RTK, Caveman and Ponytail are on AIWrapper's canonical request path; their load, toggle-after-success, level selection and explanations are adapted to the OpenCodex design system and authenticated administrator API.",
       "parityAudit": {
-        "retained": ["RTK enabled state", "Load persisted setting", "Persist toggle before changing effective state", "60-90 percent savings explanation", "RTK documentation link", "Responsive card"],
-        "lost": ["Headroom installer/proxy", "Caveman and Ponytail prompt transforms", "PXPIPE image compression and installer"],
-        "decision": "Expose the already executing RTK feature now. Preserve the complete upstream page in upstream/ and track its other runtimes as separate unwired candidates rather than presenting non-existent controls."
+        "retained": ["RTK enabled state", "Caveman enabled state and all six levels", "Ponytail enabled state and all three levels", "Load persisted settings", "Persist before changing effective state", "60-90 percent savings explanation", "RTK documentation link", "Responsive card"],
+        "lost": ["Headroom installer/proxy", "PXPIPE image compression and installer"],
+        "decision": "Expose the three token-saver transforms that execute on the canonical request path. Preserve the complete upstream page in upstream/ and keep process-managed Headroom/PXPIPE as explicitly unwired candidates."
       }
     },
     {
@@ -469,12 +469,38 @@
       "kind": "file",
       "source": "upstream/9router/src/app/api/settings/route.js",
       "destination": "services/codex-wrapper/app/aiwrapper/router.py",
-      "incompatibility": "The source is a Next.js route bound to dashboard cookies, bcrypt and all 9router settings. AIWrapper is FastAPI and must enforce its existing administrator principal, expose only the non-secret RTK field, retain the environment master lock and write its audit ledger. The original settings repository remains the persistence implementation behind this transport adapter.",
+      "incompatibility": "The source is a Next.js route bound to dashboard cookies, bcrypt and all 9router settings. AIWrapper is FastAPI and must enforce its existing administrator principal, expose only non-secret RTK/Caveman/Ponytail fields, retain the environment RTK lock, validate levels and write its audit ledger. The original settings repository remains the persistence implementation behind this transport adapter.",
       "parityAudit": {
         "retained": ["No-store-style live settings read", "PATCH persistence through updateSettings", "Protected narrow response", "Immediate runtime effect"],
         "lost": ["Password, OIDC, proxy and unrelated 9router settings fields"],
         "decision": "Adapt only the HTTP/authentication boundary and delegate persistence to the preserved repository."
       }
+    },
+    {
+      "id": "nine-router-caveman-runtime",
+      "functionality": "Original 9router Caveman system-prompt injection with all response-compression levels",
+      "project": "decolua/9router",
+      "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+      "license": "MIT",
+      "classification": "directly imported",
+      "kind": "file",
+      "source": "upstream/9router/open-sse/rtk/caveman.js",
+      "destination": "extensions/aiwrapper-runtime/src/nine-router-bridge.mjs",
+      "incompatibility": "The canonical request body is already OpenAI-shaped, so the bridge imports injectCaveman directly and supplies the persisted level; no behavior is ported.",
+      "parityAudit": { "retained": ["Original injectCaveman", "Original systemInject dependency", "All original Caveman prompts and levels"], "lost": [], "decision": "Execute the original module directly before the request reaches Codex/OpenCodex." }
+    },
+    {
+      "id": "nine-router-ponytail-runtime",
+      "functionality": "Original 9router Ponytail minimal-code system-prompt injection with all levels",
+      "project": "decolua/9router",
+      "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+      "license": "MIT",
+      "classification": "directly imported",
+      "kind": "file",
+      "source": "upstream/9router/open-sse/rtk/ponytail.js",
+      "destination": "extensions/aiwrapper-runtime/src/nine-router-bridge.mjs",
+      "incompatibility": "The canonical request body is already OpenAI-shaped, so the bridge imports injectPonytail directly and supplies the persisted level; no behavior is ported.",
+      "parityAudit": { "retained": ["Original injectPonytail", "Original systemInject dependency", "All original Ponytail prompts and levels"], "lost": [], "decision": "Execute the original module directly before the request reaches Codex/OpenCodex." }
     },
     {
       "id": "nine-router-sqlite-backup-runtime",

@@ -4,6 +4,8 @@
  * Compression and capability detection execute directly from upstream/9router.
  */
 import { compressMessages, formatRtkLog } from "../../../upstream/9router/open-sse/rtk/index.js";
+import { injectCaveman } from "../../../upstream/9router/open-sse/rtk/caveman.js";
+import { injectPonytail } from "../../../upstream/9router/open-sse/rtk/ponytail.js";
 import { detectRequiredCapabilities } from "../../../upstream/9router/open-sse/services/combo.js";
 import { backupDbLite, makeBackupDir, pruneOldBackups } from "./nine-router-db-backup.mjs";
 import { getSettings, updateSettings } from "./nine-router-settings-repo.mjs";
@@ -22,7 +24,16 @@ if (operation === "compress") {
   const body = structuredClone(input.body ?? {});
   const runtimeSettings = await getSettings();
   const stats = compressMessages(body, input.enabled !== false && runtimeSettings.rtkEnabled !== false);
-  result = { body, stats, log: formatRtkLog(stats) };
+  const transforms = [];
+  if (runtimeSettings.cavemanEnabled && runtimeSettings.cavemanLevel) {
+    injectCaveman(body, "openai", runtimeSettings.cavemanLevel);
+    transforms.push(`CAVEMAN:${runtimeSettings.cavemanLevel}`);
+  }
+  if (runtimeSettings.ponytailEnabled && runtimeSettings.ponytailLevel) {
+    injectPonytail(body, "openai", runtimeSettings.ponytailLevel);
+    transforms.push(`PONYTAIL:${runtimeSettings.ponytailLevel}`);
+  }
+  result = { body, stats, transforms, log: formatRtkLog(stats) };
 } else if (operation === "capabilities") {
   result = { required: [...detectRequiredCapabilities(input.body ?? {})] };
 } else if (operation === "settings:get") {

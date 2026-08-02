@@ -205,6 +205,26 @@ def test_nine_router_settings_repo_persists_and_controls_rtk(tmp_path, monkeypat
     assert asyncio.run(nine_router("settings:get", {}))["rtkEnabled"] is False
 
 
+def test_nine_router_executes_upstream_caveman_and_ponytail_injectors(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "aiwrapper_database_path", str(tmp_path / "prompt-savers.sqlite"))
+    asyncio.run(nine_router("settings:update", {"updates": {
+        "cavemanEnabled": True,
+        "cavemanLevel": "lite",
+        "ponytailEnabled": True,
+        "ponytailLevel": "full",
+    }}))
+
+    result = asyncio.run(nine_router("compress", {
+        "body": {"messages": [{"role": "user", "content": "Build a parser"}]},
+        "enabled": False,
+    }))
+    system = result["body"]["messages"][0]
+    assert system["role"] == "system"
+    assert "Respond tersely" in system["content"]
+    assert "lazy senior developer" in system["content"]
+    assert result["transforms"] == ["CAVEMAN:lite", "PONYTAIL:full"]
+
+
 def test_administrator_can_update_token_saver_setting(tmp_path, monkeypatch):
     store_module = importlib.import_module("app.aiwrapper.store")
     auth_module = importlib.import_module("app.aiwrapper.auth")
@@ -228,8 +248,27 @@ def test_administrator_can_update_token_saver_setting(tmp_path, monkeypatch):
     assert client.get("/admin/token-saver", headers=headers).json()["effectiveEnabled"] is True
     updated = client.patch("/admin/token-saver", headers=headers, json={"rtkEnabled": False})
     assert updated.status_code == 200
-    assert updated.json() == {"rtkEnabled": False, "environmentEnabled": True, "effectiveEnabled": False}
+    assert updated.json() == {
+        "rtkEnabled": False,
+        "environmentEnabled": True,
+        "effectiveEnabled": False,
+        "cavemanEnabled": False,
+        "cavemanLevel": "full",
+        "ponytailEnabled": False,
+        "ponytailLevel": "full",
+    }
     assert local_store.list_audit_events()[0]["action"] == "token_saver.updated"
+
+    prompts = client.patch("/admin/token-saver", headers=headers, json={
+        "cavemanEnabled": True,
+        "cavemanLevel": "ultra",
+        "ponytailEnabled": True,
+        "ponytailLevel": "lite",
+    })
+    assert prompts.status_code == 200
+    assert prompts.json()["cavemanLevel"] == "ultra"
+    assert prompts.json()["ponytailEnabled"] is True
+    assert client.patch("/admin/token-saver", headers=headers, json={"cavemanLevel": "invalid"}).status_code == 400
 
     user_login = client.post("/auth/sessions", headers={"Authorization": f"Bearer {regular_user['apiKey']['secret']}", "Origin": origin})
     user_headers = {"Authorization": f"Bearer {user_login.json()['accessToken']}", "Origin": origin}

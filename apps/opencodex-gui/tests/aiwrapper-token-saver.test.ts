@@ -6,7 +6,9 @@ test("the administrator dashboard exposes the persisted 9router RTK control", as
 
   expect(app).toContain("<TokenSaverPanel />");
   expect(panel).toContain('client.get<TokenSaverSettings>("/admin/token-saver")');
-  expect(panel).toContain('client.send<TokenSaverSettings>("/admin/token-saver", "PATCH", { rtkEnabled: value })');
+  expect(panel).toContain('client.send<TokenSaverSettings>("/admin/token-saver", "PATCH", patch)');
   expect(panel).toContain("environmentLocked");
+  expect(panel).toContain("cavemanEnabled");
+  expect(panel).toContain("ponytailEnabled");
   expect(panel).toContain("<Switch");
 });

@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\rtk\\index.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-runtime\\src\\nine-router-bridge.mjs"
-index dd1e50184..08ce2b015 100644
+index dd1e50184..100233a13 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\rtk\\index.js"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-runtime\\src\\nine-router-bridge.mjs"	
-@@ -1,155 +1,62 @@
+@@ -1,155 +1,73 @@
 -// RTK port: compress tool_result content in LLM request bodies
 -// Injected at the top of translateRequest (before any format translation)
 -import { RAW_CAP, MIN_COMPRESS_SIZE } from "./constants.js";
@@ -17,7 +17,37 @@ index dd1e50184..08ce2b015 100644
 -  // Kiro format: conversationState.history + conversationState.currentMessage
 -  if (body.conversationState) {
 -    return compressKiroFormat(body, enabled);
--  }
++#!/usr/bin/env node
++/**
++ * Process boundary for unmodified 9router runtime modules.
++ * Compression and capability detection execute directly from upstream/9router.
++ */
++import { compressMessages, formatRtkLog } from "../../../upstream/9router/open-sse/rtk/index.js";
++import { injectCaveman } from "../../../upstream/9router/open-sse/rtk/caveman.js";
++import { injectPonytail } from "../../../upstream/9router/open-sse/rtk/ponytail.js";
++import { detectRequiredCapabilities } from "../../../upstream/9router/open-sse/services/combo.js";
++import { backupDbLite, makeBackupDir, pruneOldBackups } from "./nine-router-db-backup.mjs";
++import { getSettings, updateSettings } from "./nine-router-settings-repo.mjs";
++
++const operation = process.argv[2];
++const input = JSON.parse(await new Promise((resolve, reject) => {
++  let body = "";
++  process.stdin.setEncoding("utf8");
++  process.stdin.on("data", chunk => { body += chunk; });
++  process.stdin.on("end", () => resolve(body || "{}"));
++  process.stdin.on("error", reject);
++}));
++
++let result;
++if (operation === "compress") {
++  const body = structuredClone(input.body ?? {});
++  const runtimeSettings = await getSettings();
++  const stats = compressMessages(body, input.enabled !== false && runtimeSettings.rtkEnabled !== false);
++  const transforms = [];
++  if (runtimeSettings.cavemanEnabled && runtimeSettings.cavemanLevel) {
++    injectCaveman(body, "openai", runtimeSettings.cavemanLevel);
++    transforms.push(`CAVEMAN:${runtimeSettings.cavemanLevel}`);
+   }
 -
 -  // Support both OpenAI/Claude "messages" and OpenAI Responses "input"
 -  const items = Array.isArray(body.messages) ? body.messages
@@ -50,53 +80,7 @@ index dd1e50184..08ce2b015 100644
 -      if (msg.role === "tool" && typeof msg.content === "string") {
 -        msg.content = compressText(msg.content, stats, "openai-tool");
 -        continue;
-+#!/usr/bin/env node
-+/**
-+ * Process boundary for unmodified 9router runtime modules.
-+ * Compression and capability detection execute directly from upstream/9router.
-+ */
-+import { compressMessages, formatRtkLog } from "../../../upstream/9router/open-sse/rtk/index.js";
-+import { detectRequiredCapabilities } from "../../../upstream/9router/open-sse/services/combo.js";
-+import { backupDbLite, makeBackupDir, pruneOldBackups } from "./nine-router-db-backup.mjs";
-+import { getSettings, updateSettings } from "./nine-router-settings-repo.mjs";
-+
-+const operation = process.argv[2];
-+const input = JSON.parse(await new Promise((resolve, reject) => {
-+  let body = "";
-+  process.stdin.setEncoding("utf8");
-+  process.stdin.on("data", chunk => { body += chunk; });
-+  process.stdin.on("end", () => resolve(body || "{}"));
-+  process.stdin.on("error", reject);
-+}));
-+
-+let result;
-+if (operation === "compress") {
-+  const body = structuredClone(input.body ?? {});
-+  const runtimeSettings = await getSettings();
-+  const stats = compressMessages(body, input.enabled !== false && runtimeSettings.rtkEnabled !== false);
-+  result = { body, stats, log: formatRtkLog(stats) };
-+} else if (operation === "capabilities") {
-+  result = { required: [...detectRequiredCapabilities(input.body ?? {})] };
-+} else if (operation === "settings:get") {
-+  result = await getSettings();
-+} else if (operation === "settings:update") {
-+  result = await updateSettings(input.updates ?? {});
-+} else if (operation === "backup") {
-+  const { DatabaseSync } = await import("node:sqlite");
-+  const database = new DatabaseSync(input.databasePath);
-+  const adapter = {
-+    exec(sql) { database.exec(sql); },
-+    all(sql) { return database.prepare(sql).all(); },
-+    transaction(callback) {
-+      database.exec("BEGIN IMMEDIATE");
-+      try {
-+        const value = callback();
-+        database.exec("COMMIT");
-+        return value;
-+      } catch (error) {
-+        try { database.exec("ROLLBACK"); } catch {}
-+        throw error;
-       }
+-      }
 -
 -      if (!Array.isArray(msg.content)) continue;
 -
@@ -134,16 +118,17 @@ index dd1e50184..08ce2b015 100644
 -  } catch (e) {
 -    console.warn("[RTK] compressMessages error:", e.message);
 -    return null;
--  }
++  if (runtimeSettings.ponytailEnabled && runtimeSettings.ponytailLevel) {
++    injectPonytail(body, "openai", runtimeSettings.ponytailLevel);
++    transforms.push(`PONYTAIL:${runtimeSettings.ponytailLevel}`);
+   }
 -  return stats;
 -}
 -
 -// Compress Kiro format: conversationState.history[].userInputMessage.userInputMessageContext.toolResults[].content[].text
 -function compressKiroFormat(body, enabled) {
 -  const stats = { bytesBefore: 0, bytesAfter: 0, hits: [] };
-+    },
-+  };
-   try {
+-  try {
 -    const state = body.conversationState;
 -    const allMessages = [...(Array.isArray(state?.history) ? state.history : [])];
 -    if (state?.currentMessage) allMessages.push(state.currentMessage);
@@ -161,7 +146,29 @@ index dd1e50184..08ce2b015 100644
 -            part.text = compressText(part.text, stats, "kiro-tool-result");
 -          }
 -        }
--      }
++  result = { body, stats, transforms, log: formatRtkLog(stats) };
++} else if (operation === "capabilities") {
++  result = { required: [...detectRequiredCapabilities(input.body ?? {})] };
++} else if (operation === "settings:get") {
++  result = await getSettings();
++} else if (operation === "settings:update") {
++  result = await updateSettings(input.updates ?? {});
++} else if (operation === "backup") {
++  const { DatabaseSync } = await import("node:sqlite");
++  const database = new DatabaseSync(input.databasePath);
++  const adapter = {
++    exec(sql) { database.exec(sql); },
++    all(sql) { return database.prepare(sql).all(); },
++    transaction(callback) {
++      database.exec("BEGIN IMMEDIATE");
++      try {
++        const value = callback();
++        database.exec("COMMIT");
++        return value;
++      } catch (error) {
++        try { database.exec("ROLLBACK"); } catch {}
++        throw error;
+       }
 -    }
 -  } catch (e) {
 -    console.warn("[RTK] compressKiroFormat error:", e.message);
@@ -191,6 +198,9 @@ index dd1e50184..08ce2b015 100644
 -  if (!out || out.length === 0 || out.length >= bytesIn) {
 -    stats.bytesAfter += bytesIn;
 -    return text;
++    },
++  };
++  try {
 +    const directory = makeBackupDir(input.label || "manual");
 +    const backupPath = backupDbLite(adapter, directory, "aiwrapper.sqlite");
 +    pruneOldBackups();

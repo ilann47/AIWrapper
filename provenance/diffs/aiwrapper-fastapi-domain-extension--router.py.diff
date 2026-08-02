@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\main.py" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"
-index 6647bca55..0badad1cb 100644
+index 6647bca55..89eb9b3bc 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\main.py"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"	
-@@ -1,268 +1,314 @@
+@@ -1,268 +1,329 @@
 -import json
 -import os
 +import re
@@ -173,6 +173,7 @@ index 6647bca55..0badad1cb 100644
 +    except ValueError as error:
 +        raise HTTPException(status_code=400, detail="limit must be an integer") from error
 +    return {"data": store.list_audit_events(limit)}
++
  
 -    prompt, image_urls = build_prompt_and_images([m.dict() for m in req.messages])
 -    x_overrides = req.x_codex.dict(exclude_none=True) if req.x_codex else {}
@@ -193,7 +194,6 @@ index 6647bca55..0badad1cb 100644
 -            raise HTTPException(status_code=400, detail=str(e))
 -
 -    image_paths: List[str] = []
-+
 +@router.get("/admin/backups")
 +async def database_backups(request: Request):
 +    administrator(request)
@@ -219,7 +219,7 @@ index 6647bca55..0badad1cb 100644
 +    store.audit_event(user["id"], "backup.created", "database_backup", result["id"], {"sizeBytes": result["sizeBytes"]})
 +    return result
 +
- 
++
 +@router.get("/admin/backups/{backup_id}")
 +async def download_backup(backup_id: str, request: Request):
 +    administrator(request)
@@ -227,15 +227,23 @@ index 6647bca55..0badad1cb 100644
 +    if not target:
 +        raise HTTPException(status_code=404, detail="Backup not found")
 +    return FileResponse(target, media_type="application/vnd.sqlite3", filename=f"aiwrapper-{backup_id}.sqlite")
+ 
++
++_CAVEMAN_LEVELS = {"lite", "full", "ultra", "wenyan-lite", "wenyan", "wenyan-ultra"}
++_PONYTAIL_LEVELS = {"lite", "full", "ultra"}
 +
 +
-+def _token_saver_response(runtime_settings: dict[str, Any]) -> dict[str, bool]:
++def _token_saver_response(runtime_settings: dict[str, Any]) -> dict[str, Any]:
 +    configured = runtime_settings.get("rtkEnabled") is not False
 +    environment_enabled = bool(settings.aiwrapper_rtk_enabled)
 +    return {
 +        "rtkEnabled": configured,
 +        "environmentEnabled": environment_enabled,
 +        "effectiveEnabled": configured and environment_enabled,
++        "cavemanEnabled": runtime_settings.get("cavemanEnabled") is True,
++        "cavemanLevel": runtime_settings.get("cavemanLevel", "full"),
++        "ponytailEnabled": runtime_settings.get("ponytailEnabled") is True,
++        "ponytailLevel": runtime_settings.get("ponytailLevel", "full"),
 +    }
 +
 +
@@ -289,9 +297,16 @@ index 6647bca55..0badad1cb 100644
 +async def update_token_saver_settings(request: Request):
 +    user = administrator(request)
 +    body = await request.json()
-+    enabled = body.get("rtkEnabled")
-+    if not isinstance(enabled, bool):
-+        raise HTTPException(status_code=400, detail="rtkEnabled must be a boolean")
++    allowed = {"rtkEnabled", "cavemanEnabled", "cavemanLevel", "ponytailEnabled", "ponytailLevel"}
++    if not body or set(body) - allowed:
++        raise HTTPException(status_code=400, detail="Unsupported token-saver setting")
++    for key in ("rtkEnabled", "cavemanEnabled", "ponytailEnabled"):
++        if key in body and not isinstance(body[key], bool):
++            raise HTTPException(status_code=400, detail=f"{key} must be a boolean")
++    if "cavemanLevel" in body and body["cavemanLevel"] not in _CAVEMAN_LEVELS:
++        raise HTTPException(status_code=400, detail="Invalid cavemanLevel")
++    if "ponytailLevel" in body and body["ponytailLevel"] not in _PONYTAIL_LEVELS:
++        raise HTTPException(status_code=400, detail="Invalid ponytailLevel")
      try:
 -        model, alias_effort = choose_model(req.model)
 -    except ValueError as e:
@@ -303,14 +318,14 @@ index 6647bca55..0badad1cb 100644
 -                "code": "model_not_found",
 -            },
 -        )
-+        runtime_settings = await nine_router("settings:update", {"updates": {"rtkEnabled": enabled}})
++        runtime_settings = await nine_router("settings:update", {"updates": body})
 +    except RuntimeError as error:
 +        raise HTTPException(status_code=503, detail=str(error)) from error
-+    store.audit_event(user["id"], "token_saver.updated", "setting", "rtkEnabled", {"enabled": enabled})
++    store.audit_event(user["id"], "token_saver.updated", "setting", "token-saver", {"updates": body})
 +    return _token_saver_response(runtime_settings)
-+
  
 -    # Normalize input → messages
++
 +@router.post("/admin/users", status_code=201)
 +async def create_user(request: Request):
 +    administrator(request)
@@ -418,7 +433,7 @@ index 6647bca55..0badad1cb 100644
 +    favorites_only = request.query_params.get("favorite", "").lower() in {"1", "true", "yes"}
 +    return {"data": store.list_sessions(user["id"], query, favorites_only)}
 +
-+
+ 
 +@router.get("/v1/sessions/{session_id}")
 +async def get_session(session_id: str, request: Request):
 +    user = principal(request)
@@ -426,7 +441,7 @@ index 6647bca55..0badad1cb 100644
 +    if not result:
 +        raise HTTPException(status_code=404, detail="Session not found")
 +    return result
- 
++
 +
 +@router.delete("/v1/sessions/{session_id}", status_code=204)
 +async def archive_session(session_id: str, request: Request):

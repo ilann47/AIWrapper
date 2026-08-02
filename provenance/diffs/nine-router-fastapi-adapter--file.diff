@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\rtk\\index.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\nine_router.py"
-index dd1e50184..97a7020db 100644
+index dd1e50184..56022b48f 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\rtk\\index.js"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\nine_router.py"	
-@@ -1,155 +1,40 @@
+@@ -1,155 +1,38 @@
 -// RTK port: compress tool_result content in LLM request bodies
 -// Injected at the top of translateRequest (before any format translation)
 -import { RAW_CAP, MIN_COMPRESS_SIZE } from "./constants.js";
@@ -190,10 +190,8 @@ index dd1e50184..97a7020db 100644
 +
 +
 +async def compress_request(body: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any] | None]:
-+    if not settings.aiwrapper_rtk_enabled:
-+        return body, None
 +    try:
-+        result = await nine_router("compress", {"body": body, "enabled": True})
++        result = await nine_router("compress", {"body": body, "enabled": bool(settings.aiwrapper_rtk_enabled)})
 +        return result.get("body", body), result.get("stats")
 +    except Exception:
 +        # 9router's RTK contract is fail-open: bridge failures must not block a request.

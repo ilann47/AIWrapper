@@ -96,7 +96,7 @@ Os serviços são publicados somente em loopback: OpenCodex em `8765` e Codex-Wr
 
 O botão **Download backup** no dashboard administrativo executa o algoritmo SQLite original do 9router, preserva esquema e dados e mantém somente as três cópias mais recentes em `AIWRAPPER_STATE_DIR/backups`.
 
-O card **Token Saver** no dashboard liga ou desliga a compressão RTK sem reiniciar os serviços. O repositório transacional original do 9router persiste a escolha na base AIWrapper; `AIWRAPPER_RTK_ENABLED=false` continua funcionando como trava mestra do ambiente.
+O card **Token Saver** no dashboard controla RTK, Caveman e Ponytail sem reiniciar os serviços. O repositório transacional original do 9router persiste as escolhas na base AIWrapper; os módulos Caveman/Ponytail originais injetam os respectivos prompts no pedido OpenAI e `AIWRAPPER_RTK_ENABLED=false` continua funcionando como trava mestra exclusiva da compressão RTK.
 
 ## Validação e proveniência
 

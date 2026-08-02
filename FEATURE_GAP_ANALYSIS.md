@@ -21,6 +21,8 @@ Audit date: 2026-08-01. Exact line counts, reuse percentages and unified diffs a
 | Traycer | Agent/workspace collaboration | No | Yes | Snapshot only | `upstream/traycer/` | Needs Traycer desktop services/project graph | preserved |
 | Traycer | Chat/composer/session UX | Partial | Yes | Selected modules | Complete snapshot plus runtime exports | AIWrapper keeps authenticated HTTP/SSE boundary | wired |
 | 9router | RTK token compression | No | Yes | Yes | `open-sse/rtk/index.js` → `nine-router-bridge.mjs` | JSON subprocess boundary only | wired |
+| 9router | Caveman terse-response transform | No | Yes | Yes | `open-sse/rtk/caveman.js`, `cavemanPrompts.js`, `systemInject.js` executed by `nine-router-bridge.mjs` | Original OpenAI-format injector; persisted administrator setting | wired |
+| 9router | Ponytail minimal-code transform | No | Yes | Yes | `open-sse/rtk/ponytail.js`, `ponytailPrompt.js`, `systemInject.js` executed by `nine-router-bridge.mjs` | Original OpenAI-format injector; persisted administrator setting | wired |
 | 9router | Required capability detection | No | Yes | Yes | `open-sse/services/combo.js` → same bridge | JSON operation selector | wired |
 | 9router | Chat attachments, IDs, dates, content normalization | Partial | Yes | Yes | `BasicChatPageClient.js` → `nine-router-chat-core.ts` | Type contracts and gateway binding | wired |
 | 9router | Usage overview cards/table | Partial | Yes | Yes | `OverviewCards.js`/`UsageTable.js` → `nine-router-usage.tsx` | OpenCodex tokens and authenticated ledger | wired |
@@ -43,7 +45,7 @@ Audit date: 2026-08-01. Exact line counts, reuse percentages and unified diffs a
 - Chat: search, favorites, history, recent/new/continued sessions, rename, delete, share, Markdown export, model, effort, streaming, cancel, copy, regenerate, edit/resend, Markdown/GFM, code and image attachments.
 - Usage: 5-hour/7-day quota bars, health, request/input/cache/output/cost cards, usage by day and usage by model.
 - RTK compression runs before Codex and reports saved bytes in `X-AIWrapper-RTK-Saved-Bytes`.
-- Administrators can enable or disable RTK from the dashboard; the complete 9router settings repository persists the choice transactionally, while `AIWRAPPER_RTK_ENABLED` remains a deployment-level safety lock.
+- Administrators can configure RTK, Caveman and Ponytail from the dashboard; the complete 9router settings repository persists every choice transactionally, while `AIWRAPPER_RTK_ENABLED` remains a deployment-level RTK safety lock.
 - The canonical Docker topology routes Codex-Wrapper through OpenCodex's original data plane, so provider OAuth, account pools, model visibility, fallback and measured token usage now affect AIWrapper chat requests instead of remaining a disconnected administration surface.
 
 ## Production integration increment (2026-08-02)
@@ -58,7 +60,7 @@ Audit date: 2026-08-01. Exact line counts, reuse percentages and unified diffs a
 - Conversation sharing is complete rather than decorative: public read-only routes, one-time secret links, hashed persistence, 1/7/30-day expiration, owner revocation and a themed public transcript are wired end to end.
 - SQLite startup migrations now add indexed auth, audit, message, session and share paths. Security/governance events are persisted and exposed to administrators in the existing dashboard extension.
 - The administrator dashboard now invokes 9router's original ATTACH-based lightweight SQLite backup, retains the newest three copies and downloads a portable database file. The runtime image includes the actual 9router source tree and Node 22 needed by the SQLite bridge.
-- The dashboard now exposes 9router's Token Saver as a commercial settings card. Its state is stored by the adapted original settings repository in the canonical SQLite database and takes effect on the next request without a restart.
+- The dashboard now exposes 9router's Token Saver as a commercial settings card. RTK, Caveman and Ponytail state is stored by the adapted original settings repository in the canonical SQLite database and takes effect on the next request without a restart; the actual prompt injectors execute directly from upstream.
 
 ## Parity audit
 

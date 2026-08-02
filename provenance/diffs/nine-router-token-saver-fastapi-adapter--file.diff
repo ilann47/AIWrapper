@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\app\\api\\settings\\route.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"
-index 6a7134331..0badad1cb 100644
+index 6a7134331..89eb9b3bc 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\app\\api\\settings\\route.js"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"	
-@@ -1,118 +1,314 @@
+@@ -1,118 +1,329 @@
 -import { NextResponse } from "next/server";
 -import { getSettings, updateSettings } from "@/lib/localDb";
 -import { applyOutboundProxyEnv } from "@/lib/network/outboundProxy";
@@ -199,16 +199,8 @@ index 6a7134331..0badad1cb 100644
 +        "audit": store.list_audit_events(10),
 +        "throughputPerMinute": round(float(totals.get("requests", 0)) / elapsed_minutes, 3),
 +        "window": {"since": since_ms, "until": now_ms},
-     }
- 
--    const { password, oidcClientSecret, ...safeSettings } = settings;
--    safeSettings.oidcConfigured = !!(safeSettings.oidcIssuerUrl && safeSettings.oidcClientId && oidcClientSecret);
--    return NextResponse.json(safeSettings, { headers: SETTINGS_RESPONSE_HEADERS });
--  } catch (error) {
--    console.log("Error updating settings:", error);
--    return NextResponse.json({ error: error.message }, { status: 500 });
--  }
--}
++    }
++
 +
 +@router.get("/admin/audit")
 +async def audit_events(request: Request):
@@ -246,15 +238,31 @@ index 6a7134331..0badad1cb 100644
 +    return FileResponse(target, media_type="application/vnd.sqlite3", filename=f"aiwrapper-{backup_id}.sqlite")
 +
 +
-+def _token_saver_response(runtime_settings: dict[str, Any]) -> dict[str, bool]:
++_CAVEMAN_LEVELS = {"lite", "full", "ultra", "wenyan-lite", "wenyan", "wenyan-ultra"}
++_PONYTAIL_LEVELS = {"lite", "full", "ultra"}
++
++
++def _token_saver_response(runtime_settings: dict[str, Any]) -> dict[str, Any]:
 +    configured = runtime_settings.get("rtkEnabled") is not False
 +    environment_enabled = bool(settings.aiwrapper_rtk_enabled)
 +    return {
 +        "rtkEnabled": configured,
 +        "environmentEnabled": environment_enabled,
 +        "effectiveEnabled": configured and environment_enabled,
-+    }
-+
++        "cavemanEnabled": runtime_settings.get("cavemanEnabled") is True,
++        "cavemanLevel": runtime_settings.get("cavemanLevel", "full"),
++        "ponytailEnabled": runtime_settings.get("ponytailEnabled") is True,
++        "ponytailLevel": runtime_settings.get("ponytailLevel", "full"),
+     }
+ 
+-    const { password, oidcClientSecret, ...safeSettings } = settings;
+-    safeSettings.oidcConfigured = !!(safeSettings.oidcIssuerUrl && safeSettings.oidcClientId && oidcClientSecret);
+-    return NextResponse.json(safeSettings, { headers: SETTINGS_RESPONSE_HEADERS });
+-  } catch (error) {
+-    console.log("Error updating settings:", error);
+-    return NextResponse.json({ error: error.message }, { status: 500 });
+-  }
+-}
 +
 +@router.get("/admin/token-saver")
 +async def token_saver_settings(request: Request):
@@ -269,14 +277,21 @@ index 6a7134331..0badad1cb 100644
 +async def update_token_saver_settings(request: Request):
 +    user = administrator(request)
 +    body = await request.json()
-+    enabled = body.get("rtkEnabled")
-+    if not isinstance(enabled, bool):
-+        raise HTTPException(status_code=400, detail="rtkEnabled must be a boolean")
++    allowed = {"rtkEnabled", "cavemanEnabled", "cavemanLevel", "ponytailEnabled", "ponytailLevel"}
++    if not body or set(body) - allowed:
++        raise HTTPException(status_code=400, detail="Unsupported token-saver setting")
++    for key in ("rtkEnabled", "cavemanEnabled", "ponytailEnabled"):
++        if key in body and not isinstance(body[key], bool):
++            raise HTTPException(status_code=400, detail=f"{key} must be a boolean")
++    if "cavemanLevel" in body and body["cavemanLevel"] not in _CAVEMAN_LEVELS:
++        raise HTTPException(status_code=400, detail="Invalid cavemanLevel")
++    if "ponytailLevel" in body and body["ponytailLevel"] not in _PONYTAIL_LEVELS:
++        raise HTTPException(status_code=400, detail="Invalid ponytailLevel")
 +    try:
-+        runtime_settings = await nine_router("settings:update", {"updates": {"rtkEnabled": enabled}})
++        runtime_settings = await nine_router("settings:update", {"updates": body})
 +    except RuntimeError as error:
 +        raise HTTPException(status_code=503, detail=str(error)) from error
-+    store.audit_event(user["id"], "token_saver.updated", "setting", "rtkEnabled", {"enabled": enabled})
++    store.audit_event(user["id"], "token_saver.updated", "setting", "token-saver", {"updates": body})
 +    return _token_saver_response(runtime_settings)
 +
 +

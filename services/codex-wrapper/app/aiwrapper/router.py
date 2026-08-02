@@ -132,13 +132,21 @@ async def download_backup(backup_id: str, request: Request):
     return FileResponse(target, media_type="application/vnd.sqlite3", filename=f"aiwrapper-{backup_id}.sqlite")
 
 
-def _token_saver_response(runtime_settings: dict[str, Any]) -> dict[str, bool]:
+_CAVEMAN_LEVELS = {"lite", "full", "ultra", "wenyan-lite", "wenyan", "wenyan-ultra"}
+_PONYTAIL_LEVELS = {"lite", "full", "ultra"}
+
+
+def _token_saver_response(runtime_settings: dict[str, Any]) -> dict[str, Any]:
     configured = runtime_settings.get("rtkEnabled") is not False
     environment_enabled = bool(settings.aiwrapper_rtk_enabled)
     return {
         "rtkEnabled": configured,
         "environmentEnabled": environment_enabled,
         "effectiveEnabled": configured and environment_enabled,
+        "cavemanEnabled": runtime_settings.get("cavemanEnabled") is True,
+        "cavemanLevel": runtime_settings.get("cavemanLevel", "full"),
+        "ponytailEnabled": runtime_settings.get("ponytailEnabled") is True,
+        "ponytailLevel": runtime_settings.get("ponytailLevel", "full"),
     }
 
 
@@ -155,14 +163,21 @@ async def token_saver_settings(request: Request):
 async def update_token_saver_settings(request: Request):
     user = administrator(request)
     body = await request.json()
-    enabled = body.get("rtkEnabled")
-    if not isinstance(enabled, bool):
-        raise HTTPException(status_code=400, detail="rtkEnabled must be a boolean")
+    allowed = {"rtkEnabled", "cavemanEnabled", "cavemanLevel", "ponytailEnabled", "ponytailLevel"}
+    if not body or set(body) - allowed:
+        raise HTTPException(status_code=400, detail="Unsupported token-saver setting")
+    for key in ("rtkEnabled", "cavemanEnabled", "ponytailEnabled"):
+        if key in body and not isinstance(body[key], bool):
+            raise HTTPException(status_code=400, detail=f"{key} must be a boolean")
+    if "cavemanLevel" in body and body["cavemanLevel"] not in _CAVEMAN_LEVELS:
+        raise HTTPException(status_code=400, detail="Invalid cavemanLevel")
+    if "ponytailLevel" in body and body["ponytailLevel"] not in _PONYTAIL_LEVELS:
+        raise HTTPException(status_code=400, detail="Invalid ponytailLevel")
     try:
-        runtime_settings = await nine_router("settings:update", {"updates": {"rtkEnabled": enabled}})
+        runtime_settings = await nine_router("settings:update", {"updates": body})
     except RuntimeError as error:
         raise HTTPException(status_code=503, detail=str(error)) from error
-    store.audit_event(user["id"], "token_saver.updated", "setting", "rtkEnabled", {"enabled": enabled})
+    store.audit_event(user["id"], "token_saver.updated", "setting", "token-saver", {"updates": body})
     return _token_saver_response(runtime_settings)
 
 

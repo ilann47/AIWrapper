@@ -30,10 +30,8 @@ async def nine_router(operation: str, payload: dict[str, Any], env_overrides: di
 
 
 async def compress_request(body: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any] | None]:
-    if not settings.aiwrapper_rtk_enabled:
-        return body, None
     try:
-        result = await nine_router("compress", {"body": body, "enabled": True})
+        result = await nine_router("compress", {"body": body, "enabled": bool(settings.aiwrapper_rtk_enabled)})
         return result.get("body", body), result.get("stats")
     except Exception:
         # 9router's RTK contract is fail-open: bridge failures must not block a request.
