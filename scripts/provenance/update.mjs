@@ -6,7 +6,7 @@
  * AIWrapper additions: source/destination pairs, LCS line metrics, reuse ratio,
  * unified diffs and Markdown evidence report.
  */
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, extname, join, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { canonicalTextBuffer, hashCanonicalText } from "./canonical.mjs";
@@ -15,7 +15,9 @@ const root = resolve(import.meta.dirname, "..", "..");
 const config = JSON.parse(await readFile(join(root, "provenance", "components.json"), "utf8"));
 const textExtensions = new Set([".py", ".ts", ".tsx", ".js", ".mjs", ".json", ".md", ".toml", ".txt", ".yml", ".yaml", ".sh", ".css", ""]);
 const posix = value => value.replaceAll("\\", "/");
-const ignoredNames = new Set([".git", ".pytest_cache", "__pycache__", "node_modules", "dist", "coverage", ".tmp", ".aiwrapper"]);
+const trackedResult = spawnSync("git", ["ls-files", "-z"], { cwd: root, encoding: "utf8", maxBuffer: 20 * 1024 * 1024 });
+if (trackedResult.status !== 0) throw new Error(`Unable to enumerate tracked provenance inputs: ${trackedResult.stderr}`);
+const trackedFiles = trackedResult.stdout.split("\0").filter(Boolean).map(posix);
 
 async function writeText(path, content) {
   for (let attempt = 0; ; attempt += 1) {
@@ -32,26 +34,18 @@ async function writeText(path, content) {
   }
 }
 
-async function listFiles(dir) {
-  const entries = (await readdir(dir, { withFileTypes: true }))
-    .filter(entry => !ignoredNames.has(entry.name) && !entry.name.endsWith(".pyc"));
-  return (await Promise.all(entries.map(async entry => {
-    const path = join(dir, entry.name);
-    return entry.isDirectory() ? listFiles(path) : [path];
-  }))).flat();
-}
-
 async function expand(component) {
   if (component.kind === "file") return [{ source: component.source, destination: component.destination }];
-  const destinationRoot = join(root, component.destination);
-  const files = await listFiles(destinationRoot);
+  const destinationRoot = posix(component.destination).replace(/\/$/, "");
+  const destinationPrefix = `${destinationRoot}/`;
+  const files = trackedFiles.filter(file => file.startsWith(destinationPrefix));
   const excluded = (component.exclude ?? []).map(value => posix(value).replace(/\/$/, ""));
   return files.filter(file => {
     if (!textExtensions.has(extname(file))) return false;
-    const rel = posix(relative(destinationRoot, file));
+    const rel = file.slice(destinationPrefix.length);
     return !excluded.some(prefix => rel === prefix || rel.startsWith(`${prefix}/`));
   }).map(file => {
-    const rel = relative(destinationRoot, file);
+    const rel = file.slice(destinationPrefix.length);
     return {
       source: component.kind === "reference-directory" ? component.source : posix(join(component.source, rel)),
       destination: posix(join(component.destination, rel)),

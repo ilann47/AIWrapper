@@ -1403,9 +1403,9 @@
       "destination": "scripts/provenance/update.mjs",
       "incompatibility": "The upstream generator verifies vendored SHA-256 values but does not compare arbitrary origin/destination pairs or emit line metrics and unified diffs required by AIWrapper.",
       "parityAudit": {
-        "retained": ["Declarative manifest", "SHA-256 evidence", "fail-closed file traversal", "Per-file origin and destination evidence", "Bounded transient-write retry for Windows indexers", "Cross-platform canonical text hashes"],
+        "retained": ["Declarative manifest", "SHA-256 evidence", "fail-closed file traversal", "Per-file origin and destination evidence", "Bounded transient-write retry for Windows indexers", "Cross-platform canonical text hashes", "Git-index-closed directory expansion that excludes machine-local ignored files and retains tracked nested vendor artifacts"],
         "lost": [],
-        "decision": "The upstream manifest architecture is preserved and extended with required pairwise evidence, component-level aggregate metrics, canonical text hashing and direct links to every unified diff rather than replaced."
+        "decision": "The upstream manifest architecture is preserved and extended with required pairwise evidence, component-level aggregate metrics, canonical text hashing, Git-index-closed traversal and direct links to every unified diff rather than replaced."
       }
     },
     {
@@ -1420,7 +1420,7 @@
       "destination": "scripts/provenance/verify.mjs",
       "incompatibility": "The upstream verifier has no AIWrapper literal classification, pairwise diff integrity or mandatory own-code incompatibility checks.",
       "parityAudit": {
-        "retained": ["Fail-closed validation", "destination hash verification", "manifest checks", "Symmetric LF-canonical source, destination and diff verification"],
+        "retained": ["Fail-closed validation", "destination hash verification", "manifest checks", "Symmetric LF-canonical source, destination and diff verification", "Mandatory Git tracking for every source, destination and stored diff"],
         "lost": [],
         "decision": "Upstream verification behavior is retained and strengthened for the acceptance policy."
       }

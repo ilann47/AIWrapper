@@ -1,20 +1,25 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\codex-multi-auth\\scripts\\verify-vendor-provenance.mjs" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\scripts\\provenance\\verify.mjs"
-index dfb44b7db..ec8a3bd2c 100644
+index dfb44b7db..96cdeea99 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\codex-multi-auth\\scripts\\verify-vendor-provenance.mjs"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\scripts\\provenance\\verify.mjs"	
-@@ -1,117 +1,40 @@
+@@ -1,117 +1,46 @@
  #!/usr/bin/env node
 -import { createHash } from "node:crypto";
 -import { readFile, readdir } from "node:fs/promises";
 +/** Adapted from codex-multi-auth/scripts/verify-vendor-provenance.mjs (MIT, 89ca9696). */
 +import { readFile } from "node:fs/promises";
 +import { resolve } from "node:path";
++import { spawnSync } from "node:child_process";
 +import { hashCanonicalText } from "./canonical.mjs";
  
 -const manifest = JSON.parse(
 -	await readFile(new URL("../vendor/provenance.json", import.meta.url), "utf8"),
 -);
--
++const root = resolve(import.meta.dirname, "..", "..");
++const manifest = JSON.parse(await readFile(new URL("../../provenance/manifest.json", import.meta.url), "utf8"));
++if (!manifest || !Array.isArray(manifest.components)) throw new Error("provenance/manifest.json is missing a valid components array");
++const classifications = new Set(["copied", "directly imported", "adapter", "imported-not-wired", "IMPLEMENTAÇÃO PRÓPRIA"]);
+ 
 -if (!manifest || !Array.isArray(manifest.components)) {
 -	throw new Error("vendor/provenance.json is missing a valid components array");
 -}
@@ -54,10 +59,9 @@ index dfb44b7db..ec8a3bd2c 100644
 -	await walk(relRoot);
 -	return out;
 -}
-+const root = resolve(import.meta.dirname, "..", "..");
-+const manifest = JSON.parse(await readFile(new URL("../../provenance/manifest.json", import.meta.url), "utf8"));
-+if (!manifest || !Array.isArray(manifest.components)) throw new Error("provenance/manifest.json is missing a valid components array");
-+const classifications = new Set(["copied", "directly imported", "adapter", "imported-not-wired", "IMPLEMENTAÇÃO PRÓPRIA"]);
++const trackedResult = spawnSync("git", ["ls-files", "-z"], { cwd: root, encoding: "utf8", maxBuffer: 20 * 1024 * 1024 });
++if (trackedResult.status !== 0) throw new Error(`Unable to enumerate tracked provenance evidence: ${trackedResult.stderr}`);
++const trackedFiles = new Set(trackedResult.stdout.split("\0").filter(Boolean).map(value => value.replaceAll("\\", "/")));
  
 +let count = 0;
  for (const component of manifest.components) {
@@ -131,6 +135,7 @@ index dfb44b7db..ec8a3bd2c 100644
 +  }
 +  for (const file of component.files) {
 +    for (const required of ["source", "destination", "sourceCommit", "license", "sourceSha256", "sha256", "diff", "diffSha256", "lines"]) if (file[required] === undefined) throw new Error(`Missing ${required} in ${component.id}`);
++    for (const path of [file.source, file.destination, file.diff]) if (!trackedFiles.has(path)) throw new Error(`Provenance evidence is not tracked by Git: ${path}`);
 +    const content = await readFile(resolve(root, file.destination));
 +    const actual = hashCanonicalText(content);
 +    if (actual !== file.sha256) throw new Error(`Provenance mismatch for ${file.destination}; run pnpm provenance:update`);

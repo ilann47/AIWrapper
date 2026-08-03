@@ -1,4 +1,7 @@
 import { expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import {
   canonicalTextBuffer,
   hashCanonicalText,
@@ -16,3 +19,17 @@ test("provenance normalization preserves lone carriage returns and content", () 
   expect(canonicalTextBuffer(content)).toEqual(content);
 });
 
+test("every generated provenance input and evidence file is tracked by Git", () => {
+  const root = new URL("../../../", import.meta.url);
+  const manifest = JSON.parse(readFileSync(new URL("provenance/manifest.json", root), "utf8"));
+  const result = spawnSync("git", ["ls-files", "-z"], { cwd: fileURLToPath(root), encoding: "utf8" });
+  expect(result.status).toBe(0);
+  const tracked = new Set(result.stdout.split("\0").filter(Boolean).map(path => path.replaceAll("\\", "/")));
+  for (const component of manifest.components) {
+    for (const file of component.files) {
+      expect(tracked.has(file.source)).toBeTrue();
+      expect(tracked.has(file.destination)).toBeTrue();
+      expect(tracked.has(file.diff)).toBeTrue();
+    }
+  }
+});
