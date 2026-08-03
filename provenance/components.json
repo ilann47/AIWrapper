@@ -1386,6 +1386,23 @@
       }
     },
     {
+      "id": "multi-auth-backend-test-build-boundary",
+      "functionality": "Self-contained backend test lifecycle that builds the imported codex-multi-auth runtime before FastAPI integration tests",
+      "project": "ndycode/codex-multi-auth",
+      "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
+      "license": "MIT / project adapter script",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/codex-multi-auth/package.json",
+      "destination": "package.json",
+      "incompatibility": "The imported package defines its own build lifecycle, but AIWrapper's Python integration tests execute the package through governance-bridge.mjs from the repository root. A clean checkout has no generated dist tree, so the root backend-test boundary must invoke the original build script before pytest.",
+      "parityAudit": {
+        "retained": ["Original codex-multi-auth build script", "Original TypeScript compiler output", "Original OAuth success asset copy", "Existing FastAPI pytest command"],
+        "lost": [],
+        "decision": "Compose the two existing lifecycle commands at the root boundary; do not duplicate or replace the upstream build implementation."
+      }
+    },
+    {
       "id": "provenance-cross-platform-canonical-text",
       "functionality": "Cross-platform LF-canonical SHA-256 evidence for text checked out with Windows CRLF or Git LF",
       "project": "ndycode/codex-multi-auth",

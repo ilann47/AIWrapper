@@ -1,1 +1,29 @@
-# Files are identical.
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\tests\\test_codex_parallel.py" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\tests\\test_codex_parallel.py"
+index f6d1247f2..c9d43ba51 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\tests\\test_codex_parallel.py"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\tests\\test_codex_parallel.py"	
+@@ -23,6 +23,7 @@ def test_run_codex_last_message_runs_in_parallel(monkeypatch, tmp_path):
+             active = 0
+             max_active = 0
+             release_events: list[asyncio.Event] = []
++            both_active = asyncio.Event()
+ 
+             async def fake_create_subprocess_exec(*cmd, **kwargs):
+                 nonlocal active, max_active
+@@ -38,6 +39,8 @@ def test_run_codex_last_message_runs_in_parallel(monkeypatch, tmp_path):
+                         nonlocal active, max_active
+                         active += 1
+                         max_active = max(max_active, active)
++                        if max_active == 2:
++                            both_active.set()
+                         with open(out_path, "w", encoding="utf-8") as fh:
+                             fh.write("done")
+                         await release.wait()
+@@ -65,6 +68,7 @@ def test_run_codex_last_message_runs_in_parallel(monkeypatch, tmp_path):
+                 await asyncio.sleep(0)
+ 
+             # Both tasks should hold a slot concurrently when the limit is 2.
++            await asyncio.wait_for(both_active.wait(), timeout=1)
+             assert max_active == 2
+ 
+             for event in release_events:

@@ -10,7 +10,7 @@
     "build:web": "pnpm --dir apps/opencodex-gui build && node scripts/sync-gui-dist.mjs",
     "typecheck": "pnpm --dir packages/codex-multi-auth typecheck && pnpm --dir apps/opencodex-gui build",
     "test": "pnpm test:backend && pnpm test:gui",
-    "test:backend": "cd services/codex-wrapper && python -m pytest -q",
+    "test:backend": "pnpm build:governance && cd services/codex-wrapper && python -m pytest -q",
     "test:gui": "pnpm --dir apps/opencodex-gui test",
     "test:e2e:live": "node scripts/e2e/live-platform-smoke.mjs",
     "test:e2e:ui": "node scripts/e2e/live-browser-smoke.mjs",
