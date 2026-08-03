@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /** Adapted from codex-multi-auth/scripts/verify-vendor-provenance.mjs (MIT, 89ca9696). */
-import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { hashCanonicalText } from "./canonical.mjs";
 
 const root = resolve(import.meta.dirname, "..", "..");
 const manifest = JSON.parse(await readFile(new URL("../../provenance/manifest.json", import.meta.url), "utf8"));
@@ -19,13 +19,13 @@ for (const component of manifest.components) {
   for (const file of component.files) {
     for (const required of ["source", "destination", "sourceCommit", "license", "sourceSha256", "sha256", "diff", "diffSha256", "lines"]) if (file[required] === undefined) throw new Error(`Missing ${required} in ${component.id}`);
     const content = await readFile(resolve(root, file.destination));
-    const actual = createHash("sha256").update(content).digest("hex");
+    const actual = hashCanonicalText(content);
     if (actual !== file.sha256) throw new Error(`Provenance mismatch for ${file.destination}; run pnpm provenance:update`);
     const source = await readFile(resolve(root, file.source));
-    const sourceActual = createHash("sha256").update(source).digest("hex");
+    const sourceActual = hashCanonicalText(source);
     if (sourceActual !== file.sourceSha256) throw new Error(`Upstream source mismatch for ${file.source}; pin or regenerate provenance`);
     const diff = await readFile(resolve(root, file.diff));
-    const diffActual = createHash("sha256").update(diff).digest("hex");
+    const diffActual = hashCanonicalText(diff);
     if (diffActual !== file.diffSha256) throw new Error(`Stored diff mismatch for ${file.diff}; run pnpm provenance:update`);
     if (typeof file.lines.reusePercent !== "number" || file.lines.reusePercent < 0 || file.lines.reusePercent > 100) throw new Error(`Invalid reuse percentage for ${file.destination}`);
     if (file.lines.source > file.lines.destination * 2 && file.lines.reusePercent < 50) {

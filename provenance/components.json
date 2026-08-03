@@ -19,7 +19,7 @@
       "kind": "directory",
       "source": "upstream/opencodex/gui",
       "destination": "apps/opencodex-gui",
-      "exclude": ["dist", "tests/aiwrapper-token-saver.test.ts", "tests/aiwrapper-traycer-session-history.test.ts", "tests/aiwrapper-traycer-notifications.test.ts", "tests/aiwrapper-traycer-onboarding.test.ts", "tests/aiwrapper-nine-router-connections.test.ts", "tests/aiwrapper-codex-profiles-admin.test.ts", "tests/aiwrapper-multi-auth-monitor.test.ts", "tests/aiwrapper-grid-layout.test.ts", "tests/aiwrapper-container-layout.test.ts", "tests/aiwrapper-production-topology.test.ts"]
+      "exclude": ["dist", "tests/aiwrapper-token-saver.test.ts", "tests/aiwrapper-traycer-session-history.test.ts", "tests/aiwrapper-traycer-notifications.test.ts", "tests/aiwrapper-traycer-onboarding.test.ts", "tests/aiwrapper-nine-router-connections.test.ts", "tests/aiwrapper-codex-profiles-admin.test.ts", "tests/aiwrapper-multi-auth-monitor.test.ts", "tests/aiwrapper-grid-layout.test.ts", "tests/aiwrapper-container-layout.test.ts", "tests/aiwrapper-production-topology.test.ts", "tests/aiwrapper-provenance-portability.test.ts"]
     },
     {
       "id": "opencodex-data-plane-execution",
@@ -1044,9 +1044,9 @@
       "destination": "Dockerfile.codex-wrapper",
       "incompatibility": "The upstream image only copies Codex-Wrapper; AIWrapper must additionally compile and copy the unmodified multi-auth package and original profile executable used by its thin adapters.",
       "parityAudit": {
-        "retained": ["Python 3.11 runtime", "Official Codex CLI install", "Unprivileged codex user", "workspace and auth mounts", "uvicorn process"],
+        "retained": ["Python 3.11 runtime", "Official Codex CLI install", "Unprivileged codex user", "workspace and auth mounts", "uvicorn process", "Original codex-multi-auth vendored plugin and SDK packages installed through its frozen lockfile"],
         "lost": [],
-        "decision": "The upstream container architecture is retained and extended only with the two required upstream packages and AIWrapper integration boundary."
+        "decision": "The upstream container architecture is retained and extended only with the two required upstream packages and AIWrapper integration boundary. The codex-multi-auth vendor tree is copied before npm ci because its original lockfile declares both runtime packages as local file dependencies."
       }
     },
     {
@@ -1062,9 +1062,9 @@
       "destination": "Dockerfile.opencodex",
       "incompatibility": "OpenCodex has no upstream Dockerfile to import. Its Bun package scripts are therefore invoked unchanged from a minimal container integration file. AIWrapper's GUI modules live in a sibling extensions/ tree, so a repository-shaped build stage is required; copying only gui/ makes the original relative imports unavailable in a clean image.",
       "parityAudit": {
-        "retained": ["Pinned Bun version", "Original frozen OpenCodex package install", "Original CLI start command", "Original Vite GUI build", "Original OpenCodex runtime tree", "Single React dependency instance across GUI and extensions", "Build-time public OpenCodex and AIWrapper browser endpoints"],
+        "retained": ["Pinned Bun version", "Original frozen OpenCodex package install", "Original CLI start command", "Original Vite GUI build", "Original OpenCodex runtime tree", "Single React dependency instance across GUI and extensions", "Build-time public OpenCodex and AIWrapper browser endpoints", "Original Traycer chat highlighter and context-usage modules at their repository-relative import paths", "Original Traycer protocol source graph resolved by the existing TypeScript path alias", "Original OPENCODEX_HOME and CODEX_HOME resolution pointed at the prepared configuration and OAuth mount"],
         "lost": [],
-        "decision": "Build the traceable GUI and extension tree in a repository-shaped stage, inject only the browser-visible endpoint values at build time, copy the static dist into the unchanged OpenCodex runtime image, and keep the upstream server executable authoritative."
+        "decision": "Build the traceable GUI, extension tree, directly imported Traycer chat modules and their original protocol source graph in a repository-shaped stage, inject only the browser-visible endpoint values at build time, copy the static dist into the unchanged OpenCodex runtime image, and keep the upstream server executable authoritative."
       }
     },
     {
@@ -1213,10 +1213,11 @@
           "Python cache and virtual-environment exclusion",
           "environment-secret exclusion",
           "Node dependency exclusion",
-          "runtime log exclusion"
+          "runtime log exclusion",
+          "Narrow retention of codex-multi-auth's original compiled vendor packages required by its frozen local-file dependencies"
         ],
         "lost": [],
-        "decision": "Preserve the original denylist and extend it for the multi-runtime repository while explicitly retaining only public environment examples."
+        "decision": "Preserve the original denylist and extend it for the multi-runtime repository while explicitly retaining only public environment examples and codex-multi-auth's tracked vendor package artifacts."
       }
     },
     {
@@ -1368,6 +1369,29 @@
       }
     },
     {
+      "id": "provenance-cross-platform-canonical-text",
+      "functionality": "Cross-platform LF-canonical SHA-256 evidence for text checked out with Windows CRLF or Git LF",
+      "project": "ndycode/codex-multi-auth",
+      "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/codex-multi-auth/scripts/update-vendor-provenance.mjs",
+      "destination": "scripts/provenance/canonical.mjs",
+      "incompatibility": "The upstream vendor manifest hashes raw bytes inside one package. AIWrapper's evidence is generated on Windows with core.autocrlf and verified on Linux CI, so raw hashes describe checkout-specific CRLF bytes rather than the canonical LF bytes committed by Git. Keeping raw hashing makes valid evidence unverifiable on another operating system.",
+      "parityAudit": {
+        "retained": [
+          "SHA-256 algorithm",
+          "Fail-closed content verification",
+          "Whole-file evidence"
+        ],
+        "lost": [
+          "Checkout-specific CRLF is intentionally treated as the same textual artifact as committed LF"
+        ],
+        "decision": "Normalize only CRLF to LF before hashing; preserve all other bytes, including lone carriage returns, and use the helper symmetrically in generation and verification."
+      }
+    },
+    {
       "id": "provenance-generator",
       "functionality": "Pairwise and component-aggregate source/destination provenance manifest, metrics, evidence report and unified diff generation",
       "project": "ndycode/codex-multi-auth",
@@ -1379,9 +1403,9 @@
       "destination": "scripts/provenance/update.mjs",
       "incompatibility": "The upstream generator verifies vendored SHA-256 values but does not compare arbitrary origin/destination pairs or emit line metrics and unified diffs required by AIWrapper.",
       "parityAudit": {
-        "retained": ["Declarative manifest", "SHA-256 evidence", "fail-closed file traversal", "Per-file origin and destination evidence", "Bounded transient-write retry for Windows indexers"],
+        "retained": ["Declarative manifest", "SHA-256 evidence", "fail-closed file traversal", "Per-file origin and destination evidence", "Bounded transient-write retry for Windows indexers", "Cross-platform canonical text hashes"],
         "lost": [],
-        "decision": "The upstream manifest architecture is preserved and extended with required pairwise evidence, component-level aggregate metrics and direct links to every unified diff rather than replaced."
+        "decision": "The upstream manifest architecture is preserved and extended with required pairwise evidence, component-level aggregate metrics, canonical text hashing and direct links to every unified diff rather than replaced."
       }
     },
     {
@@ -1396,7 +1420,7 @@
       "destination": "scripts/provenance/verify.mjs",
       "incompatibility": "The upstream verifier has no AIWrapper literal classification, pairwise diff integrity or mandatory own-code incompatibility checks.",
       "parityAudit": {
-        "retained": ["Fail-closed validation", "destination hash verification", "manifest checks"],
+        "retained": ["Fail-closed validation", "destination hash verification", "manifest checks", "Symmetric LF-canonical source, destination and diff verification"],
         "lost": [],
         "decision": "Upstream verification behavior is retained and strengthened for the acceptance policy."
       }

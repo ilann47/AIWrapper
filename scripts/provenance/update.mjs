@@ -6,10 +6,10 @@
  * AIWrapper additions: source/destination pairs, LCS line metrics, reuse ratio,
  * unified diffs and Markdown evidence report.
  */
-import { createHash } from "node:crypto";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { dirname, extname, join, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
+import { canonicalTextBuffer, hashCanonicalText } from "./canonical.mjs";
 
 const root = resolve(import.meta.dirname, "..", "..");
 const config = JSON.parse(await readFile(join(root, "provenance", "components.json"), "utf8"));
@@ -69,7 +69,6 @@ function lcsLength(a, b) {
   return previous[b.length];
 }
 
-const hash = content => createHash("sha256").update(content).digest("hex");
 const safeName = value => value.replaceAll(/[^a-zA-Z0-9._-]+/g, "_");
 const manifest = { schemaVersion: 1, generatedAt: new Date().toISOString(), generatorUpstream: config.generatorUpstream, components: [] };
 await mkdir(join(root, "provenance", "diffs"), { recursive: true });
@@ -80,9 +79,11 @@ for (const component of config.components) {
     const sourcePath = join(root, pair.source);
     const destinationPath = join(root, pair.destination);
     const [sourceBuffer, destinationBuffer] = await Promise.all([readFile(sourcePath), readFile(destinationPath)]);
+    const canonicalSource = canonicalTextBuffer(sourceBuffer);
+    const canonicalDestination = canonicalTextBuffer(destinationBuffer);
     const sourceLines = sourceBuffer.toString("utf8").split(/\r?\n/);
     const destinationLines = destinationBuffer.toString("utf8").split(/\r?\n/);
-    const preserved = sourceBuffer.equals(destinationBuffer) ? sourceLines.length : lcsLength(sourceLines, destinationLines);
+    const preserved = canonicalSource.equals(canonicalDestination) ? sourceLines.length : lcsLength(sourceLines, destinationLines);
     const sourceOnly = sourceLines.length - preserved;
     const destinationOnly = destinationLines.length - preserved;
     const changed = Math.min(sourceOnly, destinationOnly);
@@ -92,7 +93,7 @@ for (const component of config.components) {
     const diffName = `${safeName(component.id)}--${safeName(relative(join(root, component.destination), destinationPath) || "file")}.diff`;
     const diffRelative = posix(join("provenance", "diffs", diffName));
     let diffContent;
-    if (sourceBuffer.equals(destinationBuffer)) {
+    if (canonicalSource.equals(canonicalDestination)) {
       // Byte-identical copied trees are the dominant case. Avoid starting one Git
       // process per file; the canonical empty unified diff is sufficient evidence.
       diffContent = "# Files are identical.\n";
@@ -105,7 +106,7 @@ for (const component of config.components) {
     await writeText(join(root, diffRelative), diffContent);
     files.push({
       source: posix(pair.source), destination: posix(pair.destination), sourceCommit: component.sourceCommit,
-      license: component.license, sourceSha256: hash(sourceBuffer), sha256: hash(destinationBuffer), diff: diffRelative, diffSha256: hash(diffContent),
+      license: component.license, sourceSha256: hashCanonicalText(sourceBuffer), sha256: hashCanonicalText(destinationBuffer), diff: diffRelative, diffSha256: hashCanonicalText(diffContent),
       lines: { source: sourceLines.length, destination: destinationLines.length, preserved, changed, removed, added, reusePercent },
     });
   }

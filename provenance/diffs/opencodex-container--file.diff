@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\package.json" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\Dockerfile.opencodex"
-index e38d51b0a..52384f4ac 100644
+index e38d51b0a..100a697a4 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\package.json"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\Dockerfile.opencodex"	
-@@ -1,98 +1,33 @@
+@@ -1,98 +1,40 @@
 -{
 -  "name": "@bitkyc08/opencodex",
 -  "version": "2.7.43",
@@ -117,6 +117,12 @@ index e38d51b0a..52384f4ac 100644
 +RUN bun install --frozen-lockfile
 +COPY apps/opencodex-gui ./
 +COPY extensions /workspace/extensions
++# The chat extension imports these original Traycer modules at build/runtime.
++# Keep their repository-relative path and original protocol dependency graph
++# instead of copying or rewriting the code.
++COPY upstream/traycer/clients/gui-app/src/components/chat/chat-find-highlighter.ts /workspace/upstream/traycer/clients/gui-app/src/components/chat/chat-find-highlighter.ts
++COPY upstream/traycer/clients/gui-app/src/components/chat/context-usage.ts /workspace/upstream/traycer/clients/gui-app/src/components/chat/context-usage.ts
++COPY upstream/traycer/protocol/src /workspace/upstream/traycer/protocol/src
 +
 +# Extension modules live beside apps/, so expose the GUI dependency tree at
 +# their common workspace ancestor. This also guarantees one React instance.
@@ -125,6 +131,7 @@ index e38d51b0a..52384f4ac 100644
 +
 +FROM oven/bun:1.3.14
 +WORKDIR /app
++ENV OPENCODEX_HOME=/home/bun/.opencodex CODEX_HOME=/home/bun/.codex
 +COPY upstream/opencodex/package.json upstream/opencodex/bun.lock ./
 +RUN bun install --frozen-lockfile
 +COPY upstream/opencodex .

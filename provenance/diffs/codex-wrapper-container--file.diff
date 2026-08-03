@@ -1,13 +1,17 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\Dockerfile" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\Dockerfile.codex-wrapper"
-index 31ed23325..d00d1464c 100644
+index 31ed23325..6c704ce8e 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\Dockerfile"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\Dockerfile.codex-wrapper"	
-@@ -1,45 +1,38 @@
+@@ -1,45 +1,42 @@
  # syntax=docker/dockerfile:1
 +# The runtime stages preserve circlemouth/Codex-Wrapper's Docker architecture.
 +FROM node:22-bookworm-slim AS governance
 +WORKDIR /src
 +COPY packages/codex-multi-auth/package*.json ./packages/codex-multi-auth/
++# The upstream lockfile resolves @codex-ai/plugin and @codex-ai/sdk from these
++# vendored packages. They must exist before npm ci so npm can materialize the
++# original local dependencies instead of silently leaving them unresolved.
++COPY packages/codex-multi-auth/vendor ./packages/codex-multi-auth/vendor
 +RUN cd packages/codex-multi-auth && npm ci --ignore-scripts
 +COPY packages/codex-multi-auth ./packages/codex-multi-auth
 +RUN cd packages/codex-multi-auth && npm run build

@@ -16,6 +16,10 @@
 **/venv
 **/node_modules
 **/dist
+# codex-multi-auth deliberately vendors the compiled @codex-ai/plugin and SDK;
+# its frozen lockfile consumes these exact local package artifacts.
+!packages/codex-multi-auth/vendor/
+!packages/codex-multi-auth/vendor/**
 **/coverage
 **/*.log
 provenance/diffs

@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\.dockerignore" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\.dockerignore"
-index c172a243e..c7f5bc292 100644
+index c172a243e..c6ed6c48e 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\.dockerignore"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\.dockerignore"	
-@@ -1,17 +1,23 @@
+@@ -1,17 +1,26 @@
  .git
 -.gitignore
 -__pycache__
@@ -35,8 +35,11 @@ index c172a243e..c7f5bc292 100644
 +**/venv
 +**/node_modules
 +**/dist
++# codex-multi-auth deliberately vendors the compiled @codex-ai/plugin and SDK;
++# its frozen lockfile consumes these exact local package artifacts.
++!packages/codex-multi-auth/vendor/
++!packages/codex-multi-auth/vendor/**
 +**/coverage
 +**/*.log
 +provenance/diffs
 +docs/generated
-+

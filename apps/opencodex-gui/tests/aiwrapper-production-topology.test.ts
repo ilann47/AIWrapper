@@ -36,3 +36,21 @@ test("production topology smoke verifies identity, readiness and admission", () 
   expect(smoke).toContain("Anonymous OpenCodex management was not rejected");
   expect(smoke).toContain('"X-OpenCodex-API-Key": ADMIN_TOKEN');
 });
+
+test("OpenCodex image preserves directly imported Traycer chat modules", () => {
+  const dockerfile = read("Dockerfile.opencodex");
+  expect(dockerfile).toContain("upstream/traycer/clients/gui-app/src/components/chat/chat-find-highlighter.ts /workspace/upstream/traycer/clients/gui-app/src/components/chat/chat-find-highlighter.ts");
+  expect(dockerfile).toContain("upstream/traycer/clients/gui-app/src/components/chat/context-usage.ts /workspace/upstream/traycer/clients/gui-app/src/components/chat/context-usage.ts");
+  expect(dockerfile).toContain("upstream/traycer/protocol/src /workspace/upstream/traycer/protocol/src");
+  expect(dockerfile).toContain("ENV OPENCODEX_HOME=/home/bun/.opencodex CODEX_HOME=/home/bun/.codex");
+});
+
+test("Codex-Wrapper image installs original multi-auth vendored dependencies before building", () => {
+  const dockerfile = read("Dockerfile.codex-wrapper");
+  const dockerignore = read(".dockerignore");
+  const vendorCopy = dockerfile.indexOf("COPY packages/codex-multi-auth/vendor ./packages/codex-multi-auth/vendor");
+  const npmInstall = dockerfile.indexOf("npm ci --ignore-scripts");
+  expect(vendorCopy).toBeGreaterThan(-1);
+  expect(npmInstall).toBeGreaterThan(vendorCopy);
+  expect(dockerignore).toContain("!packages/codex-multi-auth/vendor/**");
+});
