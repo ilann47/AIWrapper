@@ -125,6 +125,27 @@
       }
     },
     {
+      "id": "opencodex-default-runtime-selection",
+      "functionality": "OpenCodex selected as the canonical zero-configuration data plane with Codex CLI retained as an explicit fallback",
+      "project": "lidge-jun/OpenCodex and circlemouth/Codex-Wrapper",
+      "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/opencodex/src/config.ts",
+      "destination": "services/codex-wrapper/app/config.py",
+      "incompatibility": "OpenCodex owns its Bun configuration schema while Codex-Wrapper owns Pydantic process configuration; neither upstream has a setting that selects between the two composed services. The integration boundary must choose which complete runtime receives requests.",
+      "parityAudit": {
+        "retained": [
+          "Complete OpenCodex configuration remains authoritative inside its process",
+          "Complete Codex-Wrapper configuration remains available",
+          "Explicit AIWRAPPER_EXECUTION_BACKEND=codex-cli fallback"
+        ],
+        "lost": [],
+        "decision": "Make the already integrated OpenCodex service the safe default so an installation without .env follows the documented production topology rather than silently bypassing provider pools and fallback."
+      }
+    },
+    {
       "id": "codex-wrapper-production-admission",
       "functionality": "Allowlisted browser origins, authenticated per-user rate-limit identity and dependency-aware readiness",
       "project": "circlemouth/Codex-Wrapper and lidge-jun/OpenCodex security boundaries",
@@ -700,6 +721,32 @@
       }
     },
     {
+      "id": "aiwrapper-owner-recovery-secret",
+      "functionality": "Instance-scoped, atomically persisted owner recovery credential that cannot be overwritten by temporary databases",
+      "project": "lidge-jun/OpenCodex management authentication adapted to the AIWrapper owner domain",
+      "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/opencodex/src/server/management-auth.ts",
+      "destination": "services/codex-wrapper/app/aiwrapper/store.py",
+      "incompatibility": "OpenCodex stores one process-level administrator token in TypeScript, while AIWrapper hashes per-user keys in SQLite and exposes only a local owner recovery file. The original secret-directory, exclusive temporary file, fsync, atomic replacement and no-cross-instance principles are portable; its in-memory GUI session store is not the AIWrapper persistence model.",
+      "parityAudit": {
+        "retained": [
+          "Secret scoped to the configured runtime directory",
+          "Exclusive temporary-file creation",
+          "Flush and fsync before publication",
+          "Atomic publication and restrictive file mode",
+          "Temporary artifact cleanup",
+          "Existing credential is never replaced by creation of another instance"
+        ],
+        "lost": [
+          "OpenCodex Windows ACL helper has no Python import boundary; OS chmod remains the portable fallback"
+        ],
+        "decision": "Adapt the OpenCodex secret-file lifecycle at the persistence boundary and derive temporary-store recovery paths from their own database directory so test fixtures and parallel instances cannot corrupt the production owner credential."
+      }
+    },
+    {
       "id": "nine-router-settings-sqlite-boundary",
       "functionality": "Bind 9router's original Node 22 SQLite adapter to the canonical AIWrapper state database",
       "project": "decolua/9router",
@@ -1071,6 +1118,32 @@
       "parityAudit": { "retained": ["Original OpenCodex static-file server and path contract"], "lost": [], "decision": "Copy build artifacts at packaging time while leaving the upstream server unchanged." }
     },
     {
+      "id": "aiwrapper-live-topology-e2e",
+      "functionality": "Opt-in production smoke across browser authentication, model discovery, real SSE provider execution, conversation persistence, export, sharing and usage accounting",
+      "project": "decolua/9router and lidge-jun/OpenCodex",
+      "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/9router/tests/unit/rtk.e2e.test.js",
+      "destination": "scripts/e2e/live-platform-smoke.mjs",
+      "incompatibility": "9router's live E2E covers RTK at its own proxy and OpenCodex's runtime smoke covers an isolated provider process, but neither can authenticate an AIWrapper principal or inspect its session, share and governance domains. The live opt-in, direct fetch, bounded wait and server-contract architecture are reusable; the assertions must target the composed product boundary.",
+      "parityAudit": {
+        "retained": [
+          "Explicit opt-in before live provider traffic",
+          "Real HTTP proxy request instead of an in-process mock",
+          "Environment-configured endpoint, key and model",
+          "Bounded network timeout",
+          "Streaming response verification"
+        ],
+        "lost": [
+          "9router log-file RTK assertion remains covered by the directly executed RTK integration test",
+          "OpenCodex isolated child restart proof remains in the complete imported upstream suite"
+        ],
+        "decision": "Adapt the mature live-smoke boundary to prove the composed AIWrapper product and add secret redaction plus deterministic cleanup; do not introduce a second browser automation stack."
+      }
+    },
+    {
       "id": "provenance-generator",
       "functionality": "Pairwise and component-aggregate source/destination provenance manifest, metrics, evidence report and unified diff generation",
       "project": "ndycode/codex-multi-auth",
@@ -1082,7 +1155,7 @@
       "destination": "scripts/provenance/update.mjs",
       "incompatibility": "The upstream generator verifies vendored SHA-256 values but does not compare arbitrary origin/destination pairs or emit line metrics and unified diffs required by AIWrapper.",
       "parityAudit": {
-        "retained": ["Declarative manifest", "SHA-256 evidence", "fail-closed file traversal", "Per-file origin and destination evidence"],
+        "retained": ["Declarative manifest", "SHA-256 evidence", "fail-closed file traversal", "Per-file origin and destination evidence", "Bounded transient-write retry for Windows indexers"],
         "lost": [],
         "decision": "The upstream manifest architecture is preserved and extended with required pairwise evidence, component-level aggregate metrics and direct links to every unified diff rather than replaced."
       }

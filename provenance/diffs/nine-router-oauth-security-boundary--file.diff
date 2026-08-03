@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\providers\\registry\\gemini.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\.env.example"
-index 40dedaf7f..9e87a00be 100644
+index 40dedaf7f..20ae4ea6e 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\providers\\registry\\gemini.js"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\.env.example"	
-@@ -1,85 +1,57 @@
+@@ -1,85 +1,66 @@
 -import { GOOGLE_OAUTH_CLIENT } from "../shared.js";
 +# AIWrapper Lab — copie para .env e ajuste somente o necessário.
 +# Nunca versione .env, auth.json, chaves individuais ou o diretório .aiwrapper.
@@ -144,3 +144,12 @@ index 40dedaf7f..9e87a00be 100644
 +
 +# OpenCodex em Docker exige credencial de data-plane ao usar bind não-loopback.
 +OPENCODEX_API_AUTH_TOKEN=change-me-with-a-random-token
++
++# Gate E2E real (opt-in; nunca versione a chave individual).
++# Requer OpenCodex e Codex-Wrapper em execução e consome uma solicitação curta.
++AIWRAPPER_E2E_LIVE=0
++AIWRAPPER_E2E_BASE=http://127.0.0.1:8766
++AIWRAPPER_E2E_ORIGIN=http://127.0.0.1:8765
++AIWRAPPER_E2E_KEY_FILE=services/codex-wrapper/.aiwrapper/bootstrap-owner.key
++AIWRAPPER_E2E_MODEL=gpt-5.6-sol
++AIWRAPPER_E2E_TIMEOUT_MS=120000

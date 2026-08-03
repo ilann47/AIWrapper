@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-03T02:39:10.956Z",
+  "generatedAt": "2026-08-03T03:18:24.090Z",
   "generatorUpstream": {
     "project": "ndycode/codex-multi-auth",
     "commit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
@@ -5372,6 +5372,44 @@
       ]
     },
     {
+      "id": "opencodex-default-runtime-selection",
+      "functionality": "OpenCodex selected as the canonical zero-configuration data plane with Codex CLI retained as an explicit fallback",
+      "project": "lidge-jun/OpenCodex and circlemouth/Codex-Wrapper",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "OpenCodex owns its Bun configuration schema while Codex-Wrapper owns Pydantic process configuration; neither upstream has a setting that selects between the two composed services. The integration boundary must choose which complete runtime receives requests.",
+      "parityAudit": {
+        "retained": [
+          "Complete OpenCodex configuration remains authoritative inside its process",
+          "Complete Codex-Wrapper configuration remains available",
+          "Explicit AIWRAPPER_EXECUTION_BACKEND=codex-cli fallback"
+        ],
+        "lost": [],
+        "decision": "Make the already integrated OpenCodex service the safe default so an installation without .env follows the documented production topology rather than silently bypassing provider pools and fallback."
+      },
+      "files": [
+        {
+          "source": "upstream/opencodex/src/config.ts",
+          "destination": "services/codex-wrapper/app/config.py",
+          "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+          "license": "MIT / project adapter code",
+          "sourceSha256": "1d0dd7000ab2c961f0a8ea39d755d5f995cdac07e71d6e4a2c43088dcd34123e",
+          "sha256": "334777270e23a3f1c0a18813e50199ca4c6001f92e55bbc22a40abd88b2c280a",
+          "diff": "provenance/diffs/opencodex-default-runtime-selection--file.diff",
+          "diffSha256": "a0fe39fbbe5a0f0e9840fa7da4505d4764f4c828a75a665b0bc833e8ae9a6fc0",
+          "lines": {
+            "source": 1877,
+            "destination": 83,
+            "preserved": 9,
+            "changed": 74,
+            "removed": 1794,
+            "added": 0,
+            "reusePercent": 0.48
+          }
+        }
+      ]
+    },
+    {
       "id": "codex-wrapper-production-admission",
       "functionality": "Allowlisted browser origins, authenticated per-user rate-limit identity and dependency-aware readiness",
       "project": "circlemouth/Codex-Wrapper and lidge-jun/OpenCodex security boundaries",
@@ -5446,16 +5484,16 @@
           "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
           "license": "MIT",
           "sourceSha256": "ea7965f6bf02016a3a03887a774fd10eeacce42b5426b61c1ef989cee373604d",
-          "sha256": "cf6c9e8477d65737e86f59306c299f7920f948938a8fc8fc4abc079e759b228a",
+          "sha256": "334777270e23a3f1c0a18813e50199ca4c6001f92e55bbc22a40abd88b2c280a",
           "diff": "provenance/diffs/codex-wrapper-service--app_config.py.diff",
-          "diffSha256": "08b87be9d8be3e4fe2bf4c70569d645d46c2230e4b922c9764a58afd8af168ee",
+          "diffSha256": "9aa1814cd48168008acb0e9510ebc0147617a8599be0cdbe4d7a6e3170b3922a",
           "lines": {
             "source": 52,
-            "destination": 81,
+            "destination": 83,
             "preserved": 52,
             "changed": 0,
             "removed": 0,
-            "added": 29,
+            "added": 31,
             "reusePercent": 100
           }
         },
@@ -24585,15 +24623,15 @@
           "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
           "license": "MIT / project adapter configuration",
           "sourceSha256": "ffcb7ba6b9a681dbbdb7e9c79f64ca2320188f7efede616735ceb4ec120113c3",
-          "sha256": "85e599cc04f0ed2e0e7df8967c2db2bbcfba1aaa5b2723bf7256bc4a7d5b74de",
+          "sha256": "418e2aab32ebde246bd89247dc4c1354b9d77d5384346b6066a861f0f3baeda5",
           "diff": "provenance/diffs/nine-router-oauth-security-boundary--file.diff",
-          "diffSha256": "4b56d4ddb548484bea45790b947d4483d77d919c2efacf843f8955b6eedcb7ee",
+          "diffSha256": "93bbdff8962f4787fe33f88295e6c757b1d1276d57ca0dfd3ee865825f102dc9",
           "lines": {
             "source": 86,
-            "destination": 58,
+            "destination": 67,
             "preserved": 2,
-            "changed": 56,
-            "removed": 28,
+            "changed": 65,
+            "removed": 19,
             "added": 0,
             "reusePercent": 2.33
           }
@@ -25608,16 +25646,16 @@
           "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
           "license": "MIT / project code",
           "sourceSha256": "e611d9f8f4e169e93306e2938bb9d2297432771364a9a00976e8d2541e94596a",
-          "sha256": "53cfb61eb820601bf9fc7ee377ae474d4832a6ecd90b48fbe855010425423b2d",
+          "sha256": "4bfadd8fba75837996c710df55082ed65eb69955891a29a98ca35349e91e606f",
           "diff": "provenance/diffs/aiwrapper-notification-receipts--file.diff",
-          "diffSha256": "0aaf746a6a2a5add65ed7f8d398edf72848266b74a7c9919d06119aaf74f1cdf",
+          "diffSha256": "276db2e801bfe80914732173738b44df2e753bcd14e95d6a672508fe8235e43a",
           "lines": {
             "source": 10,
-            "destination": 512,
+            "destination": 529,
             "preserved": 2,
             "changed": 8,
             "removed": 0,
-            "added": 502,
+            "added": 519,
             "reusePercent": 20
           }
         }
@@ -25698,6 +25736,49 @@
             "removed": 0,
             "added": 0,
             "reusePercent": 98.28
+          }
+        }
+      ]
+    },
+    {
+      "id": "aiwrapper-owner-recovery-secret",
+      "functionality": "Instance-scoped, atomically persisted owner recovery credential that cannot be overwritten by temporary databases",
+      "project": "lidge-jun/OpenCodex management authentication adapted to the AIWrapper owner domain",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "OpenCodex stores one process-level administrator token in TypeScript, while AIWrapper hashes per-user keys in SQLite and exposes only a local owner recovery file. The original secret-directory, exclusive temporary file, fsync, atomic replacement and no-cross-instance principles are portable; its in-memory GUI session store is not the AIWrapper persistence model.",
+      "parityAudit": {
+        "retained": [
+          "Secret scoped to the configured runtime directory",
+          "Exclusive temporary-file creation",
+          "Flush and fsync before publication",
+          "Atomic publication and restrictive file mode",
+          "Temporary artifact cleanup",
+          "Existing credential is never replaced by creation of another instance"
+        ],
+        "lost": [
+          "OpenCodex Windows ACL helper has no Python import boundary; OS chmod remains the portable fallback"
+        ],
+        "decision": "Adapt the OpenCodex secret-file lifecycle at the persistence boundary and derive temporary-store recovery paths from their own database directory so test fixtures and parallel instances cannot corrupt the production owner credential."
+      },
+      "files": [
+        {
+          "source": "upstream/opencodex/src/server/management-auth.ts",
+          "destination": "services/codex-wrapper/app/aiwrapper/store.py",
+          "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+          "license": "MIT / project adapter code",
+          "sourceSha256": "775f69d8302b74083194235e1d27a8ac004bf9338cb7d0cc8e6c1d6e6dbc00ba",
+          "sha256": "4bfadd8fba75837996c710df55082ed65eb69955891a29a98ca35349e91e606f",
+          "diff": "provenance/diffs/aiwrapper-owner-recovery-secret--file.diff",
+          "diffSha256": "e65d8067aefc856cfdc48202f13cbf1c219e9b0ae05d3e23a5e46395cf0ce6ea",
+          "lines": {
+            "source": 217,
+            "destination": 529,
+            "preserved": 17,
+            "changed": 200,
+            "removed": 0,
+            "added": 312,
+            "reusePercent": 7.83
           }
         }
       ]
@@ -26789,17 +26870,17 @@
           "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
           "license": "MIT / project code",
           "sourceSha256": "e40cdd42970dffd2148095756800d793475ee3daae61bc70fec39e7e9a3145af",
-          "sha256": "53cfb61eb820601bf9fc7ee377ae474d4832a6ecd90b48fbe855010425423b2d",
+          "sha256": "4bfadd8fba75837996c710df55082ed65eb69955891a29a98ca35349e91e606f",
           "diff": "provenance/diffs/aiwrapper-fastapi-domain-extension--store.py.diff",
-          "diffSha256": "73cfa0d1daa3d2657f1fb7467e51c27ca0aaed0d235bae77359c906e91c90c9c",
+          "diffSha256": "82e5abf3beed26bbec1cc8796e3f7c59be2c5143064639126ac9837619b993ed",
           "lines": {
             "source": 269,
-            "destination": 512,
-            "preserved": 34,
-            "changed": 235,
+            "destination": 529,
+            "preserved": 35,
+            "changed": 234,
             "removed": 0,
-            "added": 243,
-            "reusePercent": 12.64
+            "added": 260,
+            "reusePercent": 13.01
           }
         },
         {
@@ -27016,6 +27097,49 @@
       ]
     },
     {
+      "id": "aiwrapper-live-topology-e2e",
+      "functionality": "Opt-in production smoke across browser authentication, model discovery, real SSE provider execution, conversation persistence, export, sharing and usage accounting",
+      "project": "decolua/9router and lidge-jun/OpenCodex",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "9router's live E2E covers RTK at its own proxy and OpenCodex's runtime smoke covers an isolated provider process, but neither can authenticate an AIWrapper principal or inspect its session, share and governance domains. The live opt-in, direct fetch, bounded wait and server-contract architecture are reusable; the assertions must target the composed product boundary.",
+      "parityAudit": {
+        "retained": [
+          "Explicit opt-in before live provider traffic",
+          "Real HTTP proxy request instead of an in-process mock",
+          "Environment-configured endpoint, key and model",
+          "Bounded network timeout",
+          "Streaming response verification"
+        ],
+        "lost": [
+          "9router log-file RTK assertion remains covered by the directly executed RTK integration test",
+          "OpenCodex isolated child restart proof remains in the complete imported upstream suite"
+        ],
+        "decision": "Adapt the mature live-smoke boundary to prove the composed AIWrapper product and add secret redaction plus deterministic cleanup; do not introduce a second browser automation stack."
+      },
+      "files": [
+        {
+          "source": "upstream/9router/tests/unit/rtk.e2e.test.js",
+          "destination": "scripts/e2e/live-platform-smoke.mjs",
+          "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+          "license": "MIT / project adapter code",
+          "sourceSha256": "b1d8c5a35df042e722fe3d496ee2f76c569584528f6a0e125374d1c4cf71934e",
+          "sha256": "fb9e5ca96f50ea9eb99901774837d56cfd413c3a10e6f1c7b292d4b38ebb8344",
+          "diff": "provenance/diffs/aiwrapper-live-topology-e2e--file.diff",
+          "diffSha256": "cd82ba12d9ba6aceca8b99bcc17faee1d8a23abc43ac6004ce20db8837c3109d",
+          "lines": {
+            "source": 137,
+            "destination": 220,
+            "preserved": 25,
+            "changed": 112,
+            "removed": 0,
+            "added": 83,
+            "reusePercent": 18.25
+          }
+        }
+      ]
+    },
+    {
       "id": "provenance-generator",
       "functionality": "Pairwise and component-aggregate source/destination provenance manifest, metrics, evidence report and unified diff generation",
       "project": "ndycode/codex-multi-auth",
@@ -27027,7 +27151,8 @@
           "Declarative manifest",
           "SHA-256 evidence",
           "fail-closed file traversal",
-          "Per-file origin and destination evidence"
+          "Per-file origin and destination evidence",
+          "Bounded transient-write retry for Windows indexers"
         ],
         "lost": [],
         "decision": "The upstream manifest architecture is preserved and extended with required pairwise evidence, component-level aggregate metrics and direct links to every unified diff rather than replaced."
@@ -27039,16 +27164,16 @@
           "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
           "license": "MIT",
           "sourceSha256": "213412a53958eec4becde6126ea6ed3f240c381538ed611995bc93aeeb03d693",
-          "sha256": "5f9d68411a4021a1bb9b7529cd8bce98dad39b2da230aeb26051118fc47fbf96",
+          "sha256": "3ff718103430bdec5d5b9acbd7e6727b91aba691d521039bad358e4c4873cbea",
           "diff": "provenance/diffs/provenance-generator--file.diff",
-          "diffSha256": "7b68d5d7d002e5d4b3a2f6918ac902e9ba5daf959ddaa80ad931f77f92c41ee6",
+          "diffSha256": "a836ebdf43e604583e6cb47cebd15f72eaefb9b7a170496b1aee8a13c28a72bc",
           "lines": {
             "source": 97,
-            "destination": 137,
+            "destination": 140,
             "preserved": 13,
             "changed": 84,
             "removed": 0,
-            "added": 40,
+            "added": 43,
             "reusePercent": 13.4
           }
         }

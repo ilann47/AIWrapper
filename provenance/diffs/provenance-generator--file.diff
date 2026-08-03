@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\codex-multi-auth\\scripts\\update-vendor-provenance.mjs" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\scripts\\provenance\\update.mjs"
-index 948603c0f..09f519dda 100644
+index 948603c0f..a87f7c84f 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\codex-multi-auth\\scripts\\update-vendor-provenance.mjs"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\scripts\\provenance\\update.mjs"	
-@@ -1,96 +1,136 @@
+@@ -1,96 +1,139 @@
  #!/usr/bin/env node
 +/**
 + * Adapted from codex-multi-auth/scripts/update-vendor-provenance.mjs (MIT,
@@ -61,8 +61,11 @@ index 948603c0f..09f519dda 100644
 +      await writeFile(path, content, "utf8");
 +      return;
 +    } catch (error) {
-+      if (attempt >= 5 || !["UNKNOWN", "EBUSY", "EPERM"].includes(error?.code)) throw error;
-+      await new Promise(resolveDelay => setTimeout(resolveDelay, 40 * (attempt + 1)));
++      if (attempt >= 20 || !["UNKNOWN", "EBUSY", "EPERM"].includes(error?.code)) throw error;
++      // Windows Defender and file indexers can keep a freshly generated diff
++      // unavailable for several seconds. Preserve the upstream fail-closed write
++      // while allowing bounded, linear backoff for those transient errors.
++      await new Promise(resolveDelay => setTimeout(resolveDelay, Math.min(1_000, 100 * (attempt + 1))));
 +    }
 +  }
  }

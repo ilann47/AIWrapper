@@ -23,8 +23,11 @@ async function writeText(path, content) {
       await writeFile(path, content, "utf8");
       return;
     } catch (error) {
-      if (attempt >= 5 || !["UNKNOWN", "EBUSY", "EPERM"].includes(error?.code)) throw error;
-      await new Promise(resolveDelay => setTimeout(resolveDelay, 40 * (attempt + 1)));
+      if (attempt >= 20 || !["UNKNOWN", "EBUSY", "EPERM"].includes(error?.code)) throw error;
+      // Windows Defender and file indexers can keep a freshly generated diff
+      // unavailable for several seconds. Preserve the upstream fail-closed write
+      // while allowing bounded, linear backoff for those transient errors.
+      await new Promise(resolveDelay => setTimeout(resolveDelay, Math.min(1_000, 100 * (attempt + 1))));
     }
   }
 }

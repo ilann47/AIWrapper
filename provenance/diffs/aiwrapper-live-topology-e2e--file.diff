@@ -1,0 +1,341 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\tests\\unit\\rtk.e2e.test.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\scripts\\e2e\\live-platform-smoke.mjs"
+index a7d42685e..885d461ed 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\tests\\unit\\rtk.e2e.test.js"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\scripts\\e2e\\live-platform-smoke.mjs"	
+@@ -1,136 +1,219 @@
+-// End-to-end integration test: hit live local proxy and verify [RTK] behavior.
+-// Run with: RUN_E2E=1 RTK_E2E_PORT=... RTK_E2E_KEY=... RTK_E2E_LOG=<absolute path to server stdout file> npm test rtk.e2e.test.js
+-// Requires: dev server running, rtkEnabled=true, API key present.
+-import { describe, it, expect } from "vitest";
+-import fs from "node:fs";
+-
+-const PORT = process.env.RTK_E2E_PORT || "20128";
+-const BASE = `http://localhost:${PORT}`;
+-const API_KEY = process.env.RTK_E2E_KEY || "";
+-const LOG_FILE = process.env.RTK_E2E_LOG || "";
+-
+-const RUN = process.env.RUN_E2E === "1";
+-const maybe = RUN ? describe : describe.skip;
+-
+-function readLogTail(bytes = 8192) {
+-  if (!LOG_FILE || !fs.existsSync(LOG_FILE)) return "";
+-  const stat = fs.statSync(LOG_FILE);
+-  const start = Math.max(0, stat.size - bytes);
+-  const fd = fs.openSync(LOG_FILE, "r");
+-  const buf = Buffer.alloc(stat.size - start);
+-  fs.readSync(fd, buf, 0, buf.length, start);
+-  fs.closeSync(fd);
+-  return buf.toString("utf8");
++#!/usr/bin/env node
++/**
++ * Opt-in live topology gate adapted from 9router's RUN_E2E proxy probes and
++ * OpenCodex's isolated runtime smoke. It exercises the already-running
++ * AIWrapper gateway without ever printing the individual key or session token.
++ */
++import { existsSync, readFileSync } from "node:fs";
++import { resolve } from "node:path";
++
++const RUN = process.env.AIWRAPPER_E2E_LIVE === "1";
++const BASE = (process.env.AIWRAPPER_E2E_BASE ?? "http://127.0.0.1:8766").replace(/\/$/, "");
++const ORIGIN = (process.env.AIWRAPPER_E2E_ORIGIN ?? "http://127.0.0.1:8765").replace(/\/$/, "");
++const TIMEOUT_MS = Number(process.env.AIWRAPPER_E2E_TIMEOUT_MS ?? 120_000);
++const MARKER = `AIWRAPPER_E2E_${Date.now()}`;
++
++function fail(message) {
++  throw new Error(message);
+ }
+ 
+-// Read new bytes appended to log since `offset`. Returns text + new offset.
+-function readLogSince(offset) {
+-  if (!LOG_FILE || !fs.existsSync(LOG_FILE)) return { text: "", next: offset };
+-  const stat = fs.statSync(LOG_FILE);
+-  if (stat.size <= offset) return { text: "", next: stat.size };
+-  const fd = fs.openSync(LOG_FILE, "r");
+-  const buf = Buffer.alloc(stat.size - offset);
+-  fs.readSync(fd, buf, 0, buf.length, offset);
+-  fs.closeSync(fd);
+-  return { text: buf.toString("utf8"), next: stat.size };
++function readIndividualKey() {
++  const inline = process.env.AIWRAPPER_E2E_KEY?.trim();
++  if (inline) return inline;
++  const configured = process.env.AIWRAPPER_E2E_KEY_FILE?.trim();
++  const path = resolve(configured || "services/codex-wrapper/.aiwrapper/bootstrap-owner.key");
++  if (!existsSync(path)) fail(`AIWrapper E2E key file not found: ${path}`);
++  const value = readFileSync(path, "utf8").trim();
++  if (!value) fail(`AIWrapper E2E key file is empty: ${path}`);
++  return value;
+ }
+ 
+-function logOffset() {
+-  if (!LOG_FILE || !fs.existsSync(LOG_FILE)) return 0;
+-  return fs.statSync(LOG_FILE).size;
++function redact(message, secrets) {
++  return secrets.reduce(
++    (safe, secret) => secret ? safe.replaceAll(secret, "<redacted>") : safe,
++    String(message),
++  ).replace(/Bearer\s+\S+/gi, "Bearer <redacted>");
+ }
+ 
+-async function sendChat(body) {
+-  return fetch(`${BASE}/v1/chat/completions`, {
+-    method: "POST",
+-    headers: { "content-type": "application/json", "authorization": `Bearer ${API_KEY}` },
+-    body: JSON.stringify(body)
++async function request(path, init = {}, expected = [200]) {
++  const response = await fetch(`${BASE}${path}`, {
++    ...init,
++    signal: AbortSignal.timeout(TIMEOUT_MS),
+   });
++  if (!expected.includes(response.status)) {
++    const detail = (await response.text()).slice(0, 500);
++    fail(`${init.method ?? "GET"} ${path} returned ${response.status}: ${detail}`);
++  }
++  return response;
+ }
+ 
+-function makeBigDiff(fileCount = 3, linesPerFile = 80) {
+-  const out = [];
+-  for (let f = 0; f < fileCount; f++) {
+-    out.push(`diff --git a/src/file${f}.js b/src/file${f}.js`);
+-    out.push(`index abc${f}..def${f} 100644`);
+-    out.push(`--- a/src/file${f}.js`);
+-    out.push(`+++ b/src/file${f}.js`);
+-    out.push(`@@ -1,${linesPerFile} +1,${linesPerFile} @@`);
+-    for (let i = 0; i < linesPerFile; i++) {
+-      out.push(`-const old${f}_${i} = "removed value ${i} padding padding padding";`);
+-      out.push(`+const new${f}_${i} = "added value ${i} padding padding padding padding";`);
++async function json(path, init = {}, expected = [200]) {
++  const response = await request(path, init, expected);
++  return { response, body: await response.json() };
++}
++
++function bearer(token) {
++  return { authorization: `Bearer ${token}`, origin: ORIGIN };
++}
++
++function streamText(raw) {
++  let output = "";
++  let done = false;
++  for (const line of raw.split(/\r?\n/)) {
++    if (!line.startsWith("data:")) continue;
++    const payload = line.slice(5).trim();
++    if (payload === "[DONE]") {
++      done = true;
++      continue;
+     }
++    if (!payload) continue;
++    const event = JSON.parse(payload);
++    output += event.choices?.[0]?.delta?.content ?? "";
+   }
+-  return out.join("\n");
++  if (!done) fail("Streaming response ended without [DONE]");
++  return output;
+ }
+ 
+-maybe("RTK end-to-end", () => {
+-  it("server is reachable", async () => {
+-    const res = await fetch(`${BASE}/api/health`);
+-    expect(res.ok).toBe(true);
+-  });
++if (!RUN) {
++  process.stderr.write(
++    "Refusing to call a live provider. Set AIWRAPPER_E2E_LIVE=1 and provide " +
++    "AIWRAPPER_E2E_KEY or AIWRAPPER_E2E_KEY_FILE.\n",
++  );
++  process.exit(2);
++}
+ 
+-  it("rtkEnabled flag is true (user must enable via dashboard)", async () => {
+-    const res = await fetch(`${BASE}/api/settings`);
+-    const data = await res.json();
+-    expect(data.rtkEnabled).toBe(true);
+-  });
++const individualKey = readIndividualKey();
++let accessToken = "";
++let refreshCookie = "";
++let sessionId = "";
++let shareId = "";
++let beforeSessionIds = new Set();
++const secrets = [individualKey];
+ 
+-  it("compresses git diff tool_result and writes [RTK] savings to log", async () => {
+-    const diff = makeBigDiff(2, 60);
+-    expect(diff.length).toBeGreaterThan(500);
+-
+-    const offset = logOffset();
+-    const res = await sendChat({
+-      model: "cc/claude-opus-4-7",
+-      stream: false,
+-      max_tokens: 64,
+-      messages: [
+-        { role: "user", content: "run git diff" },
+-        { role: "assistant", content: null, tool_calls: [{ id: "call_1", type: "function", function: { name: "Bash", arguments: JSON.stringify({ command: "git diff" }) } }] },
+-        { role: "tool", tool_call_id: "call_1", content: diff },
+-        { role: "user", content: "summarize in 10 words" }
+-      ]
+-    });
+-    expect([200, 400, 401, 402, 500]).toContain(res.status);
+-
+-    if (!LOG_FILE) return;
+-    await new Promise(r => setTimeout(r, 500));
+-    const { text } = readLogSince(offset);
+-    const matches = [...text.matchAll(/\[RTK\] saved (\d+)B \/ (\d+)B \([\d.]+%\) via \[([\w,-]+)\] hits=(\d+)/g)];
+-    // Find the log line that corresponds to OUR request (total ≥ diff.length and contains git-diff)
+-    const mine = matches.find(m => Number(m[2]) >= diff.length && m[3].includes("git-diff"));
+-    expect(mine, `no matching [RTK] line for our request (diff=${diff.length}B) in ${matches.length} log entries`).toBeTruthy();
+-    expect(Number(mine[1])).toBeGreaterThan(500);
+-    expect(mine[3]).toContain("git-diff");
+-    expect(Number(mine[4])).toBeGreaterThanOrEqual(1);
+-  });
++try {
++  const login = await json("/auth/sessions", {
++    method: "POST",
++    headers: { authorization: `Bearer ${individualKey}`, origin: ORIGIN },
++  }, [201]);
++  accessToken = login.body.accessToken;
++  if (!accessToken || login.body.principal?.role !== "owner") {
++    fail("Browser session did not return an owner principal");
++  }
++  secrets.push(accessToken);
++  refreshCookie = (login.response.headers.get("set-cookie") ?? "").split(";", 1)[0];
++  if (!refreshCookie.startsWith("aiwrapper_refresh=")) fail("Refresh cookie was not issued");
++  secrets.push(refreshCookie.slice(refreshCookie.indexOf("=") + 1));
++
++  const authHeaders = bearer(accessToken);
++  const { body: me } = await json("/v1/me", { headers: authHeaders });
++  if (me.role !== "owner") fail("Authenticated /v1/me principal is not the owner");
+ 
+-  it("compresses grep-style tool_result", async () => {
+-    const lines = [];
+-    for (let i = 1; i <= 30; i++) lines.push(`src/lib/foo.js:${i}:const v${i} = "matching content with enough padding to exceed threshold";`);
+-    const grepOut = lines.join("\n");
+-    expect(grepOut.length).toBeGreaterThan(500);
++  const { body: models } = await json("/v1/models", { headers: authHeaders });
++  const modelIds = (models.data ?? []).map(item => item.id).filter(Boolean);
++  const model = process.env.AIWRAPPER_E2E_MODEL?.trim()
++    || (modelIds.includes("gpt-5.6-sol") ? "gpt-5.6-sol" : modelIds[0]);
++  if (!model) fail("No model is available through the gateway");
+ 
+-    const offset = logOffset();
+-    const res = await sendChat({
+-      model: "cc/claude-opus-4-7",
+-      stream: false,
++  const { body: beforeSessions } = await json("/v1/sessions", { headers: authHeaders });
++  beforeSessionIds = new Set((beforeSessions.data ?? []).map(item => item.id));
++  const { body: beforeUsage } = await json("/v1/me/usage", { headers: authHeaders });
++
++  const chat = await request("/v1/chat/completions", {
++    method: "POST",
++    headers: { ...authHeaders, "content-type": "application/json" },
++    body: JSON.stringify({
++      model,
++      stream: true,
+       max_tokens: 32,
+-      messages: [
+-        { role: "user", content: "grep" },
+-        { role: "assistant", content: null, tool_calls: [{ id: "c3", type: "function", function: { name: "Bash", arguments: "{}" } }] },
+-        { role: "tool", tool_call_id: "c3", content: grepOut },
+-        { role: "user", content: "ok" }
+-      ]
+-    });
+-    expect([200, 400, 401, 402, 500]).toContain(res.status);
+-
+-    if (!LOG_FILE) return;
+-    await new Promise(r => setTimeout(r, 500));
+-    const { text } = readLogSince(offset);
+-    const matches = [...text.matchAll(/\[RTK\] saved (\d+)B \/ (\d+)B \([\d.]+%\) via \[([\w,-]+)\] hits=(\d+)/g)];
+-    const mine = matches.find(m => Number(m[2]) >= grepOut.length && m[3].includes("grep"));
+-    expect(mine, `no matching [RTK] line for grep payload`).toBeTruthy();
++      reasoning_effort: "low",
++      messages: [{ role: "user", content: `Reply exactly ${MARKER}` }],
++    }),
+   });
+-});
++  const answer = streamText(await chat.text());
++  if (!answer.includes(MARKER)) fail("Live provider response did not contain the requested marker");
++
++  const { body: afterSessions } = await json("/v1/sessions", { headers: authHeaders });
++  const created = (afterSessions.data ?? []).find(item => !beforeSessionIds.has(item.id));
++  if (!created) fail("Live request did not create a persisted conversation");
++  sessionId = created.id;
++
++  const { body: detail } = await json(`/v1/sessions/${encodeURIComponent(sessionId)}`, { headers: authHeaders });
++  const turns = detail.thread?.turns ?? [];
++  if (turns.length < 2 || JSON.stringify(turns).includes(MARKER) === false) {
++    fail("Persisted conversation does not contain the complete live exchange");
++  }
++
++  const title = `Production smoke ${MARKER}`;
++  const { body: updated } = await json(`/v1/sessions/${encodeURIComponent(sessionId)}`, {
++    method: "PATCH",
++    headers: { ...authHeaders, "content-type": "application/json" },
++    body: JSON.stringify({ title, favorite: true }),
++  });
++  if (updated.title !== title || updated.favorite !== true) fail("Conversation update was not persisted");
++
++  const exported = await request(`/v1/sessions/${encodeURIComponent(sessionId)}/export`, { headers: authHeaders });
++  if (!(await exported.text()).includes(MARKER)) fail("Markdown export omitted the live exchange");
++
++  const { body: shared } = await json("/v1/shares", {
++    method: "POST",
++    headers: { ...authHeaders, "content-type": "application/json" },
++    body: JSON.stringify({ sessionId, expiresInHours: 1 }),
++  }, [201]);
++  shareId = shared.id;
++  const shareToken = String(shared.url ?? "").split("/#shared/")[1];
++  if (!shareId || !shareToken) fail("Conversation share did not return a one-time URL");
++  secrets.push(shareToken);
++  const { body: publicShare } = await json(`/public/shares/${encodeURIComponent(shareToken)}`);
++  if (JSON.stringify(publicShare).includes(MARKER) === false) fail("Public share omitted the live exchange");
++
++  const { body: afterUsage } = await json("/v1/me/usage", { headers: authHeaders });
++  if ((afterUsage.request_count ?? 0) < (beforeUsage.request_count ?? 0) + 1) {
++    fail("Usage ledger did not record the live request");
++  }
++
++  process.stdout.write(`${JSON.stringify({
++    verdict: "PASS",
++    topology: { web: ORIGIN, gateway: BASE },
++    principal: { role: me.role, profileId: me.profileId },
++    model,
++    checks: [
++      "origin-bound browser session",
++      "model discovery",
++      "streaming provider response",
++      "conversation persistence",
++      "rename and favorite",
++      "Markdown export",
++      "expiring public share",
++      "usage ledger",
++    ],
++  }, null, 2)}\n`);
++} catch (error) {
++  process.stderr.write(`${redact(error instanceof Error ? error.message : error, secrets)}\n`);
++  process.exitCode = 1;
++} finally {
++  const authHeaders = accessToken ? bearer(accessToken) : {};
++  if (accessToken && !sessionId) {
++    const createdAfterFailure = await json("/v1/sessions", { headers: authHeaders })
++      .then(({ body }) => (body.data ?? []).find(item => !beforeSessionIds.has(item.id) && String(item.title).includes(MARKER)))
++      .catch(() => null);
++    sessionId = createdAfterFailure?.id ?? "";
++  }
++  if (shareId) {
++    await request(`/v1/shares/${encodeURIComponent(shareId)}`, {
++      method: "DELETE",
++      headers: authHeaders,
++    }, [204]).catch(() => undefined);
++  }
++  if (sessionId) {
++    await request(`/v1/sessions/${encodeURIComponent(sessionId)}`, {
++      method: "DELETE",
++      headers: authHeaders,
++    }, [204]).catch(() => undefined);
++  }
++  if (accessToken) {
++    await request("/auth/sessions/current", {
++      method: "DELETE",
++      headers: { ...authHeaders, cookie: refreshCookie },
++    }, [204]).catch(() => undefined);
++  }
++}

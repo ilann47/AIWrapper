@@ -32,6 +32,21 @@ def _session_secret(kind: str) -> str:
     return f"aiw_{kind}_{secrets.token_urlsafe(32)}"
 
 
+def _write_secret_file(path: Path, value: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.parent / f".{uuid.uuid4()}.owner-key.tmp"
+    try:
+        with temporary.open("x", encoding="utf-8") as handle:
+            handle.write(value)
+            handle.flush()
+            os.fsync(handle.fileno())
+        temporary.chmod(0o600)
+        os.replace(temporary, path)
+        path.chmod(0o600)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
 class AIWrapperStore:
     def __init__(self, database_path: str) -> None:
         path = Path(database_path).resolve()
@@ -44,6 +59,12 @@ class AIWrapperStore:
         self._connection.execute("PRAGMA foreign_keys=ON")
         self._migrate()
         self._bootstrap_owner()
+
+    def _owner_recovery_key_path(self) -> Path:
+        configured_database = Path(settings.aiwrapper_database_path).resolve()
+        if self.path == configured_database:
+            return Path(settings.aiwrapper_state_dir).resolve() / "bootstrap-owner.key"
+        return self.path.parent / "bootstrap-owner.key"
 
     def _migrate(self) -> None:
         with self._connection:
@@ -143,9 +164,7 @@ class AIWrapperStore:
                 (owner_id, settings.aiwrapper_owner_name, _hash_key(token), codex_home, _now()),
             )
         if not settings.aiwrapper_owner_key:
-            key_path = Path(settings.aiwrapper_state_dir).resolve() / "bootstrap-owner.key"
-            key_path.parent.mkdir(parents=True, exist_ok=True)
-            key_path.write_text(token, encoding="utf-8")
+            _write_secret_file(self._owner_recovery_key_path(), token)
 
     @staticmethod
     def _dict(row: sqlite3.Row | None) -> Optional[dict[str, Any]]:
@@ -349,9 +368,7 @@ class AIWrapperStore:
             self._connection.execute("UPDATE users SET api_key_hash = ? WHERE id = ?", (_hash_key(token), user_id))
             self._connection.execute("UPDATE auth_sessions SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL", (_now(), user_id))
         if user["role"] == "owner" and not settings.aiwrapper_owner_key:
-            key_path = Path(settings.aiwrapper_state_dir).resolve() / "bootstrap-owner.key"
-            key_path.parent.mkdir(parents=True, exist_ok=True)
-            key_path.write_text(token, encoding="utf-8")
+            _write_secret_file(self._owner_recovery_key_path(), token)
         self.audit_event(user_id, "user.key_rotated", "user", user_id)
         return {"secret": token}
 

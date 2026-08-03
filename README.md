@@ -42,7 +42,7 @@ Terminal 2 — servidor e GUI completos do OpenCodex:
 pnpm dev:opencodex -- --port 8765
 ```
 
-Abra `http://127.0.0.1:8765`. O item **Codex Auth** mantém o OAuth original do OpenCodex. No primeiro acesso às páginas AIWrapper, informe a chave individual uma vez: o servidor troca a chave por um access token curto mantido somente em memória e um refresh rotacionado em cookie HttpOnly. A sessão é restaurada silenciosamente depois de recarregar a página, sem gravar a chave em `localStorage` ou `sessionStorage`. Na primeira inicialização local, a chave owner é criada uma única vez em `services/codex-wrapper/.aiwrapper/bootstrap-owner.key` (arquivo ignorado pelo Git).
+Abra `http://127.0.0.1:8765`. O item **Codex Auth** mantém o OAuth original do OpenCodex. No primeiro acesso às páginas AIWrapper, informe a chave individual uma vez: o servidor troca a chave por um access token curto mantido somente em memória e um refresh rotacionado em cookie HttpOnly. A sessão é restaurada silenciosamente depois de recarregar a página, sem gravar a chave em `localStorage` ou `sessionStorage`. Na primeira inicialização local, a chave owner é criada atomicamente em `services/codex-wrapper/.aiwrapper/bootstrap-owner.key` (arquivo ignorado pelo Git). Bancos temporários e testes gravam sua própria chave ao lado da respectiva base, sem alterar a recuperação da instância configurada.
 
 O frontend dev separado também pode ser iniciado com `pnpm dev:web`, usando `OPENCODEX_PROXY_TARGET=http://127.0.0.1:8765` quando precisar encaminhar as APIs de gerenciamento do OpenCodex.
 
@@ -123,5 +123,17 @@ pnpm --dir apps/opencodex-gui lint:i18n
 pnpm provenance:update
 pnpm provenance:verify
 ```
+
+### Gate E2E da topologia real
+
+Com OpenCodex em `8765` e Codex-Wrapper em `8766`, execute uma prova ponta a ponta opt-in:
+
+```powershell
+$env:AIWRAPPER_E2E_LIVE='1'
+$env:AIWRAPPER_E2E_KEY_FILE='services/codex-wrapper/.aiwrapper/bootstrap-owner.key'
+pnpm test:e2e:live
+```
+
+O gate reutiliza o padrão de smoke live do 9router e o isolamento/redação do OpenCodex. Ele valida sessão de navegador vinculada à origem, descoberta de modelos, resposta SSE real, persistência e edição da conversa, exportação Markdown, compartilhamento temporário e contabilização no ledger. A conversa, o link público e a sessão de autenticação criados pelo teste são removidos no `finally`. A execução é recusada sem `AIWRAPPER_E2E_LIVE=1`, pois faz uma solicitação curta ao provider conectado.
 
 Classificações são literais: `copied`, `directly imported`, `adapter`, `imported-not-wired` ou `IMPLEMENTAÇÃO PRÓPRIA`. Código próprio só aparece nas funcionalidades exclusivas permitidas e em boundaries de integração, sempre com incompatibilidade e auditoria documentadas.

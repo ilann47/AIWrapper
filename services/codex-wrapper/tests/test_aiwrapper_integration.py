@@ -11,8 +11,15 @@ from fastapi.testclient import TestClient
 from app.aiwrapper.governance import governance
 from app.aiwrapper.nine_router import nine_router
 from app.aiwrapper.store import AIWrapperStore
-from app.config import settings
+from app.config import Settings, settings
 from app.main import app
+
+
+def test_opencodex_is_the_default_composed_backend(monkeypatch):
+    monkeypatch.delenv("AIWRAPPER_EXECUTION_BACKEND", raising=False)
+    assert Settings(_env_file=None).aiwrapper_execution_backend == "opencodex"
+    monkeypatch.setenv("AIWRAPPER_EXECUTION_BACKEND", "codex-cli")
+    assert Settings(_env_file=None).aiwrapper_execution_backend == "codex-cli"
 
 
 def test_aiwrapper_store_users_sessions_organizations_and_shares(tmp_path):
@@ -181,11 +188,13 @@ def test_administrator_can_create_list_and_download_database_backup(tmp_path, mo
 
 def test_rotating_owner_key_updates_the_local_recovery_file(tmp_path):
     original_state_dir = settings.aiwrapper_state_dir
+    original_database_path = settings.aiwrapper_database_path
     original_owner_key = settings.aiwrapper_owner_key
     settings.aiwrapper_state_dir = str(tmp_path / "state")
+    settings.aiwrapper_database_path = str(tmp_path / "owner.db")
     settings.aiwrapper_owner_key = None
     try:
-        local_store = AIWrapperStore(str(tmp_path / "owner.db"))
+        local_store = AIWrapperStore(settings.aiwrapper_database_path)
         owner = local_store.list_users()[0]
         rotated = local_store.rotate_key(owner["id"])
         recovery = Path(settings.aiwrapper_state_dir) / "bootstrap-owner.key"
@@ -193,6 +202,32 @@ def test_rotating_owner_key_updates_the_local_recovery_file(tmp_path):
         assert local_store.authenticate(rotated["secret"])["role"] == "owner"
     finally:
         settings.aiwrapper_state_dir = original_state_dir
+        settings.aiwrapper_database_path = original_database_path
+        settings.aiwrapper_owner_key = original_owner_key
+
+
+def test_temporary_store_cannot_overwrite_configured_owner_recovery_file(tmp_path):
+    original_state_dir = settings.aiwrapper_state_dir
+    original_database_path = settings.aiwrapper_database_path
+    original_owner_key = settings.aiwrapper_owner_key
+    settings.aiwrapper_state_dir = str(tmp_path / "canonical-state")
+    settings.aiwrapper_database_path = str(tmp_path / "canonical-state" / "aiwrapper.db")
+    settings.aiwrapper_owner_key = None
+    try:
+        canonical = AIWrapperStore(settings.aiwrapper_database_path)
+        recovery = Path(settings.aiwrapper_state_dir) / "bootstrap-owner.key"
+        canonical_secret = recovery.read_text(encoding="utf-8")
+        assert canonical.authenticate(canonical_secret)["role"] == "owner"
+
+        temporary_database = tmp_path / "test-fixture" / "fixture.db"
+        fixture = AIWrapperStore(str(temporary_database))
+        assert recovery.read_text(encoding="utf-8") == canonical_secret
+        fixture_secret = (temporary_database.parent / "bootstrap-owner.key").read_text(encoding="utf-8")
+        assert fixture.authenticate(fixture_secret)["role"] == "owner"
+        assert canonical.authenticate(fixture_secret) is None
+    finally:
+        settings.aiwrapper_state_dir = original_state_dir
+        settings.aiwrapper_database_path = original_database_path
         settings.aiwrapper_owner_key = original_owner_key
 
 

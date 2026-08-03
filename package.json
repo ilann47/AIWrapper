@@ -12,6 +12,7 @@
     "test": "pnpm test:backend && pnpm test:gui",
     "test:backend": "cd services/codex-wrapper && python -m pytest -q",
     "test:gui": "pnpm --dir apps/opencodex-gui test",
+    "test:e2e:live": "node scripts/e2e/live-platform-smoke.mjs",
     "dev:api": "cd services/codex-wrapper && python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8766",
     "dev:web": "pnpm --dir apps/opencodex-gui dev",
     "dev:opencodex": "pnpm --filter @bitkyc08/opencodex start",
