@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-03T03:35:12.346Z",
+  "generatedAt": "2026-08-03T03:53:39.714Z",
   "generatorUpstream": {
     "project": "ndycode/codex-multi-auth",
     "commit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
@@ -24623,15 +24623,15 @@
           "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
           "license": "MIT / project adapter configuration",
           "sourceSha256": "ffcb7ba6b9a681dbbdb7e9c79f64ca2320188f7efede616735ceb4ec120113c3",
-          "sha256": "c539db2ae3894ccddb3219a68f55daef0cf12a0de5bb2802713248295f6930a6",
+          "sha256": "0dc4d019d73b867d7f394496b299b600a48d007625694875089b1fd3fc28388f",
           "diff": "provenance/diffs/nine-router-oauth-security-boundary--file.diff",
-          "diffSha256": "b0f5c64f5c3ebe9343820f86f61bfc8432966f5ec3dac0614bfd5ec7c473b952",
+          "diffSha256": "0f371e4302feeb5c31439730a2a1d610d542294dc55ac6f4f473dcc228776113",
           "lines": {
             "source": 86,
-            "destination": 71,
+            "destination": 73,
             "preserved": 2,
-            "changed": 69,
-            "removed": 15,
+            "changed": 71,
+            "removed": 13,
             "added": 0,
             "reusePercent": 2.33
           }
@@ -27046,16 +27046,16 @@
           "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
           "license": "MIT / project code",
           "sourceSha256": "e46ad7f7ed22f461f966eb98568c7023849fc802560e25c6965b12979548393e",
-          "sha256": "c223cc642d8e743ef74f48d76d022e3982b8b20eb001914e5be9024c73210365",
+          "sha256": "75208e69ef41928c4ce21a982332b6bf24cf34405e525cbb1ad28e3d407c44fc",
           "diff": "provenance/diffs/lab-compose--file.diff",
-          "diffSha256": "82c0eb745e099071ddd66f73096dd0dd0144b4dafde302e51520d7092229efe2",
+          "diffSha256": "f385de52e5088572689c06d7209a0edcbda3a6e79b175f4aa4c3ae3e1feea5c5",
           "lines": {
             "source": 25,
-            "destination": 73,
+            "destination": 74,
             "preserved": 11,
             "changed": 14,
             "removed": 0,
-            "added": 48,
+            "added": 49,
             "reusePercent": 44
           }
         }
@@ -27223,6 +27223,296 @@
             "removed": 147,
             "added": 0,
             "reusePercent": 10.22
+          }
+        }
+      ]
+    },
+    {
+      "id": "codex-wrapper-production-build-context",
+      "functionality": "Secret-safe and cache-efficient Docker build context for the composed upstream runtimes",
+      "project": "circlemouth/Codex-Wrapper and decolua/9router",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "The upstream ignore file assumes a single Python repository. AIWrapper's build context also contains Bun, Node, multiple complete upstream snapshots, generated provenance and local AIWrapper state, so the original rules alone would send credentials and large transient trees to the Docker daemon.",
+      "parityAudit": {
+        "retained": [
+          "VCS exclusion",
+          "Python cache and virtual-environment exclusion",
+          "environment-secret exclusion",
+          "Node dependency exclusion",
+          "runtime log exclusion"
+        ],
+        "lost": [],
+        "decision": "Preserve the original denylist and extend it for the multi-runtime repository while explicitly retaining only public environment examples."
+      },
+      "files": [
+        {
+          "source": "upstream/Codex-Wrapper/.dockerignore",
+          "destination": ".dockerignore",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT / project adapter configuration",
+          "sourceSha256": "544b57166dedfd04778964449a3b3485ef13b95d11977f432a735b76479abfe4",
+          "sha256": "6382f896d0b38b1baa3f9f9d245cbf129c5a19023108df81e6b9c5a7ca8fa3b1",
+          "diff": "provenance/diffs/codex-wrapper-production-build-context--file.diff",
+          "diffSha256": "80ac1b36334d117bfe62a9ddd45eb953a69a35999897af4ab578a5351f28eede",
+          "lines": {
+            "source": 18,
+            "destination": 24,
+            "preserved": 4,
+            "changed": 14,
+            "removed": 0,
+            "added": 6,
+            "reusePercent": 22.22
+          }
+        }
+      ]
+    },
+    {
+      "id": "codex-wrapper-production-compose",
+      "functionality": "Production composition of the original Codex-Wrapper and OpenCodex runtimes behind a private dependency-aware network",
+      "project": "circlemouth/Codex-Wrapper and lidge-jun/OpenCodex",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "Codex-Wrapper's original Compose runs one service and publishes it directly. AIWrapper must compose the unchanged OpenCodex data plane, the extended Codex-Wrapper gateway and one public ingress, enforce dependency health, share the protected OAuth directory with asymmetric permissions and keep state durable.",
+      "parityAudit": {
+        "retained": [
+          "Original Codex-Wrapper Docker build",
+          "Codex OAuth home mount",
+          "Persistent workspace volume",
+          "Environment-driven runtime controls",
+          "Non-root Codex-Wrapper runtime"
+        ],
+        "lost": [
+          "Direct publication of the backend port is intentionally removed from production"
+        ],
+        "decision": "Keep the original service contract and add only the OpenCodex dependency, AIWrapper integration environment, health ordering, durable state and same-origin ingress required by the composed product."
+      },
+      "files": [
+        {
+          "source": "upstream/Codex-Wrapper/docker-compose.yml",
+          "destination": "docker-compose.production.yml",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT / project adapter configuration",
+          "sourceSha256": "e46ad7f7ed22f461f966eb98568c7023849fc802560e25c6965b12979548393e",
+          "sha256": "a0140708ac2f479676f0c7dd3b565536e479fe72b80f49d56c01b7f1c125818c",
+          "diff": "provenance/diffs/codex-wrapper-production-compose--file.diff",
+          "diffSha256": "0a91b16dfa5b2b7fa15a58c6cfd8dc4e81023fb0a9aa3bd3a398937522f1dd80",
+          "lines": {
+            "source": 25,
+            "destination": 102,
+            "preserved": 13,
+            "changed": 12,
+            "removed": 0,
+            "added": 77,
+            "reusePercent": 52
+          }
+        }
+      ]
+    },
+    {
+      "id": "nine-router-production-ingress",
+      "functionality": "Single-origin Nginx ingress with OpenCodex shell routing, AIWrapper prefix isolation, security headers and unbuffered SSE",
+      "project": "decolua/9router",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "9router documents separate dashboard and API ports on one application. AIWrapper has two preserved upstream runtimes with overlapping root API paths, so the API must be isolated under /aiwrapper while OpenCodex continues to own the root shell and provider data plane.",
+      "parityAudit": {
+        "retained": [
+          "Nginx reverse-proxy boundary",
+          "Forwarded host, address and protocol headers",
+          "HTTP/1.1 upgrade support",
+          "SSE proxy buffering disabled",
+          "Long streaming read timeout"
+        ],
+        "lost": [
+          "Certificate termination remains the responsibility of the host proxy so the container can run behind any production TLS provider"
+        ],
+        "decision": "Adapt the original dual-route Nginx pattern to a same-origin /aiwrapper prefix and retain the complete streaming requirements."
+      },
+      "files": [
+        {
+          "source": "upstream/9router/gitbook/content/en/deployment/cloud.md",
+          "destination": "infra/gateway/nginx.conf",
+          "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+          "license": "MIT / project adapter configuration",
+          "sourceSha256": "20d48d829b08f81e789a0c3400417b8dd4a162556e545cd991be73458be83169",
+          "sha256": "f3f377c75e4bb7aecd737ff253f43bee4796f7f50a49ad043312ae1b5bca79f4",
+          "diff": "provenance/diffs/nine-router-production-ingress--file.diff",
+          "diffSha256": "eea0a9207f8f2232d41016e10fd709bf0357321c4761131a0b87ffedc94701ca",
+          "lines": {
+            "source": 474,
+            "destination": 72,
+            "preserved": 22,
+            "changed": 50,
+            "removed": 402,
+            "added": 0,
+            "reusePercent": 4.64
+          }
+        }
+      ]
+    },
+    {
+      "id": "nine-router-production-environment-contract",
+      "functionality": "Explicit production environment template for public origin, protected OAuth storage, secure cookies and independent data-plane, administration and owner secrets",
+      "project": "decolua/9router",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "9router's environment contract configures one JWT-protected application. AIWrapper needs independent OpenCodex data-plane, OpenCodex administration and AIWrapper owner secrets, the shared Codex OAuth path, a canonical browser origin and explicit secure-cookie and ingress binding controls.",
+      "parityAudit": {
+        "retained": [
+          "No production secret defaults",
+          "Explicit data path",
+          "Production-only configuration template",
+          "Requirement to replace all credential placeholders"
+        ],
+        "lost": [
+          "9router-specific JWT and initial-password variables do not exist in the imported runtimes"
+        ],
+        "decision": "Keep the explicit upstream production-secret contract and map it to the real authentication and topology boundaries of AIWrapper."
+      },
+      "files": [
+        {
+          "source": "upstream/9router/gitbook/content/en/deployment/cloud.md",
+          "destination": ".env.production.example",
+          "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+          "license": "MIT / project adapter configuration",
+          "sourceSha256": "20d48d829b08f81e789a0c3400417b8dd4a162556e545cd991be73458be83169",
+          "sha256": "6a75b8074f4ab2ed7f0ae63bd9eeaefa6a2851f5bf8b13c9ed746ae7ab22401f",
+          "diff": "provenance/diffs/nine-router-production-environment-contract--file.diff",
+          "diffSha256": "1d79942a2565683d422720867562c1f1a55b449ea938ad534b97d5d68da85ba5",
+          "lines": {
+            "source": 474,
+            "destination": 23,
+            "preserved": 4,
+            "changed": 19,
+            "removed": 451,
+            "added": 0,
+            "reusePercent": 0.84
+          }
+        }
+      ]
+    },
+    {
+      "id": "opencodex-production-admin-admission",
+      "functionality": "Stable independent OpenCodex management credential across container replacement with anonymous rejection and authenticated verification",
+      "project": "lidge-jun/OpenCodex",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "OpenCodex can atomically create an administrator token file for a local installation, but the container's .opencodex directory is image-owned and replaceable while only the OAuth directory is host-mounted. Relying on the generated file would change the administrator credential after replacement. The original runtime already supports an explicit environment token and rejects any collision with data-plane credentials.",
+      "parityAudit": {
+        "retained": [
+          "OPENCODEX_ADMIN_AUTH_TOKEN environment contract",
+          "Independent management and data-plane admission domains",
+          "Timing-safe credential comparison",
+          "Anonymous management rejection",
+          "Management credential collision rejection"
+        ],
+        "lost": [
+          "Automatic local token-file generation is intentionally replaced by an orchestrator-provided production secret"
+        ],
+        "decision": "Require the original environment-supported management credential in both Compose variants and verify it through the unchanged management API."
+      },
+      "files": [
+        {
+          "source": "upstream/opencodex/src/server/management-auth.ts",
+          "destination": "docker-compose.production.yml",
+          "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+          "license": "MIT / project adapter configuration",
+          "sourceSha256": "775f69d8302b74083194235e1d27a8ac004bf9338cb7d0cc8e6c1d6e6dbc00ba",
+          "sha256": "a0140708ac2f479676f0c7dd3b565536e479fe72b80f49d56c01b7f1c125818c",
+          "diff": "provenance/diffs/opencodex-production-admin-admission--file.diff",
+          "diffSha256": "dca04750761f9b5a56f95352039237bdf094411aa4c438ef44aa2b90a722f048",
+          "lines": {
+            "source": 217,
+            "destination": 102,
+            "preserved": 4,
+            "changed": 98,
+            "removed": 115,
+            "added": 0,
+            "reusePercent": 1.84
+          }
+        }
+      ]
+    },
+    {
+      "id": "opencodex-production-ingress-smoke",
+      "functionality": "Identity-aware production ingress smoke covering both services, dependency readiness, compiled GUI, security headers and anonymous admission",
+      "project": "lidge-jun/OpenCodex",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "OpenCodex's liveness module discovers one local process from PID and runtime-port records. The production gate runs outside the containers and must verify two identities through an Nginx prefix plus readiness, static delivery and unauthenticated rejection; local PID discovery is unavailable and unnecessary at this boundary.",
+      "parityAudit": {
+        "retained": [
+          "Bounded health polling",
+          "HTTP status verification",
+          "OpenCodex service-identity verification",
+          "Structured health body validation",
+          "Foreign-listener rejection"
+        ],
+        "lost": [
+          "PID and runtime-port discovery remain covered by the complete imported OpenCodex test suite"
+        ],
+        "decision": "Preserve the identity-first health invariant and extend it across the externally observable product topology."
+      },
+      "files": [
+        {
+          "source": "upstream/opencodex/src/server/proxy-liveness.ts",
+          "destination": "scripts/e2e/production-compose-smoke.mjs",
+          "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+          "license": "MIT / project adapter code",
+          "sourceSha256": "d98bd0b8ebb02ea72287176be6ba00aec1738705958fdd0430e430e5e2e7719b",
+          "sha256": "8df4627007a8c228d679b800e0e9074c03cf612f4c044f1e425225dde8c2fb9c",
+          "diff": "provenance/diffs/opencodex-production-ingress-smoke--file.diff",
+          "diffSha256": "043a846f854113ae03b2bbb49a576a65a7345632866f74ca9ba3ae568e37e5a8",
+          "lines": {
+            "source": 156,
+            "destination": 97,
+            "preserved": 16,
+            "changed": 81,
+            "removed": 59,
+            "added": 0,
+            "reusePercent": 10.26
+          }
+        }
+      ]
+    },
+    {
+      "id": "nine-router-production-topology-ci",
+      "functionality": "Linux CI build, health-ordered startup, ingress smoke, failure logs and deterministic teardown of the production containers",
+      "project": "decolua/9router and lidge-jun/OpenCodex",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "9router's workflow builds and publishes one multi-architecture image only for releases. AIWrapper needs a non-publishing pull-request gate that builds two local images, starts three health-dependent services, executes the same-origin product smoke and always removes volumes.",
+      "parityAudit": {
+        "retained": [
+          "GitHub checkout",
+          "Docker Buildx setup",
+          "Real Linux container build",
+          "Bounded workflow execution"
+        ],
+        "lost": [
+          "Registry login, multi-architecture publication and release tags are intentionally outside the validation workflow"
+        ],
+        "decision": "Reuse the upstream Docker CI foundation for a fail-closed topology gate and keep image publication as a separate future release decision."
+      },
+      "files": [
+        {
+          "source": "upstream/9router/.github/workflows/docker-publish.yml",
+          "destination": ".github/workflows/provenance.yml",
+          "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+          "license": "MIT / project adapter workflow",
+          "sourceSha256": "fd2961dc23efd57111d6095f32b2eee7a60fc6fb75b5460e0b410c6725114e86",
+          "sha256": "fda12d2da78bf5a81899cb5e0aa435a8e58c69e354ef6eb00ab067036c1e68a9",
+          "diff": "provenance/diffs/nine-router-production-topology-ci--file.diff",
+          "diffSha256": "09dcbd265e30e717078cc5cf82c695cb0a8b18131ca15dcaa09a4ba22d94cb3c",
+          "lines": {
+            "source": 61,
+            "destination": 60,
+            "preserved": 13,
+            "changed": 47,
+            "removed": 1,
+            "added": 0,
+            "reusePercent": 21.31
           }
         }
       ]

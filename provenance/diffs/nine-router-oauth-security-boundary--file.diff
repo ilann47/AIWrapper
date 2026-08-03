@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\providers\\registry\\gemini.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\.env.example"
-index 40dedaf7f..b11859d92 100644
+index 40dedaf7f..4c9f739f7 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\providers\\registry\\gemini.js"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\.env.example"	
-@@ -1,85 +1,70 @@
+@@ -1,85 +1,72 @@
 -import { GOOGLE_OAUTH_CLIENT } from "../shared.js";
 +# AIWrapper Lab — copie para .env e ajuste somente o necessário.
 +# Nunca versione .env, auth.json, chaves individuais ou o diretório .aiwrapper.
@@ -144,6 +144,8 @@ index 40dedaf7f..b11859d92 100644
 +
 +# OpenCodex em Docker exige credencial de data-plane ao usar bind não-loopback.
 +OPENCODEX_API_AUTH_TOKEN=change-me-with-a-random-token
++# Credencial administrativa independente; não reutilize o token do data plane.
++OPENCODEX_ADMIN_AUTH_TOKEN=change-me-with-a-different-random-admin-token
 +
 +# Gate E2E real (opt-in; nunca versione a chave individual).
 +# Requer OpenCodex e Codex-Wrapper em execução e consome uma solicitação curta.

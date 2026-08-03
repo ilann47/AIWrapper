@@ -1,0 +1,113 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\.github\\workflows\\docker-publish.yml" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\.github\\workflows\\provenance.yml"
+index e8ef957e3..4bb4e7943 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\.github\\workflows\\docker-publish.yml"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\.github\\workflows\\provenance.yml"	
+@@ -1,60 +1,59 @@
+-name: Build and Push Docker Image
++name: Provenance
+ 
+ on:
+   push:
+-    tags:
+-      - "v*"
+-  workflow_dispatch:
++  pull_request:
+ 
+-env:
+-  GHCR_IMAGE: ghcr.io/${{ github.repository }}
+-  DOCKERHUB_IMAGE: decolua/9router
++permissions:
++  contents: read
++
++concurrency:
++  group: aiwrapper-ci-${{ github.ref }}
++  cancel-in-progress: true
+ 
+ jobs:
+-  build-and-push:
++  verify:
+     runs-on: ubuntu-latest
+-    permissions:
+-      contents: read
+-      packages: write
+-
+     steps:
+       - uses: actions/checkout@v4
+-
+-      - uses: docker/setup-buildx-action@v3
+-
+-      - name: Log in to GHCR
+-        uses: docker/login-action@v3
+-        with:
+-          registry: ghcr.io
+-          username: ${{ github.actor }}
+-          password: ${{ secrets.GITHUB_TOKEN }}
+-
+-      - name: Log in to Docker Hub
+-        uses: docker/login-action@v3
++      - uses: pnpm/action-setup@v4
+         with:
+-          username: ${{ secrets.DOCKERHUB_USERNAME }}
+-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+-
+-      - name: Extract metadata
+-        id: meta
+-        uses: docker/metadata-action@v5
+-        with:
+-          images: |
+-            ${{ env.GHCR_IMAGE }}
+-            ${{ env.DOCKERHUB_IMAGE }}
+-          tags: |
+-            type=semver,pattern={{version}}
+-            type=raw,value=latest,enable={{is_default_branch}}
+-
+-      - name: Build and push
+-        uses: docker/build-push-action@v6
++          version: 10.14.0
++      - uses: actions/setup-node@v4
+         with:
+-          context: .
+-          push: true
+-          tags: ${{ steps.meta.outputs.tags }}
+-          labels: ${{ steps.meta.outputs.labels }}
+-          cache-from: type=registry,ref=${{ env.GHCR_IMAGE }}:buildcache
+-          cache-to: type=registry,ref=${{ env.GHCR_IMAGE }}:buildcache,mode=max
+-          platforms: linux/amd64,linux/arm64
+-          provenance: false
+-          sbom: false
++          node-version: 22
++          cache: pnpm
++      - run: pnpm install --frozen-lockfile
++      - run: pnpm provenance:verify
++      - run: pnpm typecheck
++      - run: pnpm test
++
++  production-topology:
++    runs-on: ubuntu-latest
++    timeout-minutes: 30
++    env:
++      AIWRAPPER_PUBLIC_ORIGIN: http://127.0.0.1:8080
++      AIWRAPPER_PUBLIC_BIND: 127.0.0.1
++      AIWRAPPER_PUBLIC_PORT: "8080"
++      AIWRAPPER_SESSION_COOKIE_SECURE: "false"
++      OPENCODEX_API_AUTH_TOKEN: ci-opencodex-${{ github.run_id }}-${{ github.run_attempt }}
++      OPENCODEX_ADMIN_AUTH_TOKEN: ci-opencodex-admin-${{ github.run_id }}-${{ github.run_attempt }}
++      AIWRAPPER_OWNER_KEY: aiw_ci_owner_${{ github.run_id }}_${{ github.run_attempt }}_topology
++      CODEX_HOST_HOME: ${{ github.workspace }}/.ci-codex-home
++    steps:
++      - uses: actions/checkout@v4
++      - uses: docker/setup-buildx-action@v3
++      - name: Prepare isolated OAuth mount
++        run: mkdir -p "$CODEX_HOST_HOME"
++      - name: Validate production Compose
++        run: docker compose -f docker-compose.production.yml config --quiet
++      - name: Build and start production topology
++        run: docker compose -f docker-compose.production.yml up --build --detach --wait --wait-timeout 420
++      - name: Verify production ingress
++        run: node scripts/e2e/production-compose-smoke.mjs
++      - name: Show container logs on failure
++        if: failure()
++        run: docker compose -f docker-compose.production.yml logs --no-color
++      - name: Stop production topology
++        if: always()
++        run: docker compose -f docker-compose.production.yml down --volumes --remove-orphans

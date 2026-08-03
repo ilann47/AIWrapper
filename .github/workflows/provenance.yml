@@ -4,6 +4,13 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: aiwrapper-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -20,3 +27,33 @@ jobs:
       - run: pnpm provenance:verify
       - run: pnpm typecheck
       - run: pnpm test
+
+  production-topology:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      AIWRAPPER_PUBLIC_ORIGIN: http://127.0.0.1:8080
+      AIWRAPPER_PUBLIC_BIND: 127.0.0.1
+      AIWRAPPER_PUBLIC_PORT: "8080"
+      AIWRAPPER_SESSION_COOKIE_SECURE: "false"
+      OPENCODEX_API_AUTH_TOKEN: ci-opencodex-${{ github.run_id }}-${{ github.run_attempt }}
+      OPENCODEX_ADMIN_AUTH_TOKEN: ci-opencodex-admin-${{ github.run_id }}-${{ github.run_attempt }}
+      AIWRAPPER_OWNER_KEY: aiw_ci_owner_${{ github.run_id }}_${{ github.run_attempt }}_topology
+      CODEX_HOST_HOME: ${{ github.workspace }}/.ci-codex-home
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Prepare isolated OAuth mount
+        run: mkdir -p "$CODEX_HOST_HOME"
+      - name: Validate production Compose
+        run: docker compose -f docker-compose.production.yml config --quiet
+      - name: Build and start production topology
+        run: docker compose -f docker-compose.production.yml up --build --detach --wait --wait-timeout 420
+      - name: Verify production ingress
+        run: node scripts/e2e/production-compose-smoke.mjs
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.production.yml logs --no-color
+      - name: Stop production topology
+        if: always()
+        run: docker compose -f docker-compose.production.yml down --volumes --remove-orphans

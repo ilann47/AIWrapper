@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\docker-compose.yml" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\docker-compose.yml"
-index e729bc004..948207327 100644
+index e729bc004..0d4659730 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\docker-compose.yml"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\docker-compose.yml"	
-@@ -1,24 +1,72 @@
+@@ -1,24 +1,73 @@
  services:
 -  codex-wrapper:
 +  # Full lidge-jun/OpenCodex runtime and its imported GUI.
@@ -22,6 +22,7 @@ index e729bc004..948207327 100644
 +        VITE_AIWRAPPER_API_BASE: ${VITE_AIWRAPPER_API_BASE:-http://127.0.0.1:8766}
 +    environment:
 +      OPENCODEX_API_AUTH_TOKEN: ${OPENCODEX_API_AUTH_TOKEN:?Set OPENCODEX_API_AUTH_TOKEN in .env}
++      OPENCODEX_ADMIN_AUTH_TOKEN: ${OPENCODEX_ADMIN_AUTH_TOKEN:?Set OPENCODEX_ADMIN_AUTH_TOKEN in .env}
 +    ports: ["127.0.0.1:8765:8765"]
 +    volumes:
 +      - type: bind

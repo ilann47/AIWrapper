@@ -1,0 +1,322 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\src\\server\\management-auth.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\docker-compose.production.yml"
+index 52fd46401..b259ec876 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\src\\server\\management-auth.ts"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\docker-compose.production.yml"	
+@@ -1,216 +1,101 @@
+-import { randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
+-import {
+-  chmodSync,
+-  closeSync,
+-  fsyncSync,
+-  linkSync,
+-  lstatSync,
+-  mkdirSync,
+-  openSync,
+-  readFileSync,
+-  unlinkSync,
+-  writeFileSync,
+-} from "node:fs";
+-import { dirname, join } from "node:path";
+-import { adminApiTokenFilePath } from "../lib/admin-secrets";
+-import { hardenSecretDir, hardenSecretPath } from "../lib/windows-secret-acl";
+-import type { OcxConfig } from "../types";
+-import {
+-  isAllowedManagementOrigin,
+-  isApiAuthRequired,
+-  isDataPlaneAdmissionSecret,
+-  isLoopbackHostname,
+-  managementRequestOrigin,
+-  parseHttpHost,
+-} from "./auth-cors";
+-
+-const GUI_SESSION_TTL_MS = 5 * 60_000;
+-const GUI_SESSION_LIMIT = 128;
+-
+-interface GuiSessionRecord {
+-  csrfToken: string;
+-  origin: string;
+-  expiresAt: number;
+-}
+-
+-export interface GuiSessionBootstrap extends GuiSessionRecord {
+-  token: string;
+-}
+-
+-export type ManagementAuthState =
+-  | {
+-    available: true;
+-    token: string;
+-    source: "environment" | "file";
+-    sessions: Map<string, GuiSessionRecord>;
+-  }
+-  | { available: false; reason: string };
+-
+-function fail(reason: string): ManagementAuthState {
+-  return { available: false, reason };
+-}
+-
+-function assertSafeDirectory(path: string): void {
+-  mkdirSync(path, { recursive: true, mode: 0o700 });
+-  const stat = lstatSync(path);
+-  if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error("management token directory is not a regular directory");
+-  chmodSync(path, 0o700);
+-  const hardened = hardenSecretDir(path, { required: true });
+-  if (!hardened.ok) throw new Error("management token directory ACL hardening did not complete");
+-}
+-
+-function readExistingToken(path: string): string {
+-  const stat = lstatSync(path);
+-  if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 512) {
+-    throw new Error("management token path is not a regular secret file");
+-  }
+-  chmodSync(path, 0o600);
+-  const hardened = hardenSecretPath(path, { required: true });
+-  if (!hardened.ok) throw new Error("management token file ACL hardening did not complete");
+-  const token = readFileSync(path, "utf8").trim();
+-  if (!/^ocx_admin_[A-Za-z0-9_-]{43}$/.test(token)) throw new Error("management token file is invalid");
+-  return token;
+-}
+-
+-function removeBestEffort(path: string): void {
+-  try { unlinkSync(path); } catch { /* fail-closed state is preserved by the caller */ }
+-}
+-
+-function createTokenFile(path: string): string {
+-  const directory = dirname(path);
+-  const token = `ocx_admin_${randomBytes(32).toString("base64url")}`;
+-  const temporary = join(directory, `.${randomUUID()}.admin-token.tmp`);
+-  let linked = false;
+-  let fd: number | null = null;
+-  try {
+-    fd = openSync(temporary, "wx", 0o600);
+-    writeFileSync(fd, `${token}\n`, "utf8");
+-    fsyncSync(fd);
+-    closeSync(fd);
+-    fd = null;
+-    chmodSync(temporary, 0o600);
+-    const temporaryHardened = hardenSecretPath(temporary, { required: true });
+-    if (!temporaryHardened.ok) throw new Error("management token temporary ACL hardening did not complete");
+-    try {
+-      linkSync(temporary, path);
+-      linked = true;
+-    } catch (error) {
+-      if ((error as NodeJS.ErrnoException).code === "EEXIST") return readExistingToken(path);
+-      throw error;
+-    }
+-    const finalHardened = hardenSecretPath(path, { required: true });
+-    if (!finalHardened.ok) throw new Error("management token file ACL hardening did not complete");
+-    return token;
+-  } catch (error) {
+-    if (linked) removeBestEffort(path);
+-    throw error;
+-  } finally {
+-    if (fd !== null) {
+-      try { closeSync(fd); } catch { /* best effort */ }
+-    }
+-    removeBestEffort(temporary);
+-  }
+-}
+-
+-function ready(token: string, source: "environment" | "file", config: OcxConfig): ManagementAuthState {
+-  if (isDataPlaneAdmissionSecret(token, config)) {
+-    return fail("management credential conflicts with a data-plane credential");
+-  }
+-  return { available: true, token, source, sessions: new Map() };
+-}
+-
+-export function initializeManagementAuthState(config: OcxConfig): ManagementAuthState {
+-  const environmentToken = process.env.OPENCODEX_ADMIN_AUTH_TOKEN?.trim();
+-  if (environmentToken) {
+-    return ready(environmentToken, "environment", config);
+-  }
+-  try {
+-    const path = adminApiTokenFilePath();
+-    assertSafeDirectory(dirname(path));
+-    let token: string;
+-    try {
+-      token = readExistingToken(path);
+-    } catch (error) {
+-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+-      token = createTokenFile(path);
+-    }
+-    return ready(token, "file", config);
+-  } catch (error) {
+-    return fail(error instanceof Error ? error.message : "management token initialization failed");
+-  }
+-}
+-
+-function equalSecret(actual: string, expected: string): boolean {
+-  const encoder = new TextEncoder();
+-  const left = encoder.encode(actual);
+-  const right = encoder.encode(expected);
+-  return left.length === right.length && timingSafeEqual(left, right);
+-}
+-
+-function removeExpiredSessions(state: Extract<ManagementAuthState, { available: true }>, now = Date.now()): void {
+-  for (const [token, session] of state.sessions) {
+-    if (session.expiresAt <= now) state.sessions.delete(token);
+-  }
+-}
+-
+-function randomSessionSecret(prefix: "ocx_session_"): string {
+-  return `${prefix}${randomBytes(32).toString("base64url")}`;
+-}
+-
+-export function issueGuiSession(
+-  req: Request,
+-  config: OcxConfig,
+-  state: ManagementAuthState,
+-): GuiSessionBootstrap | null {
+-  if (isApiAuthRequired(config) || !state.available || req.method !== "GET" || !isAllowedManagementOrigin(req, config)) return null;
+-  const host = parseHttpHost(req.headers.get("Host"));
+-  if (!host || !isLoopbackHostname(host.hostname)) return null;
+-  const origin = managementRequestOrigin(req, config);
+-  if (!origin) return null;
+-  const now = Date.now();
+-  removeExpiredSessions(state, now);
+-  while (state.sessions.size >= GUI_SESSION_LIMIT) {
+-    const oldest = state.sessions.keys().next().value as string | undefined;
+-    if (!oldest) break;
+-    state.sessions.delete(oldest);
+-  }
+-  const token = randomSessionSecret("ocx_session_");
+-  const session: GuiSessionRecord = {
+-    csrfToken: randomBytes(32).toString("base64url"),
+-    origin,
+-    expiresAt: now + GUI_SESSION_TTL_MS,
+-  };
+-  state.sessions.set(token, session);
+-  return { token, ...session };
+-}
+-
+-export function requireManagementAuth(
+-  req: Request,
+-  state: ManagementAuthState,
+-  config?: OcxConfig,
+-): Response | null {
+-  if (!state.available) {
+-    return Response.json({ error: "management API unavailable" }, { status: 503 });
+-  }
+-  const actual = req.headers.get("x-opencodex-api-key")?.trim()
+-    || req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
+-  if (actual && equalSecret(actual, state.token)) return null;
+-  if (actual && config) {
+-    removeExpiredSessions(state);
+-    const session = state.sessions.get(actual);
+-    if (session) {
+-      const requestOrigin = managementRequestOrigin(req, config);
+-      const claimedOrigin = req.headers.get("x-opencodex-gui-origin");
+-      const browserOrigin = req.headers.get("Origin");
+-      const sameOrigin = requestOrigin === session.origin
+-        && claimedOrigin === session.origin
+-        && (!browserOrigin || browserOrigin === session.origin);
+-      const safeMethod = req.method === "GET" || req.method === "HEAD";
+-      const csrf = req.headers.get("x-opencodex-csrf-token")?.trim();
+-      if (sameOrigin && (safeMethod || (browserOrigin === session.origin && !!csrf && equalSecret(csrf, session.csrfToken)))) {
+-        return null;
+-      }
+-    }
+-  }
+-  return Response.json({ error: "opencodex admin token required" }, { status: 401 });
+-}
++services:
++  opencodex:
++    build:
++      context: .
++      dockerfile: Dockerfile.opencodex
++      args:
++        VITE_API_BASE: ""
++        VITE_AIWRAPPER_API_BASE: /aiwrapper
++    environment:
++      OPENCODEX_API_AUTH_TOKEN: ${OPENCODEX_API_AUTH_TOKEN:?Set a strong OPENCODEX_API_AUTH_TOKEN}
++      OPENCODEX_ADMIN_AUTH_TOKEN: ${OPENCODEX_ADMIN_AUTH_TOKEN:?Set an independent OPENCODEX_ADMIN_AUTH_TOKEN}
++    volumes:
++      - type: bind
++        source: ${CODEX_HOST_HOME:?Set CODEX_HOST_HOME to a protected Codex OAuth directory}
++        target: /home/bun/.codex
++    restart: unless-stopped
++    security_opt:
++      - no-new-privileges:true
++    healthcheck:
++      test: ["CMD", "bun", "-e", "const r=await fetch('http://127.0.0.1:8765/healthz');if(!r.ok)process.exit(1);const j=await r.json();if(j.service!=='opencodex')process.exit(1)"]
++      interval: 10s
++      timeout: 5s
++      retries: 12
++      start_period: 20s
++
++  codex-wrapper:
++    build:
++      context: .
++      dockerfile: Dockerfile.codex-wrapper
++      args:
++        CODEX_UID: ${CODEX_UID:-1000}
++        CODEX_GID: ${CODEX_GID:-1000}
++    environment:
++      CODEX_CONFIG_DIR: /home/codex/.codex
++      CODEX_WORKDIR: /workspace
++      CODEX_PATH: codex
++      CODEX_REASONING_EFFORT: ${CODEX_REASONING_EFFORT:-medium}
++      CODEX_MAX_PARALLEL_REQUESTS: ${CODEX_MAX_PARALLEL_REQUESTS:-2}
++      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-60}
++      AIWRAPPER_STATE_DIR: /data
++      AIWRAPPER_DATABASE_PATH: /data/aiwrapper.db
++      AIWRAPPER_MULTI_AUTH_DIR: /data/multi-auth
++      AIWRAPPER_GOVERNANCE_BRIDGE: /opt/aiwrapper/extensions/aiwrapper-admin/src/governance-bridge.mjs
++      AIWRAPPER_NINE_ROUTER_BRIDGE: /opt/aiwrapper/extensions/aiwrapper-runtime/src/nine-router-bridge.mjs
++      AIWRAPPER_PROFILE_SCRIPT: /opt/aiwrapper/packages/codex-profiles/bin/codex-profile
++      AIWRAPPER_PROFILE_BASH: /bin/bash
++      AIWRAPPER_OWNER_NAME: ${AIWRAPPER_OWNER_NAME:-owner}
++      AIWRAPPER_OWNER_KEY: ${AIWRAPPER_OWNER_KEY:?Set a strong AIWRAPPER_OWNER_KEY}
++      AIWRAPPER_PUBLIC_BASE_URL: ${AIWRAPPER_PUBLIC_ORIGIN:?Set AIWRAPPER_PUBLIC_ORIGIN}/aiwrapper
++      AIWRAPPER_WEB_BASE_URL: ${AIWRAPPER_PUBLIC_ORIGIN:?Set AIWRAPPER_PUBLIC_ORIGIN}
++      AIWRAPPER_ACCESS_SESSION_SECONDS: ${AIWRAPPER_ACCESS_SESSION_SECONDS:-300}
++      AIWRAPPER_REFRESH_SESSION_SECONDS: ${AIWRAPPER_REFRESH_SESSION_SECONDS:-2592000}
++      AIWRAPPER_SESSION_COOKIE_SECURE: ${AIWRAPPER_SESSION_COOKIE_SECURE:-true}
++      AIWRAPPER_EXECUTION_BACKEND: opencodex
++      AIWRAPPER_OPENCODEX_BASE_URL: http://opencodex:8765
++      AIWRAPPER_OPENCODEX_API_KEY: ${OPENCODEX_API_AUTH_TOKEN:?Set a strong OPENCODEX_API_AUTH_TOKEN}
++      AIWRAPPER_CORS_ORIGINS: ${AIWRAPPER_PUBLIC_ORIGIN:?Set AIWRAPPER_PUBLIC_ORIGIN}
++    volumes:
++      - type: bind
++        source: ${CODEX_HOST_HOME:?Set CODEX_HOST_HOME to a protected Codex OAuth directory}
++        target: /home/codex/.codex
++        read_only: true
++      - aiwrapper_data:/data
++      - codex_workspace:/workspace
++    depends_on:
++      opencodex:
++        condition: service_healthy
++    restart: unless-stopped
++    security_opt:
++      - no-new-privileges:true
++    healthcheck:
++      test: ["CMD", "python", "-c", "import json,urllib.request; j=json.load(urllib.request.urlopen('http://127.0.0.1:8766/health/ready',timeout=4)); assert j['status']=='ok' and j['dependencies']['database']=='ok' and j['dependencies']['opencodex']['status']=='ok'"]
++      interval: 10s
++      timeout: 5s
++      retries: 12
++      start_period: 20s
++
++  gateway:
++    image: nginx:1.27-alpine
++    ports:
++      - ${AIWRAPPER_PUBLIC_BIND:-127.0.0.1}:${AIWRAPPER_PUBLIC_PORT:-8080}:8080
++    volumes:
++      - ./infra/gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
++    depends_on:
++      opencodex:
++        condition: service_healthy
++      codex-wrapper:
++        condition: service_healthy
++    restart: unless-stopped
++    security_opt:
++      - no-new-privileges:true
++    healthcheck:
++      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
++      interval: 10s
++      timeout: 5s
++      retries: 12
++      start_period: 5s
++
++volumes:
++  aiwrapper_data: {}
++  codex_workspace: {}

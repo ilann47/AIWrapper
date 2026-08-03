@@ -113,6 +113,22 @@ O card **Codex multi-account governance** executa o `monitor --json` original do
 
 Para implantações remotas, defina `VITE_API_BASE` e `VITE_AIWRAPPER_API_BASE` com as URLs públicas vistas pelo navegador antes de construir a imagem. A imagem Docker recebe ambas como argumentos de build; nomes internos da rede Docker não devem ser enviados ao navegador.
 
+### Topologia de produção com uma única origem
+
+O manifesto `docker-compose.production.yml` coloca OpenCodex e Codex-Wrapper em rede privada e publica somente um Nginx em `8080`. O frontend e as APIs originais do OpenCodex permanecem em `/`; a API autenticada do AIWrapper fica em `/aiwrapper/`. Essa composição evita URLs internas no bundle, elimina CORS entre os dois serviços e preserva SSE sem buffering.
+
+```bash
+cp .env.production.example .env.production
+mkdir -p /srv/aiwrapper/codex-home
+# Edite origem pública, diretório OAuth e os três segredos antes de iniciar.
+docker compose --env-file .env.production -f docker-compose.production.yml up -d --build --wait
+AIWRAPPER_PRODUCTION_E2E_ORIGIN=http://127.0.0.1:8080 pnpm test:e2e:compose
+```
+
+Mantenha `AIWRAPPER_PUBLIC_BIND=127.0.0.1` quando TLS for terminado por Nginx, Caddy, Cloudflare Tunnel ou outro proxy do host. O proxy externo deve encaminhar para `127.0.0.1:8080`, preservar `X-Forwarded-*` e permitir respostas SSE longas. Use `AIWRAPPER_SESSION_COOKIE_SECURE=true` com HTTPS. Para exposição direta em uma rede privada controlada, altere o bind conscientemente; os containers internos não publicam `8765` ou `8766` nessa topologia.
+
+O diretório indicado por `CODEX_HOST_HOME` é montado com escrita somente no OpenCodex e como somente leitura no fallback Codex-Wrapper. Faça o login OAuth nesse diretório antes da implantação e proteja-o como segredo. `.env.production.example` contém apenas marcadores e não deve ser usado sem substituir `OPENCODEX_API_AUTH_TOKEN`, `OPENCODEX_ADMIN_AUTH_TOKEN` e `AIWRAPPER_OWNER_KEY` por três valores aleatórios independentes. O OpenCodex recusa deliberadamente reutilizar o segredo do data plane como segredo administrativo.
+
 ## Validação e proveniência
 
 ```powershell
@@ -122,6 +138,7 @@ pnpm --dir apps/opencodex-gui lint
 pnpm --dir apps/opencodex-gui lint:i18n
 pnpm provenance:update
 pnpm provenance:verify
+pnpm test:e2e:compose # com a topologia de produção já ativa
 ```
 
 ### Gate E2E da topologia real

@@ -19,7 +19,7 @@
       "kind": "directory",
       "source": "upstream/opencodex/gui",
       "destination": "apps/opencodex-gui",
-      "exclude": ["dist", "tests/aiwrapper-token-saver.test.ts", "tests/aiwrapper-traycer-session-history.test.ts", "tests/aiwrapper-traycer-notifications.test.ts", "tests/aiwrapper-traycer-onboarding.test.ts", "tests/aiwrapper-nine-router-connections.test.ts", "tests/aiwrapper-codex-profiles-admin.test.ts", "tests/aiwrapper-multi-auth-monitor.test.ts", "tests/aiwrapper-grid-layout.test.ts", "tests/aiwrapper-container-layout.test.ts"]
+      "exclude": ["dist", "tests/aiwrapper-token-saver.test.ts", "tests/aiwrapper-traycer-session-history.test.ts", "tests/aiwrapper-traycer-notifications.test.ts", "tests/aiwrapper-traycer-onboarding.test.ts", "tests/aiwrapper-nine-router-connections.test.ts", "tests/aiwrapper-codex-profiles-admin.test.ts", "tests/aiwrapper-multi-auth-monitor.test.ts", "tests/aiwrapper-grid-layout.test.ts", "tests/aiwrapper-container-layout.test.ts", "tests/aiwrapper-production-topology.test.ts"]
     },
     {
       "id": "opencodex-data-plane-execution",
@@ -1194,6 +1194,177 @@
           "profile zoom-preference inspection"
         ],
         "decision": "Preserve Traycer's live CDP harness architecture and replace only the Electron launch and resolution assertions with the composed OpenCodex/AIWrapper user journey."
+      }
+    },
+    {
+      "id": "codex-wrapper-production-build-context",
+      "functionality": "Secret-safe and cache-efficient Docker build context for the composed upstream runtimes",
+      "project": "circlemouth/Codex-Wrapper and decolua/9router",
+      "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+      "license": "MIT / project adapter configuration",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/Codex-Wrapper/.dockerignore",
+      "destination": ".dockerignore",
+      "incompatibility": "The upstream ignore file assumes a single Python repository. AIWrapper's build context also contains Bun, Node, multiple complete upstream snapshots, generated provenance and local AIWrapper state, so the original rules alone would send credentials and large transient trees to the Docker daemon.",
+      "parityAudit": {
+        "retained": [
+          "VCS exclusion",
+          "Python cache and virtual-environment exclusion",
+          "environment-secret exclusion",
+          "Node dependency exclusion",
+          "runtime log exclusion"
+        ],
+        "lost": [],
+        "decision": "Preserve the original denylist and extend it for the multi-runtime repository while explicitly retaining only public environment examples."
+      }
+    },
+    {
+      "id": "codex-wrapper-production-compose",
+      "functionality": "Production composition of the original Codex-Wrapper and OpenCodex runtimes behind a private dependency-aware network",
+      "project": "circlemouth/Codex-Wrapper and lidge-jun/OpenCodex",
+      "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+      "license": "MIT / project adapter configuration",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/Codex-Wrapper/docker-compose.yml",
+      "destination": "docker-compose.production.yml",
+      "incompatibility": "Codex-Wrapper's original Compose runs one service and publishes it directly. AIWrapper must compose the unchanged OpenCodex data plane, the extended Codex-Wrapper gateway and one public ingress, enforce dependency health, share the protected OAuth directory with asymmetric permissions and keep state durable.",
+      "parityAudit": {
+        "retained": [
+          "Original Codex-Wrapper Docker build",
+          "Codex OAuth home mount",
+          "Persistent workspace volume",
+          "Environment-driven runtime controls",
+          "Non-root Codex-Wrapper runtime"
+        ],
+        "lost": [
+          "Direct publication of the backend port is intentionally removed from production"
+        ],
+        "decision": "Keep the original service contract and add only the OpenCodex dependency, AIWrapper integration environment, health ordering, durable state and same-origin ingress required by the composed product."
+      }
+    },
+    {
+      "id": "nine-router-production-ingress",
+      "functionality": "Single-origin Nginx ingress with OpenCodex shell routing, AIWrapper prefix isolation, security headers and unbuffered SSE",
+      "project": "decolua/9router",
+      "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+      "license": "MIT / project adapter configuration",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/9router/gitbook/content/en/deployment/cloud.md",
+      "destination": "infra/gateway/nginx.conf",
+      "incompatibility": "9router documents separate dashboard and API ports on one application. AIWrapper has two preserved upstream runtimes with overlapping root API paths, so the API must be isolated under /aiwrapper while OpenCodex continues to own the root shell and provider data plane.",
+      "parityAudit": {
+        "retained": [
+          "Nginx reverse-proxy boundary",
+          "Forwarded host, address and protocol headers",
+          "HTTP/1.1 upgrade support",
+          "SSE proxy buffering disabled",
+          "Long streaming read timeout"
+        ],
+        "lost": [
+          "Certificate termination remains the responsibility of the host proxy so the container can run behind any production TLS provider"
+        ],
+        "decision": "Adapt the original dual-route Nginx pattern to a same-origin /aiwrapper prefix and retain the complete streaming requirements."
+      }
+    },
+    {
+      "id": "nine-router-production-environment-contract",
+      "functionality": "Explicit production environment template for public origin, protected OAuth storage, secure cookies and independent data-plane, administration and owner secrets",
+      "project": "decolua/9router",
+      "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+      "license": "MIT / project adapter configuration",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/9router/gitbook/content/en/deployment/cloud.md",
+      "destination": ".env.production.example",
+      "incompatibility": "9router's environment contract configures one JWT-protected application. AIWrapper needs independent OpenCodex data-plane, OpenCodex administration and AIWrapper owner secrets, the shared Codex OAuth path, a canonical browser origin and explicit secure-cookie and ingress binding controls.",
+      "parityAudit": {
+        "retained": [
+          "No production secret defaults",
+          "Explicit data path",
+          "Production-only configuration template",
+          "Requirement to replace all credential placeholders"
+        ],
+        "lost": [
+          "9router-specific JWT and initial-password variables do not exist in the imported runtimes"
+        ],
+        "decision": "Keep the explicit upstream production-secret contract and map it to the real authentication and topology boundaries of AIWrapper."
+      }
+    },
+    {
+      "id": "opencodex-production-admin-admission",
+      "functionality": "Stable independent OpenCodex management credential across container replacement with anonymous rejection and authenticated verification",
+      "project": "lidge-jun/OpenCodex",
+      "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+      "license": "MIT / project adapter configuration",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/opencodex/src/server/management-auth.ts",
+      "destination": "docker-compose.production.yml",
+      "incompatibility": "OpenCodex can atomically create an administrator token file for a local installation, but the container's .opencodex directory is image-owned and replaceable while only the OAuth directory is host-mounted. Relying on the generated file would change the administrator credential after replacement. The original runtime already supports an explicit environment token and rejects any collision with data-plane credentials.",
+      "parityAudit": {
+        "retained": [
+          "OPENCODEX_ADMIN_AUTH_TOKEN environment contract",
+          "Independent management and data-plane admission domains",
+          "Timing-safe credential comparison",
+          "Anonymous management rejection",
+          "Management credential collision rejection"
+        ],
+        "lost": [
+          "Automatic local token-file generation is intentionally replaced by an orchestrator-provided production secret"
+        ],
+        "decision": "Require the original environment-supported management credential in both Compose variants and verify it through the unchanged management API."
+      }
+    },
+    {
+      "id": "opencodex-production-ingress-smoke",
+      "functionality": "Identity-aware production ingress smoke covering both services, dependency readiness, compiled GUI, security headers and anonymous admission",
+      "project": "lidge-jun/OpenCodex",
+      "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/opencodex/src/server/proxy-liveness.ts",
+      "destination": "scripts/e2e/production-compose-smoke.mjs",
+      "incompatibility": "OpenCodex's liveness module discovers one local process from PID and runtime-port records. The production gate runs outside the containers and must verify two identities through an Nginx prefix plus readiness, static delivery and unauthenticated rejection; local PID discovery is unavailable and unnecessary at this boundary.",
+      "parityAudit": {
+        "retained": [
+          "Bounded health polling",
+          "HTTP status verification",
+          "OpenCodex service-identity verification",
+          "Structured health body validation",
+          "Foreign-listener rejection"
+        ],
+        "lost": [
+          "PID and runtime-port discovery remain covered by the complete imported OpenCodex test suite"
+        ],
+        "decision": "Preserve the identity-first health invariant and extend it across the externally observable product topology."
+      }
+    },
+    {
+      "id": "nine-router-production-topology-ci",
+      "functionality": "Linux CI build, health-ordered startup, ingress smoke, failure logs and deterministic teardown of the production containers",
+      "project": "decolua/9router and lidge-jun/OpenCodex",
+      "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
+      "license": "MIT / project adapter workflow",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/9router/.github/workflows/docker-publish.yml",
+      "destination": ".github/workflows/provenance.yml",
+      "incompatibility": "9router's workflow builds and publishes one multi-architecture image only for releases. AIWrapper needs a non-publishing pull-request gate that builds two local images, starts three health-dependent services, executes the same-origin product smoke and always removes volumes.",
+      "parityAudit": {
+        "retained": [
+          "GitHub checkout",
+          "Docker Buildx setup",
+          "Real Linux container build",
+          "Bounded workflow execution"
+        ],
+        "lost": [
+          "Registry login, multi-architecture publication and release tags are intentionally outside the validation workflow"
+        ],
+        "decision": "Reuse the upstream Docker CI foundation for a fail-closed topology gate and keep image publication as a separate future release decision."
       }
     },
     {

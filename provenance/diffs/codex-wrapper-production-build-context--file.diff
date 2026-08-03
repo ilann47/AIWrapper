@@ -1,0 +1,42 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\.dockerignore" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\.dockerignore"
+index c172a243e..c7f5bc292 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\.dockerignore"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\.dockerignore"	
+@@ -1,17 +1,23 @@
+ .git
+-.gitignore
+-__pycache__
+-*.py[cod]
+-*.so
+-*.log
+-.python-version
+-.venv
+-venv
++**/.git
++.github
++.codex
++**/.codex
++.aiwrapper
++**/.aiwrapper
+ .env
+ .env.*
+-pytest_cache
+-node_modules
+-workspace/*
+-!workspace/codex_profile
+-!workspace/codex_profile/**
+-submodules/codex/.git
++!.env.example
++!.env.production.example
++**/__pycache__
++**/*.py[cod]
++**/.pytest_cache
++**/.venv
++**/venv
++**/node_modules
++**/dist
++**/coverage
++**/*.log
++provenance/diffs
++docs/generated
++

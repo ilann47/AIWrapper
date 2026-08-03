@@ -1,0 +1,101 @@
+services:
+  opencodex:
+    build:
+      context: .
+      dockerfile: Dockerfile.opencodex
+      args:
+        VITE_API_BASE: ""
+        VITE_AIWRAPPER_API_BASE: /aiwrapper
+    environment:
+      OPENCODEX_API_AUTH_TOKEN: ${OPENCODEX_API_AUTH_TOKEN:?Set a strong OPENCODEX_API_AUTH_TOKEN}
+      OPENCODEX_ADMIN_AUTH_TOKEN: ${OPENCODEX_ADMIN_AUTH_TOKEN:?Set an independent OPENCODEX_ADMIN_AUTH_TOKEN}
+    volumes:
+      - type: bind
+        source: ${CODEX_HOST_HOME:?Set CODEX_HOST_HOME to a protected Codex OAuth directory}
+        target: /home/bun/.codex
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "bun", "-e", "const r=await fetch('http://127.0.0.1:8765/healthz');if(!r.ok)process.exit(1);const j=await r.json();if(j.service!=='opencodex')process.exit(1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  codex-wrapper:
+    build:
+      context: .
+      dockerfile: Dockerfile.codex-wrapper
+      args:
+        CODEX_UID: ${CODEX_UID:-1000}
+        CODEX_GID: ${CODEX_GID:-1000}
+    environment:
+      CODEX_CONFIG_DIR: /home/codex/.codex
+      CODEX_WORKDIR: /workspace
+      CODEX_PATH: codex
+      CODEX_REASONING_EFFORT: ${CODEX_REASONING_EFFORT:-medium}
+      CODEX_MAX_PARALLEL_REQUESTS: ${CODEX_MAX_PARALLEL_REQUESTS:-2}
+      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-60}
+      AIWRAPPER_STATE_DIR: /data
+      AIWRAPPER_DATABASE_PATH: /data/aiwrapper.db
+      AIWRAPPER_MULTI_AUTH_DIR: /data/multi-auth
+      AIWRAPPER_GOVERNANCE_BRIDGE: /opt/aiwrapper/extensions/aiwrapper-admin/src/governance-bridge.mjs
+      AIWRAPPER_NINE_ROUTER_BRIDGE: /opt/aiwrapper/extensions/aiwrapper-runtime/src/nine-router-bridge.mjs
+      AIWRAPPER_PROFILE_SCRIPT: /opt/aiwrapper/packages/codex-profiles/bin/codex-profile
+      AIWRAPPER_PROFILE_BASH: /bin/bash
+      AIWRAPPER_OWNER_NAME: ${AIWRAPPER_OWNER_NAME:-owner}
+      AIWRAPPER_OWNER_KEY: ${AIWRAPPER_OWNER_KEY:?Set a strong AIWRAPPER_OWNER_KEY}
+      AIWRAPPER_PUBLIC_BASE_URL: ${AIWRAPPER_PUBLIC_ORIGIN:?Set AIWRAPPER_PUBLIC_ORIGIN}/aiwrapper
+      AIWRAPPER_WEB_BASE_URL: ${AIWRAPPER_PUBLIC_ORIGIN:?Set AIWRAPPER_PUBLIC_ORIGIN}
+      AIWRAPPER_ACCESS_SESSION_SECONDS: ${AIWRAPPER_ACCESS_SESSION_SECONDS:-300}
+      AIWRAPPER_REFRESH_SESSION_SECONDS: ${AIWRAPPER_REFRESH_SESSION_SECONDS:-2592000}
+      AIWRAPPER_SESSION_COOKIE_SECURE: ${AIWRAPPER_SESSION_COOKIE_SECURE:-true}
+      AIWRAPPER_EXECUTION_BACKEND: opencodex
+      AIWRAPPER_OPENCODEX_BASE_URL: http://opencodex:8765
+      AIWRAPPER_OPENCODEX_API_KEY: ${OPENCODEX_API_AUTH_TOKEN:?Set a strong OPENCODEX_API_AUTH_TOKEN}
+      AIWRAPPER_CORS_ORIGINS: ${AIWRAPPER_PUBLIC_ORIGIN:?Set AIWRAPPER_PUBLIC_ORIGIN}
+    volumes:
+      - type: bind
+        source: ${CODEX_HOST_HOME:?Set CODEX_HOST_HOME to a protected Codex OAuth directory}
+        target: /home/codex/.codex
+        read_only: true
+      - aiwrapper_data:/data
+      - codex_workspace:/workspace
+    depends_on:
+      opencodex:
+        condition: service_healthy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "python", "-c", "import json,urllib.request; j=json.load(urllib.request.urlopen('http://127.0.0.1:8766/health/ready',timeout=4)); assert j['status']=='ok' and j['dependencies']['database']=='ok' and j['dependencies']['opencodex']['status']=='ok'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  gateway:
+    image: nginx:1.27-alpine
+    ports:
+      - ${AIWRAPPER_PUBLIC_BIND:-127.0.0.1}:${AIWRAPPER_PUBLIC_PORT:-8080}:8080
+    volumes:
+      - ./infra/gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      opencodex:
+        condition: service_healthy
+      codex-wrapper:
+        condition: service_healthy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
+volumes:
+  aiwrapper_data: {}
+  codex_workspace: {}
