@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ru.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ru.ts"
-index e0ae4bdf4..ff4f1ffc8 100644
+index e0ae4bdf4..bfd783ff5 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ru.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ru.ts"	
-@@ -10,6 +10,294 @@ export const ru: Record<TKey, string> = {
+@@ -10,6 +10,305 @@ export const ru: Record<TKey, string> = {
    "nav.subagents": "Подагенты",
    "nav.logs": "Логи и отладка",
    "nav.usage": "Использование",
@@ -30,6 +30,17 @@ index e0ae4bdf4..ff4f1ffc8 100644
 +  "aiw.profiles.state": "State",
 +  "aiw.profiles.home": "CODEX_HOME",
 +  "aiw.profiles.status": "Authentication status",
++  "aiw.profiles.desktop": "ChatGPT desktop",
++  "aiw.profiles.desktopMissing": "Desktop application not detected",
++  "aiw.profiles.runtimeDetails": "Runtime boundaries",
++  "aiw.profiles.runtimeDetailsDescription": "Paths and isolation claims reported directly by codex-profile doctor --json.",
++  "aiw.profiles.desktopExecutable": "Desktop executable",
++  "aiw.profiles.desktopApp": "Application bundle",
++  "aiw.profiles.workspaceRegistry": "Workspace registry",
++  "aiw.profiles.configurationHome": "Profile configuration",
++  "aiw.profiles.desktopScope": "Desktop scope",
++  "aiw.profiles.accountBoundary": "Account identity",
++  "aiw.profiles.legacyClone": "Legacy application clones detected at",
 +  "nav.aiwrapperOrganizations": "Organizations",
 +  "nav.aiwrapperSessions": "Sessions",
 +  "nav.aiwrapperSharing": "Sharing",
@@ -297,7 +308,7 @@ index e0ae4bdf4..ff4f1ffc8 100644
    "common.github": "GitHub",
    "common.save": "Сохранить",
    "common.saving": "Сохранение…",
-@@ -1035,6 +1323,9 @@ export const ru: Record<TKey, string> = {
+@@ -1035,6 +1334,9 @@ export const ru: Record<TKey, string> = {
    "nav.codexAuth": "Аутентификация Codex",
    "nav.api": "API",
    "nav.openMenu": "Открыть меню",

@@ -10,6 +10,16 @@ test("Codex profile diagnostics are exposed as an administrator page", () => {
   expect(routing).toContain('"aiwrapper-profiles"');
   expect(page).toContain('client.get<ProfileDiagnostics>("/admin/profiles")');
   expect(page).toContain("commandExitCode");
+  expect(page).toContain("data.desktop.path");
+  expect(page).toContain("data.desktop.app_path");
+  expect(page).toContain("data.desktop.scope");
+  expect(page).toContain("data.desktop.account_identity");
+  expect(page).toContain("data.legacy_clone_root.found");
+  expect(page).toContain("data.workspaces.registry_path");
+  expect(page).toContain("data.workspaces.config_home");
+  expect(page).toContain('className="aiw-stack aiw-profile-page"');
+  expect(page).toContain('className="tbl-wrap"');
+  expect(page).not.toContain('className="aiw-table-wrap"');
 });
 
 test("creating a user no longer asks for a CODEX_HOME that the backend ignores", () => {

@@ -352,7 +352,7 @@
     },
     {
       "id": "codex-profiles-administration-ui",
-      "functionality": "Administrator profile inventory with Codex CLI health, authentication state, isolated CODEX_HOME paths and workspace-reference diagnostics",
+      "functionality": "Administrator profile inventory with Codex CLI and ChatGPT desktop discovery, isolation boundaries, CODEX_HOME paths and workspace-reference diagnostics",
       "project": "Ducksss/codex-profiles and lidge-jun/OpenCodex",
       "sourceCommit": "b0df2dd0ab955eb712436f234bbab984cc017992",
       "license": "MIT / project adapter code",
@@ -361,7 +361,7 @@
       "source": "upstream/codex-profiles/bin/codex-profile",
       "destination": "extensions/aiwrapper-users/src/ProfilesPage.tsx",
       "incompatibility": "codex-profiles is intentionally a dependency-free Bash CLI with no frontend. AIWrapper must not port its profile discovery or doctor logic; the OpenCodex page renders the unchanged doctor --json response through existing card, table, loading and error primitives.",
-      "parityAudit": { "retained": ["all-profile status rows", "profile name", "CODEX_HOME", "state", "authentication status", "Codex CLI found/version/path/health", "workspace guard mode", "binding count", "missing paths", "missing profiles"], "lost": ["desktop application details are returned by the API but not displayed", "legacy clone-root detail", "profile/workspace mutation commands remain CLI-only"], "decision": "Expose the original read-only diagnostic contract as a commercial admin page and keep mutation in the hardened upstream CLI." }
+      "parityAudit": { "retained": ["all-profile status rows", "profile name", "CODEX_HOME", "state", "authentication status", "Codex CLI found/version/path/health", "ChatGPT desktop executable, application bundle, product and bundle identity", "desktop scope and account-identity boundary", "legacy clone-root warning", "workspace configuration home and registry path", "workspace guard mode", "binding count", "missing paths", "missing profiles"], "lost": ["profile/workspace mutation commands remain CLI-only"], "decision": "Expose the complete original read-only doctor contract as a commercial admin page and keep filesystem mutation in the hardened upstream CLI." }
     },
     {
       "id": "nine-router-oauth-security-boundary",
