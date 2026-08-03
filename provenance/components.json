@@ -1369,6 +1369,23 @@
       }
     },
     {
+      "id": "codex-wrapper-python-ci",
+      "functionality": "Linux CI provisioning of the original Codex-Wrapper Python runtime and backend test dependency",
+      "project": "circlemouth/Codex-Wrapper",
+      "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+      "license": "MIT / project adapter workflow",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/Codex-Wrapper/Dockerfile",
+      "destination": ".github/workflows/provenance.yml",
+      "incompatibility": "The upstream Dockerfile provisions Python and installs requirements inside the runtime image but has no GitHub Actions workflow. AIWrapper executes the copied FastAPI tests directly on the verification runner, so the same Python version and requirements must be installed there together with pytest before pnpm test.",
+      "parityAudit": {
+        "retained": ["Python 3.11 runtime", "Installation from the original requirements.txt", "pytest execution contract documented by upstream"],
+        "lost": ["Container-only OS and Codex CLI installation are covered by the separate production-topology job"],
+        "decision": "Reuse the upstream runtime version and dependency manifest at the CI boundary, adding only pytest as the test runner required by the existing backend test command."
+      }
+    },
+    {
       "id": "provenance-cross-platform-canonical-text",
       "functionality": "Cross-platform LF-canonical SHA-256 evidence for text checked out with Windows CRLF or Git LF",
       "project": "ndycode/codex-multi-auth",

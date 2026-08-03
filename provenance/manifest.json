@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-03T04:43:11.439Z",
+  "generatedAt": "2026-08-03T04:51:02.493Z",
   "generatorUpstream": {
     "project": "ndycode/codex-multi-auth",
     "commit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
@@ -27621,17 +27621,57 @@
           "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
           "license": "MIT / project adapter workflow",
           "sourceSha256": "cef5c9ae18cc896582507cd0f11234f0b24cc99aa5540c9630fea2f743fcc2bc",
-          "sha256": "fda12d2da78bf5a81899cb5e0aa435a8e58c69e354ef6eb00ab067036c1e68a9",
+          "sha256": "ad515daa665e7fce7f84aa531182be9a0bd9ff2dd515780a48019f7801f6945d",
           "diff": "provenance/diffs/nine-router-production-topology-ci--file.diff",
-          "diffSha256": "09dcbd265e30e717078cc5cf82c695cb0a8b18131ca15dcaa09a4ba22d94cb3c",
+          "diffSha256": "279578c5fca9855193aa8f9825d6aa8b8aca99972300113335953b73764dc4a2",
           "lines": {
             "source": 61,
-            "destination": 60,
-            "preserved": 13,
+            "destination": 64,
+            "preserved": 14,
             "changed": 47,
-            "removed": 1,
-            "added": 0,
-            "reusePercent": 21.31
+            "removed": 0,
+            "added": 3,
+            "reusePercent": 22.95
+          }
+        }
+      ]
+    },
+    {
+      "id": "codex-wrapper-python-ci",
+      "functionality": "Linux CI provisioning of the original Codex-Wrapper Python runtime and backend test dependency",
+      "project": "circlemouth/Codex-Wrapper",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "The upstream Dockerfile provisions Python and installs requirements inside the runtime image but has no GitHub Actions workflow. AIWrapper executes the copied FastAPI tests directly on the verification runner, so the same Python version and requirements must be installed there together with pytest before pnpm test.",
+      "parityAudit": {
+        "retained": [
+          "Python 3.11 runtime",
+          "Installation from the original requirements.txt",
+          "pytest execution contract documented by upstream"
+        ],
+        "lost": [
+          "Container-only OS and Codex CLI installation are covered by the separate production-topology job"
+        ],
+        "decision": "Reuse the upstream runtime version and dependency manifest at the CI boundary, adding only pytest as the test runner required by the existing backend test command."
+      },
+      "files": [
+        {
+          "source": "upstream/Codex-Wrapper/Dockerfile",
+          "destination": ".github/workflows/provenance.yml",
+          "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
+          "license": "MIT / project adapter workflow",
+          "sourceSha256": "d1d150411b3db566573719c9ecab551a2e4fdb84b64f6991e874b5ed14d2ab04",
+          "sha256": "ad515daa665e7fce7f84aa531182be9a0bd9ff2dd515780a48019f7801f6945d",
+          "diff": "provenance/diffs/codex-wrapper-python-ci--file.diff",
+          "diffSha256": "c89e935e17b7c45da75035fe718ea4ab4c99e81a6ed63970af3c4fc0e0e95d88",
+          "lines": {
+            "source": 46,
+            "destination": 64,
+            "preserved": 6,
+            "changed": 40,
+            "removed": 0,
+            "added": 18,
+            "reusePercent": 13.04
           }
         }
       ]

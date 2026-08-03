@@ -54,3 +54,11 @@ test("Codex-Wrapper image installs original multi-auth vendored dependencies bef
   expect(npmInstall).toBeGreaterThan(vendorCopy);
   expect(dockerignore).toContain("!packages/codex-multi-auth/vendor/**");
 });
+
+test("verification CI provisions the Codex-Wrapper Python runtime before backend tests", () => {
+  const workflow = read(".github/workflows/provenance.yml");
+  expect(workflow).toContain("actions/setup-python@v5");
+  expect(workflow).toContain('python-version: "3.11"');
+  expect(workflow).toContain("python -m pip install -r services/codex-wrapper/requirements.txt pytest");
+  expect(workflow.indexOf("python -m pip install")).toBeLessThan(workflow.indexOf("pnpm test"));
+});
