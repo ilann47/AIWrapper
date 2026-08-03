@@ -9,6 +9,7 @@ import {
   ALL_NOTIFICATION_CATEGORIES,
   categoryForNotificationSource,
   compareAttentionOrder,
+  computeLiveArrivalKeys,
   occurrenceKeyForNotification,
   temporalGroupForTimestamp,
   useNotificationCenterArrivals,
@@ -102,7 +103,8 @@ export default function NotificationsCenter() {
   const setUnreadOnly = useNotificationsPopoverStore((state) => state.setUnreadOnly);
   const toggleCategory = useNotificationsPopoverStore((state) => state.toggleCategory);
   const resetFilters = useNotificationsPopoverStore((state) => state.resetFilters);
-  const seenOccurrences = useRef<Set<string> | null>(null);
+  const toastBaseline = useRef<ReadonlyArray<{ feedId: string; occurrenceKey: string }> | null>(null);
+  const toastIdentity = useRef<string | null>(null);
   const resource = useKeyedClientResource<NotificationResponse>(
     `aiwrapper-notifications:${principal?.userId ?? "anonymous"}`,
     [client, principal?.userId],
@@ -167,25 +169,31 @@ export default function NotificationsCenter() {
   });
 
   useEffect(() => {
-    const next = new Set(rows.map(row => occurrenceKeyForNotification({
-      feedId: row.feedId,
-      createdAt: row.createdAtMs,
-      sourceRef: row.sourceRef,
-    })));
-    const previous = seenOccurrences.current;
-    seenOccurrences.current = next;
-    if (previous === null) return;
+    const identity = principal?.userId ?? null;
+    if (!client || identity === null || resource.data === undefined) {
+      toastIdentity.current = identity;
+      toastBaseline.current = null;
+      return;
+    }
+    if (toastIdentity.current !== identity || toastBaseline.current === null) {
+      toastIdentity.current = identity;
+      toastBaseline.current = occurrenceOrder;
+      return;
+    }
+    const arrivals = new Set(computeLiveArrivalKeys(toastBaseline.current, occurrenceOrder));
+    toastBaseline.current = occurrenceOrder;
+    if (arrivals.size === 0) return;
     for (const row of rows) {
       const key = occurrenceKeyForNotification({
         feedId: row.feedId,
         createdAt: row.createdAtMs,
         sourceRef: row.sourceRef,
       });
-      if (!previous.has(key) && row.readAtMs === null) {
+      if (arrivals.has(key) && row.readAtMs === null) {
         toast(row.title, { description: row.body, id: row.feedId });
       }
     }
-  }, [rows]);
+  }, [client, occurrenceOrder, principal?.userId, resource.data, rows]);
 
   useEffect(() => {
     if (!open) return;

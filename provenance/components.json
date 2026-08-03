@@ -582,7 +582,7 @@
       "source": "upstream/traycer/clients/gui-app/src/components/notifications/notifications-popover.tsx",
       "destination": "extensions/aiwrapper-notifications/src/NotificationsCenter.tsx",
       "incompatibility": "Traycer's component depends on its TanStack router, host notification RPCs, project/worktree graph, analytics, Radix primitives and cloud stores. Those services do not exist in the FastAPI/OpenCodex browser topology, so the full component cannot mount. The adapter retains its feed architecture and actions while replacing only data and shell boundaries.",
-      "parityAudit": { "retained": ["notification bell and unread badge", "Attention and Recent sections", "blocking-first lifecycle", "Today/Yesterday/Earlier separators", "Recent-only unread/category filters", "filter-empty reset", "mark all read", "per-row read, resolve and clear", "live-arrival Sonner toast", "N-new reveal affordance", "scroll-anchor preservation", "Escape close", "overlay mount outside the OpenCodex grid"], "lost": ["project/worktree navigation", "Traycer analytics events", "native operating-system notification and chime", "host-window focus suppression", "Radix popover positioning"], "decision": "Reuse the complete portable lifecycle, category, popover-state, occurrence, arrival and scroll-anchor modules and adapt the mature interaction architecture to the authenticated AIWrapper REST feed; mount its fixed shell as a sibling of the OpenCodex grid so overlay nodes cannot consume grid tracks." }
+      "parityAudit": { "retained": ["notification bell and unread badge", "Attention and Recent sections", "blocking-first lifecycle", "Today/Yesterday/Earlier separators", "Recent-only unread/category filters", "filter-empty reset", "mark all read", "per-row read, resolve and clear", "post-baseline live-arrival Sonner toast", "historical snapshot suppression", "N-new reveal affordance", "scroll-anchor preservation", "Escape close", "overlay mount outside the OpenCodex grid"], "lost": ["project/worktree navigation", "Traycer analytics events", "native operating-system notification and chime", "host-window focus suppression", "Radix popover positioning"], "decision": "Reuse the complete portable lifecycle, category, popover-state, occurrence, arrival and scroll-anchor modules and adapt the mature interaction architecture to the authenticated AIWrapper REST feed; use the original live-arrival detector as the toast baseline so cold historical snapshots stay in the feed without covering the product UI." }
     },
     {
       "id": "traycer-notification-categories",
@@ -1141,6 +1141,59 @@
           "OpenCodex isolated child restart proof remains in the complete imported upstream suite"
         ],
         "decision": "Adapt the mature live-smoke boundary to prove the composed AIWrapper product and add secret redaction plus deterministic cleanup; do not introduce a second browser automation stack."
+      }
+    },
+    {
+      "id": "traycer-live-cdp-browser-runtime",
+      "functionality": "Real Chrome discovery, CDP connection, renderer readiness, deterministic viewport and screenshot capture for production UI verification",
+      "project": "traycerai/traycer",
+      "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
+      "license": "MIT",
+      "classification": "directly imported",
+      "kind": "file",
+      "source": "upstream/traycer/clients/desktop/scripts/resolution/helpers.cjs",
+      "destination": "scripts/e2e/live-browser-smoke.mjs",
+      "incompatibility": "None for the CDP transport helpers: AIWrapper imports and executes the original CommonJS module directly. Traycer's zoom-preference readers are not invoked because AIWrapper is a browser application rather than its Electron desktop shell.",
+      "parityAudit": {
+        "retained": [
+          "waitForInspectablePage",
+          "connectCdp",
+          "waitForRendererReady",
+          "applyResolutionViewport",
+          "captureScreenshot"
+        ],
+        "lost": [],
+        "decision": "Execute the original Traycer CDP helpers from upstream and keep AIWrapper-specific assertions outside that module."
+      }
+    },
+    {
+      "id": "traycer-aiwrapper-browser-e2e",
+      "functionality": "Fresh-profile Chrome journey through login, onboarding, role-aware navigation, streamed chat, session history, archive, disconnect and browser-error audit",
+      "project": "traycerai/traycer and lidge-jun/OpenCodex",
+      "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/traycer/clients/desktop/scripts/resolution/run-resolution-matrix.cjs",
+      "destination": "scripts/e2e/live-browser-smoke.mjs",
+      "incompatibility": "Traycer's runner launches its Electron binary and verifies resolution/zoom persistence. AIWrapper is served by the unchanged OpenCodex HTTP runtime, so the launch target and product assertions differ; free-port allocation, throwaway profile, child lifecycle, CDP readiness, screenshot evidence and bounded cleanup remain portable.",
+      "parityAudit": {
+        "retained": [
+          "throwaway browser profile",
+          "free debugging-port allocation",
+          "bounded child-process startup and shutdown",
+          "real Chromium renderer",
+          "CDP runtime assertions",
+          "deterministic viewport",
+          "screenshot evidence",
+          "failure-safe cleanup"
+        ],
+        "lost": [
+          "Electron-specific binary preparation",
+          "desktop zoom matrix",
+          "profile zoom-preference inspection"
+        ],
+        "decision": "Preserve Traycer's live CDP harness architecture and replace only the Electron launch and resolution assertions with the composed OpenCodex/AIWrapper user journey."
       }
     },
     {

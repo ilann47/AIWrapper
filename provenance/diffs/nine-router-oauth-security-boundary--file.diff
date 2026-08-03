@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\providers\\registry\\gemini.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\.env.example"
-index 40dedaf7f..20ae4ea6e 100644
+index 40dedaf7f..b11859d92 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\providers\\registry\\gemini.js"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\.env.example"	
-@@ -1,85 +1,66 @@
+@@ -1,85 +1,70 @@
 -import { GOOGLE_OAUTH_CLIENT } from "../shared.js";
 +# AIWrapper Lab — copie para .env e ajuste somente o necessário.
 +# Nunca versione .env, auth.json, chaves individuais ou o diretório .aiwrapper.
@@ -153,3 +153,7 @@ index 40dedaf7f..20ae4ea6e 100644
 +AIWRAPPER_E2E_KEY_FILE=services/codex-wrapper/.aiwrapper/bootstrap-owner.key
 +AIWRAPPER_E2E_MODEL=gpt-5.6-sol
 +AIWRAPPER_E2E_TIMEOUT_MS=120000
++AIWRAPPER_E2E_UI_LIVE=0
++# Opcional: caminho do Chrome/Edge e destino da captura do smoke de UI.
++AIWRAPPER_E2E_CHROME_PATH=
++AIWRAPPER_E2E_UI_SCREENSHOT=services/codex-wrapper/.aiwrapper/e2e/live-browser-smoke.png

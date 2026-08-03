@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-03T03:18:24.090Z",
+  "generatedAt": "2026-08-03T03:35:12.346Z",
   "generatorUpstream": {
     "project": "ndycode/codex-multi-auth",
     "commit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
@@ -24623,15 +24623,15 @@
           "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
           "license": "MIT / project adapter configuration",
           "sourceSha256": "ffcb7ba6b9a681dbbdb7e9c79f64ca2320188f7efede616735ceb4ec120113c3",
-          "sha256": "418e2aab32ebde246bd89247dc4c1354b9d77d5384346b6066a861f0f3baeda5",
+          "sha256": "c539db2ae3894ccddb3219a68f55daef0cf12a0de5bb2802713248295f6930a6",
           "diff": "provenance/diffs/nine-router-oauth-security-boundary--file.diff",
-          "diffSha256": "93bbdff8962f4787fe33f88295e6c757b1d1276d57ca0dfd3ee865825f102dc9",
+          "diffSha256": "b0f5c64f5c3ebe9343820f86f61bfc8432966f5ec3dac0614bfd5ec7c473b952",
           "lines": {
             "source": 86,
-            "destination": 67,
+            "destination": 71,
             "preserved": 2,
-            "changed": 65,
-            "removed": 19,
+            "changed": 69,
+            "removed": 15,
             "added": 0,
             "reusePercent": 2.33
           }
@@ -25276,7 +25276,8 @@
           "filter-empty reset",
           "mark all read",
           "per-row read, resolve and clear",
-          "live-arrival Sonner toast",
+          "post-baseline live-arrival Sonner toast",
+          "historical snapshot suppression",
           "N-new reveal affordance",
           "scroll-anchor preservation",
           "Escape close",
@@ -25289,7 +25290,7 @@
           "host-window focus suppression",
           "Radix popover positioning"
         ],
-        "decision": "Reuse the complete portable lifecycle, category, popover-state, occurrence, arrival and scroll-anchor modules and adapt the mature interaction architecture to the authenticated AIWrapper REST feed; mount its fixed shell as a sibling of the OpenCodex grid so overlay nodes cannot consume grid tracks."
+        "decision": "Reuse the complete portable lifecycle, category, popover-state, occurrence, arrival and scroll-anchor modules and adapt the mature interaction architecture to the authenticated AIWrapper REST feed; use the original live-arrival detector as the toast baseline so cold historical snapshots stay in the feed without covering the product UI."
       },
       "files": [
         {
@@ -25298,15 +25299,15 @@
           "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
           "license": "MIT / project adapter code",
           "sourceSha256": "264db93c09af58b8961e67d37f8d8eeb60e39084c5133c0675b4bdf0b779f781",
-          "sha256": "7005c8bdd89c4981eb7bb4acdf7246dba9f27af4c190bb72a421d5eca2594b35",
+          "sha256": "a890320294d5f82a210dc8e34c19c8cc7140080612f68f7321a040ae7fdf967e",
           "diff": "provenance/diffs/traycer-notification-center-ui--file.diff",
-          "diffSha256": "13e6c5b8cadaa6bb25166c07932c760b60d45ba793ef5f3e568fc99aeb6a4171",
+          "diffSha256": "f0ab08e87dda171fa83e304c723aa3c86a60430b08feed1e199fb991af19f7be",
           "lines": {
             "source": 905,
-            "destination": 281,
+            "destination": 289,
             "preserved": 43,
-            "changed": 238,
-            "removed": 624,
+            "changed": 246,
+            "removed": 616,
             "added": 0,
             "reusePercent": 4.75
           }
@@ -27135,6 +27136,93 @@
             "removed": 0,
             "added": 83,
             "reusePercent": 18.25
+          }
+        }
+      ]
+    },
+    {
+      "id": "traycer-live-cdp-browser-runtime",
+      "functionality": "Real Chrome discovery, CDP connection, renderer readiness, deterministic viewport and screenshot capture for production UI verification",
+      "project": "traycerai/traycer",
+      "classification": "directly imported",
+      "referenceOnly": false,
+      "incompatibility": "None for the CDP transport helpers: AIWrapper imports and executes the original CommonJS module directly. Traycer's zoom-preference readers are not invoked because AIWrapper is a browser application rather than its Electron desktop shell.",
+      "parityAudit": {
+        "retained": [
+          "waitForInspectablePage",
+          "connectCdp",
+          "waitForRendererReady",
+          "applyResolutionViewport",
+          "captureScreenshot"
+        ],
+        "lost": [],
+        "decision": "Execute the original Traycer CDP helpers from upstream and keep AIWrapper-specific assertions outside that module."
+      },
+      "files": [
+        {
+          "source": "upstream/traycer/clients/desktop/scripts/resolution/helpers.cjs",
+          "destination": "scripts/e2e/live-browser-smoke.mjs",
+          "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
+          "license": "MIT",
+          "sourceSha256": "57d58d6a64c2e17f41472efac5cfbba229d6b808757615bd8ea6f7e5e1a54f0f",
+          "sha256": "085439ed34ec6aa82cf0e3772a0a0d8d589c1348b9c2d0c6f768b8ebf31e4aef",
+          "diff": "provenance/diffs/traycer-live-cdp-browser-runtime--file.diff",
+          "diffSha256": "01e33b836a68c151bb0a2080a573ba9555f6caa7a1516024acaac7efecb7208c",
+          "lines": {
+            "source": 245,
+            "destination": 303,
+            "preserved": 37,
+            "changed": 208,
+            "removed": 0,
+            "added": 58,
+            "reusePercent": 15.1
+          }
+        }
+      ]
+    },
+    {
+      "id": "traycer-aiwrapper-browser-e2e",
+      "functionality": "Fresh-profile Chrome journey through login, onboarding, role-aware navigation, streamed chat, session history, archive, disconnect and browser-error audit",
+      "project": "traycerai/traycer and lidge-jun/OpenCodex",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "Traycer's runner launches its Electron binary and verifies resolution/zoom persistence. AIWrapper is served by the unchanged OpenCodex HTTP runtime, so the launch target and product assertions differ; free-port allocation, throwaway profile, child lifecycle, CDP readiness, screenshot evidence and bounded cleanup remain portable.",
+      "parityAudit": {
+        "retained": [
+          "throwaway browser profile",
+          "free debugging-port allocation",
+          "bounded child-process startup and shutdown",
+          "real Chromium renderer",
+          "CDP runtime assertions",
+          "deterministic viewport",
+          "screenshot evidence",
+          "failure-safe cleanup"
+        ],
+        "lost": [
+          "Electron-specific binary preparation",
+          "desktop zoom matrix",
+          "profile zoom-preference inspection"
+        ],
+        "decision": "Preserve Traycer's live CDP harness architecture and replace only the Electron launch and resolution assertions with the composed OpenCodex/AIWrapper user journey."
+      },
+      "files": [
+        {
+          "source": "upstream/traycer/clients/desktop/scripts/resolution/run-resolution-matrix.cjs",
+          "destination": "scripts/e2e/live-browser-smoke.mjs",
+          "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
+          "license": "MIT / project adapter code",
+          "sourceSha256": "93e19faad1c6902783c5d37ec5acd9783125d85047a826c6685b2c1c0621993a",
+          "sha256": "085439ed34ec6aa82cf0e3772a0a0d8d589c1348b9c2d0c6f768b8ebf31e4aef",
+          "diff": "provenance/diffs/traycer-aiwrapper-browser-e2e--file.diff",
+          "diffSha256": "c30bf0e9db1821d815044061c351f590bf6110fe80f95bdd5e26532c4ab2f121",
+          "lines": {
+            "source": 450,
+            "destination": 303,
+            "preserved": 46,
+            "changed": 257,
+            "removed": 147,
+            "added": 0,
+            "reusePercent": 10.22
           }
         }
       ]

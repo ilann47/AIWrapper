@@ -136,4 +136,14 @@ pnpm test:e2e:live
 
 O gate reutiliza o padrão de smoke live do 9router e o isolamento/redação do OpenCodex. Ele valida sessão de navegador vinculada à origem, descoberta de modelos, resposta SSE real, persistência e edição da conversa, exportação Markdown, compartilhamento temporário e contabilização no ledger. A conversa, o link público e a sessão de autenticação criados pelo teste são removidos no `finally`. A execução é recusada sem `AIWRAPPER_E2E_LIVE=1`, pois faz uma solicitação curta ao provider conectado.
 
+Para validar a experiência completa em Chrome/Edge real, incluindo o bundle compilado:
+
+```powershell
+$env:AIWRAPPER_E2E_UI_LIVE='1'
+$env:AIWRAPPER_E2E_KEY_FILE='services/codex-wrapper/.aiwrapper/bootstrap-owner.key'
+pnpm test:e2e:ui
+```
+
+Esse gate importa diretamente o transporte CDP do Traycer e usa um perfil temporário. Ele percorre login, onboarding, navegação por papel, chat SSE, histórico, arquivamento e desconexão, falha diante de erros JavaScript ou toasts históricos e salva uma captura local em `services/codex-wrapper/.aiwrapper/e2e/live-browser-smoke.png`. A conversa criada é arquivada pela interface e removida pela API se o fluxo falhar antes da limpeza.
+
 Classificações são literais: `copied`, `directly imported`, `adapter`, `imported-not-wired` ou `IMPLEMENTAÇÃO PRÓPRIA`. Código próprio só aparece nas funcionalidades exclusivas permitidas e em boundaries de integração, sempre com incompatibilidade e auditoria documentadas.

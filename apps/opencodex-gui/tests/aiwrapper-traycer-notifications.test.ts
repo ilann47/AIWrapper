@@ -85,6 +85,9 @@ test("Traycer live-arrival detection ignores pagination and counts recurrences",
     { feedId: "audit:front", occurrenceKey: "front@200" },
     baseline[1],
   ])).toEqual(["front@200"]);
+  expect(computeLiveArrivalKeys([], [
+    { feedId: "audit:historical", occurrenceKey: "historical@10" },
+  ])).toEqual([]);
 });
 
 test("Traycer scroll anchor preserves the nearest surviving row", () => {
@@ -116,6 +119,7 @@ test("notification center is mounted and wired to the authenticated feed", () =>
   expect(center).toContain('client.get<NotificationResponse>("/v1/me/notifications")');
   expect(center).toContain("<Toaster");
   expect(center).toContain("toast(row.title");
+  expect(center).toContain("computeLiveArrivalKeys(toastBaseline.current, occurrenceOrder)");
   expect(center).toContain("useNotificationCenterScrollAnchor");
   expect(center).toContain("useNotificationCenterArrivals");
   expect(center).toContain("categoryForNotificationSource");
