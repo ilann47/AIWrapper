@@ -1,23 +1,19 @@
-diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\api.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\governance-bridge.mjs"
-index ec1546551..23a5e4c64 100644
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\api.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\MultiAuthMonitorPanel.tsx"
+index ec1546551..35eaab6a6 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\api.ts"	
-+++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\governance-bridge.mjs"	
-@@ -1,213 +1,100 @@
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\MultiAuthMonitorPanel.tsx"	
+@@ -1,213 +1,62 @@
 -let installed = false;
 -/** Shared 401 refresh gate — concurrent waiters join one prompt / token resolution. */
 -let resolutionInFlight: Promise<string | null> | null = null;
 -/** Unwrapped fetch captured at install time — used for session re-bootstrap so the
 - *  bootstrap document request itself never enters the 401 handling path. */
 -let rawFetch: typeof fetch | null = null;
-+#!/usr/bin/env node
- /**
+-/**
 - * After the user cancels (or submits blank) once, suppress further prompts for this page
 - * lifetime so a staggered 401 fan-out does not reopen the dialog N times (#647 / Codex).
 - * A full reload clears module state and allows prompting again.
-+ * Thin process boundary for the unmodified codex-multi-auth governance modules.
-+ * All ledger normalization, redaction, pricing, summarization and budget decisions
-+ * below execute upstream code from packages/codex-multi-auth/dist.
-  */
+- */
 -let promptCancelled = false;
 -
 -/** Document path re-fetched to mint a fresh loopback GUI session (server injects meta tags). */
@@ -118,32 +114,8 @@ index ec1546551..23a5e4c64 100644
 -  } catch {
 -    return null;
 -  }
-+import {
-+  appendUsageLedgerRow,
-+  hashUsageIdentifier,
-+  readUsageLedgerRows,
-+  summarizeUsageRows,
-+} from "../../../packages/codex-multi-auth/dist/lib/usage/index.js";
-+import { evaluateBudgetGuard } from "../../../packages/codex-multi-auth/dist/lib/budget-guard.js";
-+import { runMonitorCommand } from "../../../packages/codex-multi-auth/dist/lib/codex-manager/commands/monitor.js";
-+import { loadAccounts, setStoragePath } from "../../../packages/codex-multi-auth/dist/lib/storage.js";
-+
-+const operation = process.argv[2];
-+const input = JSON.parse(await new Promise((resolve, reject) => {
-+  let body = "";
-+  process.stdin.setEncoding("utf8");
-+  process.stdin.on("data", chunk => { body += chunk; });
-+  process.stdin.on("end", () => resolve(body || "{}"));
-+  process.stdin.on("error", reject);
-+}));
-+
-+async function userSummary({ userId, since, until, by = "model" }) {
-+  const accountHash = hashUsageIdentifier(userId);
-+  const rows = (await readUsageLedgerRows({ since, until, includeArchives: true }))
-+    .filter(row => row.account?.accountHash === accountHash);
-+  return summarizeUsageRows(rows, { since, until, by });
- }
- 
+-}
+-
 -function clearLegacySessionToken(): void {
 -  try {
 -    sessionStorage.removeItem(LEGACY_TOKEN_KEY);
@@ -164,25 +136,8 @@ index ec1546551..23a5e4c64 100644
 -  }
 -  if (input instanceof Request) return [new Request(input, { headers }), init ? { ...init, headers } : undefined];
 -  return [input, { ...init, headers }];
-+async function globalOverview({ since, until }) {
-+  const rows = await readUsageLedgerRows({ since, until, includeArchives: true });
-+  const durations = rows
-+    .map(row => row.durationMs)
-+    .filter(value => typeof value === "number" && Number.isFinite(value))
-+    .sort((a, b) => a - b);
-+  const averageMs = durations.length
-+    ? Math.round(durations.reduce((total, value) => total + value, 0) / durations.length)
-+    : 0;
-+  const p95Ms = durations.length ? durations[Math.min(durations.length - 1, Math.ceil(durations.length * 0.95) - 1)] : 0;
-+  return {
-+    totals: summarizeUsageRows(rows, { since, until, by: "model" }).totals,
-+    models: summarizeUsageRows(rows, { since, until, by: "model" }).buckets,
-+    days: summarizeUsageRows(rows, { since, until, by: "day" }).buckets,
-+    outcomes: summarizeUsageRows(rows, { since, until, by: "outcome" }).buckets,
-+    latency: { averageMs, p95Ms, measuredRequests: durations.length },
-+  };
- }
- 
+-}
+-
 -/**
 - * Resolve a token after a 401. Concurrent callers share one in-flight resolution so a dashboard
 - * fan-out does not open one window.prompt per /api request (#647). Re-reads memoryToken before
@@ -209,25 +164,7 @@ index ec1546551..23a5e4c64 100644
 -    return null;
 -  })().finally(() => {
 -    resolutionInFlight = null;
-+let result;
-+if (operation === "append") {
-+  result = await appendUsageLedgerRow({
-+    source: "local-bridge",
-+    operation: input.operation ?? "responses",
-+    outcome: input.outcome ?? "success",
-+    model: input.model ?? null,
-+    projectKey: input.projectKey ?? "aiwrapper",
-+    accountId: input.userId,
-+    requestId: input.requestId ?? null,
-+    statusCode: input.statusCode ?? null,
-+    errorCode: input.errorCode ?? null,
-+    durationMs: input.durationMs ?? null,
-+    inputTokens: input.inputTokens ?? 0,
-+    outputTokens: input.outputTokens ?? 0,
-+    cachedInputTokens: input.cachedInputTokens ?? 0,
-+    reasoningTokens: input.reasoningTokens ?? 0,
-+    totalTokens: input.totalTokens ?? null,
-   });
+-  });
 -
 -  return resolutionInFlight;
 -}
@@ -266,36 +203,21 @@ index ec1546551..23a5e4c64 100644
 -    const retry = await originalFetch(retryInput, retryInit);
 -    if (retry.status === 401) clearTokenIfCurrent(nextToken);
 -    return retry;
--  };
-+} else if (operation === "summary") {
-+  result = await userSummary(input);
-+} else if (operation === "overview") {
-+  result = await globalOverview(input);
-+} else if (operation === "evaluate") {
-+  const summary = await userSummary(input);
-+  result = evaluateBudgetGuard({
-+    key: `user:${input.userId}:${input.label ?? "quota"}`,
-+    window: input.window ?? "hour",
-+    maxRequests: input.maxRequests ?? undefined,
-+    maxTokens: input.maxTokens ?? undefined,
-+    maxCostUsd: input.maxCostUsd ?? undefined,
-+    updatedAt: Date.now(),
-+  }, summary);
-+} else if (operation === "monitor") {
-+  const output = [];
-+  const errors = [];
-+  const exitCode = await runMonitorCommand(["--json"], {
-+    setStoragePath,
-+    loadAccounts,
-+    logInfo: message => output.push(message),
-+    logError: message => errors.push(message),
-+  });
-+  if (exitCode !== 0) throw new Error(errors.join("\n") || "codex-multi-auth monitor failed");
-+  result = JSON.parse(output.join("\n"));
-+} else {
-+  throw new Error(`Unsupported governance operation: ${operation}`);
- }
- 
++import { useKeyedClientResource } from "../../../apps/opencodex-gui/src/client-resource";
++import { IconActivity, IconBot, IconBoxes, IconRefresh } from "../../../apps/opencodex-gui/src/icons";
++import { useT } from "../../../apps/opencodex-gui/src/i18n/shared";
++import { useAIWrapper } from "./auth";
++
++interface MultiAuthMonitor {
++  command: "monitor";
++  project: { projectKey: string | null; hasProfile: boolean; budgetKey: string | null };
++  accounts: { count: number; policyCount: number };
++  runtime: null | {
++    responsesRequests: number;
++    runtimeMetrics: { failedRequests: number; accountRotations: number };
+   };
+-}
+-
 -/** Test-only: allow a fresh `installApiAuthFetch()` in the same module instance. */
 -export function resetApiAuthFetchForTests(): void {
 -  installed = false;
@@ -305,5 +227,52 @@ index ec1546551..23a5e4c64 100644
 -  resolutionInFlight = null;
 -  rawFetch = null;
 -  promptCancelled = false;
--}
-+process.stdout.write(`${JSON.stringify(result)}\n`);
++  usage: { totals: { requests: number; totalTokens: number } };
++  budgetGuardCount: number;
++  routingProfile: null | { projectName: string; preferredTags: string[]; avoidTags: string[] };
++  modelMatrix: { models: string[]; entries: number; available: number; unavailable: number };
++  quotaCache: { byAccountId: number; byEmail: number };
++}
++
++export default function MultiAuthMonitorPanel() {
++  const t = useT();
++  const { client, principal } = useAIWrapper();
++  const isAdministrator = principal?.role === "admin" || principal?.role === "owner";
++  const monitor = useKeyedClientResource<MultiAuthMonitor>(
++    `aiwrapper-multi-auth-monitor:${principal?.userId ?? "anonymous"}`,
++    [client, principal?.userId],
++    async () => {
++      if (!client) throw new Error(t("aiw.multiAuth.notConnected"));
++      return client.get<MultiAuthMonitor>("/admin/multi-auth/monitor");
++    },
++    { enabled: Boolean(client && isAdministrator), pollMs: 15_000 },
++  );
++
++  if (!client || !isAdministrator) return null;
++  const data = monitor.data;
++  const routing = data?.routingProfile;
++
++  return (
++    <section className="aiw-admin-overview" aria-labelledby="aiw-multi-auth-monitor-title">
++      <div className="aiw-admin-overview__head">
++        <div>
++          <h3 id="aiw-multi-auth-monitor-title">{t("aiw.multiAuth.title")}</h3>
++          <p>{t("aiw.multiAuth.subtitle")}</p>
++        </div>
++        <button className="btn btn-sm" type="button" onClick={() => monitor.refresh()} disabled={monitor.loading}>
++          <IconRefresh /> {monitor.loading ? t("aiw.overview.refreshing") : t("aiw.overview.refresh")}
++        </button>
++      </div>
++      {monitor.error ? <div className="notice notice-err" role="alert">{String(monitor.error)}</div> : null}
++      <div className="stat-row">
++        <div className="stat"><div className="label"><IconBot /> {t("aiw.multiAuth.accounts")}</div><div className="value">{data?.accounts.count ?? "â€”"}</div><small>{t("aiw.multiAuth.policies", { count: data?.accounts.policyCount ?? 0 })}</small></div>
++        <div className="stat"><div className="label"><IconBoxes /> {t("aiw.multiAuth.models")}</div><div className="value">{data ? `${data.modelMatrix.available}/${data.modelMatrix.entries}` : "â€”"}</div><small>{t("aiw.multiAuth.catalog", { count: data?.modelMatrix.models.length ?? 0 })}</small></div>
++        <div className="stat"><div className="label"><IconActivity /> {t("aiw.multiAuth.runtime")}</div><div className="value">{data?.runtime?.responsesRequests ?? 0}</div><small>{t("aiw.multiAuth.failures", { count: data?.runtime?.runtimeMetrics.failedRequests ?? 0 })}</small></div>
++        <div className="stat"><div className="label">{t("aiw.multiAuth.budgets")}</div><div className="value">{data?.budgetGuardCount ?? "â€”"}</div><small>{t("aiw.multiAuth.ledgerRequests", { count: data?.usage.totals.requests ?? 0 })}</small></div>
++        <div className="stat"><div className="label">{t("aiw.multiAuth.quotaCache")}</div><div className="value">{data ? data.quotaCache.byAccountId + data.quotaCache.byEmail : "â€”"}</div><small>{t("aiw.multiAuth.cachedIdentities")}</small></div>
++        <div className="stat"><div className="label">{t("aiw.multiAuth.routing")}</div><div className="value">{routing ? routing.projectName : t("aiw.multiAuth.defaultRouting")}</div><small>{data?.project.projectKey ?? "â€”"}</small></div>
++      </div>
++      {data && data.accounts.count === 0 ? <div className="notice" role="status">{t("aiw.multiAuth.empty")}</div> : null}
++    </section>
++  );
+ }

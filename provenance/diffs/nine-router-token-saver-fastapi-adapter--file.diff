@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\app\\api\\settings\\route.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"
-index 6a7134331..ba036af3a 100644
+index 6a7134331..ab9da4a0e 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\src\\app\\api\\settings\\route.js"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"	
-@@ -1,118 +1,460 @@
+@@ -1,118 +1,470 @@
 -import { NextResponse } from "next/server";
 -import { getSettings, updateSettings } from "@/lib/localDb";
 -import { applyOutboundProxyEnv } from "@/lib/network/outboundProxy";
@@ -193,6 +193,16 @@ index 6a7134331..ba036af3a 100644
 -    ) {
 -      resetComboRotation();
 +
++@router.get("/admin/multi-auth/monitor")
++async def multi_auth_monitor(request: Request):
++    """Expose the original codex-multi-auth aggregate monitor to administrators."""
++    administrator(request)
++    try:
++        return await governance("monitor", {})
++    except (RuntimeError, ValueError) as error:
++        raise HTTPException(status_code=503, detail=str(error)) from error
++
++
 +_QUIET_NOTIFICATION_ACTIONS = {"auth.session.created", "auth.session.refreshed"}
 +
 +
@@ -246,8 +256,7 @@ index 6a7134331..ba036af3a 100644
 +            "title": f"{window} quota {'exhausted' if percent >= 100 else 'is running low'}",
 +            "body": f"{used:,} of {limit:,} weighted units used ({percent}%).",
 +            "createdAt": datetime.fromtimestamp(bucket_ms / 1000, timezone.utc).isoformat(),
-         })
--        .catch((error) => console.warn("[AutoPing] settings update failed:", error.message));
++        })
 +    return rows
 +
 +
@@ -276,7 +285,8 @@ index 6a7134331..ba036af3a 100644
 +            **row,
 +            "readAt": receipt.get("read_at"),
 +            "resolvedAt": receipt.get("resolved_at"),
-+        })
+         })
+-        .catch((error) => console.warn("[AutoPing] settings update failed:", error.message));
 +    visible.sort(key=lambda row: row["createdAt"], reverse=True)
 +    return {"data": visible[:100], "unreadCount": sum(1 for row in visible if row["readAt"] is None)}
 +
@@ -356,8 +366,16 @@ index 6a7134331..ba036af3a 100644
 +        "headroomEnabled": runtime_settings.get("headroomEnabled") is True,
 +        "headroomUrl": runtime_settings.get("headroomUrl", "http://localhost:8787"),
 +        "headroomCompressUserMessages": runtime_settings.get("headroomCompressUserMessages") is True,
-+    }
-+
+     }
+ 
+-    const { password, oidcClientSecret, ...safeSettings } = settings;
+-    safeSettings.oidcConfigured = !!(safeSettings.oidcIssuerUrl && safeSettings.oidcClientId && oidcClientSecret);
+-    return NextResponse.json(safeSettings, { headers: SETTINGS_RESPONSE_HEADERS });
+-  } catch (error) {
+-    console.log("Error updating settings:", error);
+-    return NextResponse.json({ error: error.message }, { status: 500 });
+-  }
+-}
 +
 +@router.get("/admin/token-saver")
 +async def token_saver_settings(request: Request):
@@ -375,7 +393,7 @@ index 6a7134331..ba036af3a 100644
 +    allowed = {
 +        "rtkEnabled", "cavemanEnabled", "cavemanLevel", "ponytailEnabled", "ponytailLevel",
 +        "headroomEnabled", "headroomUrl", "headroomCompressUserMessages",
-     }
++    }
 +    if not body or set(body) - allowed:
 +        raise HTTPException(status_code=400, detail="Unsupported token-saver setting")
 +    for key in ("rtkEnabled", "cavemanEnabled", "ponytailEnabled", "headroomEnabled", "headroomCompressUserMessages"):
@@ -555,15 +573,7 @@ index 6a7134331..ba036af3a 100644
 +    if not store.revoke_share(user["id"], share_id):
 +        raise HTTPException(status_code=404, detail="Share not found")
 +
- 
--    const { password, oidcClientSecret, ...safeSettings } = settings;
--    safeSettings.oidcConfigured = !!(safeSettings.oidcIssuerUrl && safeSettings.oidcClientId && oidcClientSecret);
--    return NextResponse.json(safeSettings, { headers: SETTINGS_RESPONSE_HEADERS });
--  } catch (error) {
--    console.log("Error updating settings:", error);
--    return NextResponse.json({ error: error.message }, { status: 500 });
--  }
--}
++
 +@public_router.get("/public/shares/{token}")
 +async def public_share(token: str):
 +    result = store.public_share(token)

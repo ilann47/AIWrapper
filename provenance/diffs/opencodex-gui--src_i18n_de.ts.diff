@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\de.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\de.ts"
-index 5e85333ed..40711ff1e 100644
+index 5e85333ed..7bda228c0 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\de.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\de.ts"	
-@@ -10,6 +10,278 @@ export const de: Record<TKey, string> = {
+@@ -10,6 +10,294 @@ export const de: Record<TKey, string> = {
    "nav.subagents": "Sub-Agenten",
    "nav.logs": "Protokolle & Diagnose",
    "nav.usage": "Nutzung",
@@ -78,6 +78,22 @@ index 5e85333ed..40711ff1e 100644
 +  "aiw.overview.event": "Ereignis",
 +  "aiw.overview.target": "Ziel",
 +  "aiw.overview.when": "Zeitpunkt",
++  "aiw.multiAuth.title": "Codex-Mehrkonten-Governance",
++  "aiw.multiAuth.subtitle": "Schreibgeschuetzte Live-Aggregation aus dem originalen codex-multi-auth-Monitor.",
++  "aiw.multiAuth.notConnected": "Als Administrator verbinden, um die Mehrkonten-Governance zu pruefen.",
++  "aiw.multiAuth.accounts": "Verwaltete Konten",
++  "aiw.multiAuth.policies": "{count} Kontorichtlinien",
++  "aiw.multiAuth.models": "Verfuegbare Modelle",
++  "aiw.multiAuth.catalog": "{count} Modelle im Funktionskatalog",
++  "aiw.multiAuth.runtime": "Runtime-Antworten",
++  "aiw.multiAuth.failures": "{count} Runtime-Fehler",
++  "aiw.multiAuth.budgets": "Budgetregeln",
++  "aiw.multiAuth.ledgerRequests": "{count} Ledger-Anfragen",
++  "aiw.multiAuth.quotaCache": "Kontingent-Cache",
++  "aiw.multiAuth.cachedIdentities": "Zwischengespeicherte Kontoidentitaeten",
++  "aiw.multiAuth.routing": "Projekt-Routing",
++  "aiw.multiAuth.defaultRouting": "Standard",
++  "aiw.multiAuth.empty": "Keine codex-multi-auth-Konten konfiguriert. OpenCodex bleibt der aktive Anbieterpool; fuegen Sie vor der Rotation unabhaengige OAuth-Identitaeten ueber den originalen Login-Ablauf hinzu.",
 +  "aiw.tokenSaver.title": "Token Saver",
 +  "aiw.tokenSaver.description": "Reduziert Anfrage- und Antworttokens mit der ursprünglichen 9router-Optimierungspipeline.",
 +  "aiw.tokenSaver.rtkDescription": "Komprimiert große Werkzeugausgaben vor dem Modell und benötigt typischerweise 60–90 % weniger Eingabetokens.",
@@ -281,7 +297,7 @@ index 5e85333ed..40711ff1e 100644
    "common.github": "GitHub",
    "common.save": "Speichern",
    "common.saving": "Speichern…",
-@@ -622,6 +894,9 @@ export const de: Record<TKey, string> = {
+@@ -622,6 +910,9 @@ export const de: Record<TKey, string> = {
    "nav.codexAuth": "Codex-Auth",
    "nav.api": "API",
    "nav.openMenu": "Menü öffnen",

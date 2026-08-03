@@ -1,64 +1,143 @@
-diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\main.py" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"
-index 6647bca55..ab9da4a0e 100644
---- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\app\\main.py"	
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\codex-multi-auth\\lib\\codex-manager\\commands\\monitor.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"
+index f49813014..ab9da4a0e 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\codex-multi-auth\\lib\\codex-manager\\commands\\monitor.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"	
-@@ -1,268 +1,470 @@
--import json
--import os
+@@ -1,133 +1,470 @@
+-import { loadAccountPolicyStore } from "../../account-policy.js";
+-import { loadBudgetGuardStore } from "../../budget-guard.js";
+-import { buildModelCapabilityMatrix } from "../../model-capability-matrix.js";
+-import { loadQuotaCache } from "../../quota-cache.js";
+-import { resolveProjectRoutingProfile } from "../../routing-profiles.js";
+-import { loadPersistedRuntimeObservabilitySnapshot } from "../../runtime/runtime-observability.js";
+-import type { AccountStorageV3 } from "../../storage.js";
+-import { summarizeUsageLedger } from "../../usage/index.js";
+-
+-export interface MonitorCommandDeps {
+-	setStoragePath: (path: string | null) => void;
+-	loadAccounts: () => Promise<AccountStorageV3 | null>;
+-	loadRuntimeObservabilitySnapshot?: typeof loadPersistedRuntimeObservabilitySnapshot;
+-	loadQuotaCache?: typeof loadQuotaCache;
+-	loadAccountPolicyStore?: typeof loadAccountPolicyStore;
+-	loadBudgetGuardStore?: typeof loadBudgetGuardStore;
+-	resolveProjectRoutingProfile?: typeof resolveProjectRoutingProfile;
+-	summarizeUsageLedger?: typeof summarizeUsageLedger;
+-	logInfo?: (message: string) => void;
+-	logError?: (message: string) => void;
+-	getNow?: () => number;
+-}
+-
+-function printMonitorUsage(logInfo: (message: string) => void): void {
+-	logInfo(
+-		[
+-			"Usage:",
+-			"  codex-multi-auth monitor [--json]",
+-			"",
+-			"Aggregates local runtime, usage, policy, profile, model, quota, and project context.",
+-		].join("\n"),
+-	);
+-}
+-
+-export async function runMonitorCommand(
+-	args: string[],
+-	deps: MonitorCommandDeps,
+-): Promise<number> {
+-	const logInfo = deps.logInfo ?? console.log;
+-	const logError = deps.logError ?? console.error;
+-	if (args.includes("--help") || args.includes("-h")) {
+-		printMonitorUsage(logInfo);
+-		return 0;
+-	}
+-	let json = false;
+-	for (const arg of args) {
+-		if (arg === "--json" || arg === "-j") {
+-			json = true;
+-			continue;
+-		}
+-		logError(`Unknown monitor option: ${arg}`);
+-		return 1;
+-	}
+-
+-	deps.setStoragePath(null);
+-	const [
+-		storage,
+-		runtime,
+-		quotaCache,
+-		accountPolicies,
+-		budgetGuards,
+-		project,
+-		usage,
+-	] = await Promise.all([
+-		deps.loadAccounts(),
+-		(deps.loadRuntimeObservabilitySnapshot ??
+-			loadPersistedRuntimeObservabilitySnapshot)(),
+-		(deps.loadQuotaCache ?? loadQuotaCache)(),
+-		(deps.loadAccountPolicyStore ?? loadAccountPolicyStore)(),
+-		(deps.loadBudgetGuardStore ?? loadBudgetGuardStore)(),
+-		(deps.resolveProjectRoutingProfile ?? resolveProjectRoutingProfile)(),
+-		(deps.summarizeUsageLedger ?? summarizeUsageLedger)({ by: "outcome" }),
+-	]);
+-	const matrix = buildModelCapabilityMatrix({
+-		storage,
+-		quotaCache,
+-		now: deps.getNow?.() ?? Date.now(),
+-	});
+-	const payload = {
+-		command: "monitor",
+-		project: {
+-			projectKey: project.projectKey,
+-			projectRoot: project.projectRoot,
+-			hasProfile: project.profile !== null,
+-			budgetKey: project.profile?.budgetKey ?? null,
+-		},
+-		accounts: {
+-			count: storage?.accounts.length ?? 0,
+-			policyCount: Object.keys(accountPolicies.accounts).length,
+-		},
+-		runtime,
+-		usage,
+-		budgetGuardCount: Object.keys(budgetGuards.limits).length,
+-		routingProfile: project.profile,
+-		modelMatrix: {
+-			models: matrix.models,
+-			entries: matrix.entries.length,
+-			available: matrix.entries.filter((entry) => entry.available).length,
+-			unavailable: matrix.entries.filter((entry) => !entry.available).length,
+-		},
+-		quotaCache: {
+-			byAccountId: Object.keys(quotaCache.byAccountId).length,
+-			byEmail: Object.keys(quotaCache.byEmail).length,
+-		},
+-	};
+-
+-	if (json) {
+-		logInfo(JSON.stringify(payload, null, 2));
+-		return 0;
+-	}
+-
+-	logInfo("Local governance monitor");
+-	logInfo(`Project: ${payload.project.projectKey ?? "none"}`);
+-	logInfo(`Accounts: ${payload.accounts.count} (${payload.accounts.policyCount} policies)`);
+-	logInfo(
+-		`Usage: ${usage.totals.requests} requests, ${usage.totals.totalTokens} tokens, $${usage.totals.costUsd.toFixed(6)}`,
+-	);
+-	logInfo(`Budgets: ${payload.budgetGuardCount}`);
+-	logInfo(
+-		`Models: ${payload.modelMatrix.available}/${payload.modelMatrix.entries} available`,
+-	);
+-	logInfo(
+-		`Quota cache: ${payload.quotaCache.byAccountId} account ids, ${payload.quotaCache.byEmail} emails`,
+-	);
+-	if (runtime) {
+-		logInfo(
+-			`Runtime: responses=${runtime.responsesRequests}, refresh=${runtime.authRefreshRequests}, failures=${runtime.runtimeMetrics.failedRequests}`,
+-		);
+-	} else {
+-		logInfo("Runtime: no persisted snapshot");
+-	}
+-	return 0;
+-}
 +import re
- import time
--import uuid
--from typing import AsyncIterator, List
--
--from fastapi import Depends, FastAPI, HTTPException
--from fastapi.middleware.cors import CORSMiddleware
--from fastapi.responses import StreamingResponse
--
--from .codex import CodexError, run_codex, run_codex_last_message
--from .config import settings
--from .deps import rate_limiter, verify_api_key
--from .model_registry import (
--    choose_model,
--    get_available_models,
--    initialize_model_registry,
--)
--from .security import assert_local_only_or_raise
--from .prompt import build_prompt_and_images, normalize_responses_input
--from .images import save_image_to_temp
--from .schemas import (
--    ChatChoice,
--    ChatCompletionRequest,
--    ChatCompletionResponse,
--    ChatMessageResponse,
--    ResponsesRequest,
--    ResponsesObject,
--    ResponsesMessage,
--    ResponsesOutputText,
--)
--
--app = FastAPI()
--
--app.add_middleware(
--    CORSMiddleware,
--    allow_origins=["*"],
--    allow_methods=["*"],
--    allow_headers=["*"],
--)
--
--
--@app.on_event("startup")
--async def startup_event() -> None:
--    await initialize_model_registry()
--
--
--@app.get("/v1/models", dependencies=[Depends(rate_limiter), Depends(verify_api_key)])
--async def list_models():
--    """Return available model list."""
--    return {"data": [{"id": model} for model in get_available_models(include_reasoning_aliases=True)]}
--
--
--@app.post("/v1/chat/completions", dependencies=[Depends(rate_limiter), Depends(verify_api_key)])
--async def chat_completions(req: ChatCompletionRequest):
++import time
 +from datetime import datetime, timezone
 +from typing import Any
 +from urllib.parse import urlsplit
@@ -161,41 +240,12 @@ index 6647bca55..ab9da4a0e 100644
 +async def multi_auth_monitor(request: Request):
 +    """Expose the original codex-multi-auth aggregate monitor to administrators."""
 +    administrator(request)
-     try:
--        model_name, alias_effort = choose_model(req.model)
--    except ValueError as e:
--        raise HTTPException(
--            status_code=404,
--            detail={
--                "message": str(e),
--                "type": "invalid_request_error",
--                "code": "model_not_found",
--            },
--        )
++    try:
 +        return await governance("monitor", {})
 +    except (RuntimeError, ValueError) as error:
 +        raise HTTPException(status_code=503, detail=str(error)) from error
 +
- 
--    prompt, image_urls = build_prompt_and_images([m.dict() for m in req.messages])
--    x_overrides = req.x_codex.dict(exclude_none=True) if req.x_codex else {}
--    if alias_effort and "reasoning_effort" not in x_overrides:
--        x_overrides["reasoning_effort"] = alias_effort
--    overrides = x_overrides or None
--
--    # Safety gate: only allow danger-full-access when explicitly enabled
--    if overrides and overrides.get("sandbox") == "danger-full-access":
--        if not settings.allow_danger_full_access:
--            raise HTTPException(status_code=400, detail="danger-full-access is disabled by server policy")
--
--    # Enforce local-only model provider when enabled
--    if settings.local_only:
--        try:
--            assert_local_only_or_raise()
--        except ValueError as e:
--            raise HTTPException(status_code=400, detail=str(e))
--
--    image_paths: List[str] = []
++
 +_QUIET_NOTIFICATION_ACTIONS = {"auth.session.created", "auth.session.refreshed"}
 +
 +
@@ -299,21 +349,12 @@ index 6647bca55..ab9da4a0e 100644
 +@router.get("/admin/audit")
 +async def audit_events(request: Request):
 +    administrator(request)
-     try:
--        for u in image_urls:
--            image_paths.append(save_image_to_temp(u))
--    except ValueError as e:
--        for p in image_paths:
--            try:
--                os.remove(p)
--            except Exception:
--                pass
--        raise HTTPException(status_code=400, detail=str(e))
++    try:
 +        limit = int(request.query_params.get("limit", "200"))
 +    except ValueError as error:
 +        raise HTTPException(status_code=400, detail="limit must be an integer") from error
 +    return {"data": store.list_audit_events(limit)}
- 
++
 +
 +@router.get("/admin/backups")
 +async def database_backups(request: Request):
@@ -324,42 +365,7 @@ index 6647bca55..ab9da4a0e 100644
 +@router.post("/admin/backups", status_code=201)
 +async def create_backup(request: Request):
 +    user = administrator(request)
-     try:
--        if req.stream:
--            async def event_gen() -> AsyncIterator[bytes]:
--                async for text in run_codex(prompt, overrides, image_paths, model=model_name):
--                    if text:
--                        chunk = {
--                            "choices": [
--                                {"delta": {"content": text}, "index": 0, "finish_reason": None}
--                            ]
--                        }
--                        yield f"data: {json.dumps(chunk)}\n\n".encode()
--                yield b"data: [DONE]\n\n"
--
--            return StreamingResponse(event_gen(), media_type="text/event-stream")
--        else:
--            final = await run_codex_last_message(prompt, overrides, image_paths, model=model_name)
--            resp = ChatCompletionResponse(
--                choices=[ChatChoice(message=ChatMessageResponse(content=final))]
--            )
--            return resp
--    except CodexError as e:
--        status = getattr(e, "status_code", None) or 500
--        raise HTTPException(
--            status_code=status,
--            detail={
--                "message": str(e),
--                "type": "server_error" if status >= 500 else "upstream_error",
--                "code": None,
--            },
--        )
--    finally:
--        for p in image_paths:
--            try:
--                os.remove(p)
--            except Exception:
--                pass
++    try:
 +        result = await create_database_backup()
 +    except (OSError, RuntimeError, KeyError) as error:
 +        raise HTTPException(status_code=500, detail=str(error)) from error
@@ -379,7 +385,7 @@ index 6647bca55..ab9da4a0e 100644
 +_CAVEMAN_LEVELS = {"lite", "full", "ultra", "wenyan-lite", "wenyan", "wenyan-ultra"}
 +_PONYTAIL_LEVELS = {"lite", "full", "ultra"}
 +
- 
++
 +def _token_saver_response(runtime_settings: dict[str, Any]) -> dict[str, Any]:
 +    configured = runtime_settings.get("rtkEnabled") is not False
 +    environment_enabled = bool(settings.aiwrapper_rtk_enabled)
@@ -395,30 +401,17 @@ index 6647bca55..ab9da4a0e 100644
 +        "headroomUrl": runtime_settings.get("headroomUrl", "http://localhost:8787"),
 +        "headroomCompressUserMessages": runtime_settings.get("headroomCompressUserMessages") is True,
 +    }
- 
--@app.post("/v1/responses", dependencies=[Depends(rate_limiter), Depends(verify_api_key)])
--async def responses_endpoint(req: ResponsesRequest):
++
 +
 +@router.get("/admin/token-saver")
 +async def token_saver_settings(request: Request):
 +    administrator(request)
-     try:
--        model, alias_effort = choose_model(req.model)
--    except ValueError as e:
--        raise HTTPException(
--            status_code=404,
--            detail={
--                "message": str(e),
--                "type": "invalid_request_error",
--                "code": "model_not_found",
--            },
--        )
++    try:
 +        return _token_saver_response(await nine_router("settings:get", {}))
 +    except RuntimeError as error:
 +        raise HTTPException(status_code=503, detail=str(error)) from error
 +
- 
--    # Normalize input → messages
++
 +@router.patch("/admin/token-saver")
 +async def update_token_saver_settings(request: Request):
 +    user = administrator(request)
@@ -441,33 +434,7 @@ index 6647bca55..ab9da4a0e 100644
 +        parsed = urlsplit(url) if isinstance(url, str) and len(url) <= 2048 else None
 +        if not parsed or parsed.scheme not in {"http", "https"} or not parsed.hostname:
 +            raise HTTPException(status_code=400, detail="headroomUrl must be an HTTP(S) URL")
-     try:
--        messages = normalize_responses_input(req.input)
--    except ValueError as e:
--        raise HTTPException(status_code=400, detail=str(e))
--
--    overrides = {}
--    if alias_effort:
--        overrides["reasoning_effort"] = alias_effort
--    if req.reasoning and req.reasoning.effort:
--        overrides["reasoning_effort"] = req.reasoning.effort
--
--    # Enforce local-only model provider when enabled
--    if settings.local_only:
--        try:
--            assert_local_only_or_raise()
--        except ValueError as e:
--            raise HTTPException(status_code=400, detail=str(e))
--
--    prompt, image_urls = build_prompt_and_images(messages)
--
--    resp_id = f"resp_{uuid.uuid4().hex}"
--    msg_id = f"msg_{uuid.uuid4().hex}"
--    created = int(time.time())
--    response_model = req.model or model
--    codex_overrides = overrides or None
--
--    image_paths: List[str] = []
++    try:
 +        runtime_settings = await nine_router("settings:update", {"updates": body})
 +    except RuntimeError as error:
 +        raise HTTPException(status_code=503, detail=str(error)) from error
@@ -478,20 +445,11 @@ index 6647bca55..ab9da4a0e 100644
 +@router.get("/admin/token-saver/headroom-status")
 +async def headroom_status(request: Request):
 +    administrator(request)
-     try:
--        for u in image_urls:
--            image_paths.append(save_image_to_temp(u))
--    except ValueError as e:
--        for p in image_paths:
--            try:
--                os.remove(p)
--            except Exception:
--                pass
--        raise HTTPException(status_code=400, detail=str(e))
++    try:
 +        return await nine_router("headroom:status", {})
 +    except RuntimeError as error:
 +        raise HTTPException(status_code=503, detail=str(error)) from error
- 
++
 +
 +@router.post("/admin/users", status_code=201)
 +async def create_user(request: Request):
@@ -501,79 +459,7 @@ index 6647bca55..ab9da4a0e 100644
 +    if not name:
 +        raise HTTPException(status_code=400, detail="name is required")
 +    profile_name = re.sub(r"[^a-z0-9-]+", "-", name.lower()).strip("-")
-     try:
--        if req.stream:
--            async def event_gen() -> AsyncIterator[bytes]:
--                try:
--                    created_evt = {
--                        "id": resp_id,
--                        "object": "response",
--                        "created": created,
--                        "model": response_model,
--                        "status": "in_progress",
--                    }
--                    yield f"event: response.created\ndata: {json.dumps(created_evt)}\n\n".encode()
--
--                    buf: list[str] = []
--                    async for text in run_codex(prompt, codex_overrides, image_paths, model=model):
--                        if text:
--                            buf.append(text)
--                            delta_evt = {"id": resp_id, "delta": text}
--                            yield f"event: response.output_text.delta\ndata: {json.dumps(delta_evt)}\n\n".encode()
--
--                    final_text = "".join(buf)
--                    done_evt = {"id": resp_id, "text": final_text}
--                    yield f"event: response.output_text.done\ndata: {json.dumps(done_evt)}\n\n".encode()
--
--                    final_obj = ResponsesObject(
--                        id=resp_id,
--                        created=created,
--                        model=response_model,
--                        status="completed",
--                        output=[
--                            ResponsesMessage(
--                                id=msg_id,
--                                content=[ResponsesOutputText(text=final_text)],
--                            )
--                        ],
--                    ).model_dump()
--                    yield f"event: response.completed\ndata: {json.dumps(final_obj)}\n\n".encode()
--                except CodexError as e:
--                    err_evt = {"id": resp_id, "error": {"message": str(e)}}
--                    yield f"event: response.error\ndata: {json.dumps(err_evt)}\n\n".encode()
--                finally:
--                    yield b"data: [DONE]\n\n"
--
--            headers = {
--                "Cache-Control": "no-cache",
--                "X-Accel-Buffering": "no",
--                "Connection": "keep-alive",
--            }
--            return StreamingResponse(event_gen(), media_type="text/event-stream", headers=headers)
--        else:
--            final = await run_codex_last_message(prompt, codex_overrides, image_paths, model=model)
--            resp = ResponsesObject(
--                id=resp_id,
--                created=created,
--                model=response_model,
--                status="completed",
--                output=[
--                    ResponsesMessage(
--                        id=msg_id,
--                        content=[ResponsesOutputText(text=final)],
--                    )
--                ],
--            )
--            return resp
--    except CodexError as e:
--        status = getattr(e, "status_code", None) or 500
--        raise HTTPException(
--            status_code=status,
--            detail={
--                "message": str(e),
--                "type": "server_error" if status >= 500 else "upstream_error",
--                "code": None,
--            },
++    try:
 +        codex_home = await ensure_profile(profile_name)
 +        return store.create_user(
 +            name,
@@ -582,13 +468,7 @@ index 6647bca55..ab9da4a0e 100644
 +            codex_home,
 +            int(body.get("quota5h", body.get("quota_5h", 100000))),
 +            int(body.get("quota7d", body.get("quota_7d", 500000))),
-         )
--    finally:
--        for p in image_paths:
--            try:
--                os.remove(p)
--            except Exception:
--                pass
++        )
 +    except (RuntimeError, ValueError) as error:
 +        raise HTTPException(status_code=400, detail=str(error)) from error
 +

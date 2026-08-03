@@ -34,6 +34,7 @@ import SharedConversationPage from "../../../extensions/aiwrapper-sharing/src/Sh
 import AdminOverviewPanel from "../../../extensions/aiwrapper-admin/src/AdminOverviewPanel";
 import NavigationSearch from "../../../extensions/aiwrapper-admin/src/NavigationSearch";
 import TokenSaverPanel from "../../../extensions/aiwrapper-admin/src/TokenSaverPanel";
+import MultiAuthMonitorPanel from "../../../extensions/aiwrapper-admin/src/MultiAuthMonitorPanel";
 import NotificationsCenter from "../../../extensions/aiwrapper-notifications/src/NotificationsCenter";
 import ConnectionsPage from "../../../extensions/aiwrapper-connections/src/ConnectionsPage";
 import OnboardingPage from "../../../extensions/aiwrapper-onboarding/src/OnboardingPage";
@@ -291,7 +292,6 @@ function AppContent() {
 
   return (
     <div className="app">
-      <NotificationsCenter />
       {/* inert while the drawer is open: keeps focus and assistive tech inside the drawer */}
       <header className="mobile-topbar" inert={navOpen}>
         <button ref={menuBtnRef} type="button" className="menu-toggle" onClick={() => setNavOpen(o => !o)}
@@ -391,7 +391,7 @@ function AppContent() {
             detailsLabel={t("errorBoundary.details")}
             reloadLabel={t("errorBoundary.reload")}
           >
-            {page === "dashboard" && <Dashboard apiBase={API_BASE} beforeOverview={<><AdminOverviewPanel /><TokenSaverPanel /></>} />}
+            {page === "dashboard" && <Dashboard apiBase={API_BASE} beforeOverview={<><AdminOverviewPanel /><MultiAuthMonitorPanel /><TokenSaverPanel /></>} />}
             {page === "startup" && <Startup apiBase={API_BASE} />}
             {page === "providers" && <Providers apiBase={API_BASE} />}
             {page === "models" && <Models apiBase={API_BASE} />}
@@ -421,5 +421,5 @@ function AppContent() {
 }
 
 export default function App() {
-  return <AIWrapperProvider><AppContent /></AIWrapperProvider>;
+  return <AIWrapperProvider><NotificationsCenter /><AppContent /></AIWrapperProvider>;
 }

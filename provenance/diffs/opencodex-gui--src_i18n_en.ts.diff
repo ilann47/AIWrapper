@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\en.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\en.ts"
-index 26aa5f653..b50df14cf 100644
+index 26aa5f653..df49181e3 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\en.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\en.ts"	
-@@ -10,6 +10,278 @@ export const en = {
+@@ -10,6 +10,294 @@ export const en = {
    "nav.subagents": "Subagents",
    "nav.logs": "Logs & Debug",
    "nav.usage": "Usage",
@@ -78,6 +78,22 @@ index 26aa5f653..b50df14cf 100644
 +  "aiw.overview.event": "Event",
 +  "aiw.overview.target": "Target",
 +  "aiw.overview.when": "When",
++  "aiw.multiAuth.title": "Codex multi-account governance",
++  "aiw.multiAuth.subtitle": "Live read-only aggregation from the original codex-multi-auth monitor runtime.",
++  "aiw.multiAuth.notConnected": "Connect as an administrator to inspect multi-account governance.",
++  "aiw.multiAuth.accounts": "Managed accounts",
++  "aiw.multiAuth.policies": "{count} account policies",
++  "aiw.multiAuth.models": "Available models",
++  "aiw.multiAuth.catalog": "{count} models in the capability catalog",
++  "aiw.multiAuth.runtime": "Runtime responses",
++  "aiw.multiAuth.failures": "{count} runtime failures",
++  "aiw.multiAuth.budgets": "Budget guards",
++  "aiw.multiAuth.ledgerRequests": "{count} ledger requests",
++  "aiw.multiAuth.quotaCache": "Quota cache",
++  "aiw.multiAuth.cachedIdentities": "Cached account identities",
++  "aiw.multiAuth.routing": "Project routing",
++  "aiw.multiAuth.defaultRouting": "Default",
++  "aiw.multiAuth.empty": "No codex-multi-auth accounts are configured. OpenCodex remains the active provider pool; add independent OAuth identities with the original codex-multi-auth login flow before enabling rotation.",
 +  "aiw.tokenSaver.title": "Token Saver",
 +  "aiw.tokenSaver.description": "Reduce request and response tokens with the original 9router optimization pipeline.",
 +  "aiw.tokenSaver.rtkDescription": "Compress large tool output before it reaches the model, typically using 60–90% fewer input tokens.",
@@ -281,7 +297,7 @@ index 26aa5f653..b50df14cf 100644
    "common.github": "GitHub",
    "common.save": "Save",
    "common.saving": "Saving…",
-@@ -1036,6 +1308,9 @@ export const en = {
+@@ -1036,6 +1324,9 @@ export const en = {
    "nav.codexAuth": "Codex Auth",
    "nav.api": "API",
    "nav.openMenu": "Open menu",

@@ -19,7 +19,7 @@
       "kind": "directory",
       "source": "upstream/opencodex/gui",
       "destination": "apps/opencodex-gui",
-      "exclude": ["dist", "tests/aiwrapper-token-saver.test.ts", "tests/aiwrapper-traycer-session-history.test.ts", "tests/aiwrapper-traycer-notifications.test.ts", "tests/aiwrapper-traycer-onboarding.test.ts", "tests/aiwrapper-nine-router-connections.test.ts", "tests/aiwrapper-codex-profiles-admin.test.ts", "tests/aiwrapper-container-layout.test.ts"]
+      "exclude": ["dist", "tests/aiwrapper-token-saver.test.ts", "tests/aiwrapper-traycer-session-history.test.ts", "tests/aiwrapper-traycer-notifications.test.ts", "tests/aiwrapper-traycer-onboarding.test.ts", "tests/aiwrapper-nine-router-connections.test.ts", "tests/aiwrapper-codex-profiles-admin.test.ts", "tests/aiwrapper-multi-auth-monitor.test.ts", "tests/aiwrapper-grid-layout.test.ts", "tests/aiwrapper-container-layout.test.ts"]
     },
     {
       "id": "opencodex-data-plane-execution",
@@ -212,36 +212,87 @@
     },
     {
       "id": "multi-auth-account-policies",
-      "functionality": "Account policy store available for future multi-OAuth routing",
+      "functionality": "Account policy store loaded by the original aggregate governance monitor",
       "project": "ndycode/codex-multi-auth",
       "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
       "license": "MIT",
-      "classification": "imported-not-wired",
+      "classification": "directly imported",
       "kind": "file",
       "source": "upstream/codex-multi-auth/lib/account-policy.ts",
       "destination": "packages/codex-multi-auth/lib/account-policy.ts",
-      "incompatibility": "The current laboratory topology intentionally has one shared ChatGPT OAuth account, so selecting among multiple OAuth accounts would be misleading and is not on the request path.",
+      "incompatibility": "The original store is now executed by the read-only monitor. Enforcement remains outside the request path because the current laboratory topology intentionally has one shared ChatGPT OAuth account, so selecting among multiple OAuth accounts would be misleading.",
       "parityAudit": {
         "retained": ["Complete upstream account policy implementation in the copied package"],
         "lost": [],
-        "decision": "Keep the mature upstream module intact and label it honestly as not wired until the topology has multiple OAuth identities."
+        "decision": "Execute the intact store through runMonitorCommand for diagnostics; defer request-path enforcement until the topology has multiple independently authenticated OAuth identities."
       }
     },
     {
       "id": "multi-auth-routing-profiles",
-      "functionality": "Project routing profiles available for future multi-OAuth routing",
+      "functionality": "Project routing profiles resolved by the original aggregate governance monitor",
       "project": "ndycode/codex-multi-auth",
       "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
       "license": "MIT",
-      "classification": "imported-not-wired",
+      "classification": "directly imported",
       "kind": "file",
       "source": "upstream/codex-multi-auth/lib/routing-profiles.ts",
       "destination": "packages/codex-multi-auth/lib/routing-profiles.ts",
-      "incompatibility": "A per-user quota gateway backed by one ChatGPT OAuth account has no alternate account target to route to; activating this module would falsely suggest provider-side quota isolation.",
+      "incompatibility": "Profile resolution is now executed by the read-only monitor. Request-path routing remains inactive because a per-user quota gateway backed by one ChatGPT OAuth account has no alternate account target and would falsely suggest provider-side quota isolation.",
       "parityAudit": {
         "retained": ["Complete upstream routing profile store and resolution implementation"],
         "lost": [],
-        "decision": "The module is preserved byte-for-byte and explicitly not wired until multiple independently authorized OAuth accounts are configured."
+        "decision": "Run the byte-identical resolver through the aggregate monitor and expose its result; activate enforcement only after multiple independently authorized OAuth accounts are configured."
+      }
+    },
+    {
+      "id": "multi-auth-monitor-runtime",
+      "functionality": "Original aggregate monitor for account policies, budgets, project routing, model capabilities, quota cache, usage and runtime observability",
+      "project": "ndycode/codex-multi-auth",
+      "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
+      "license": "MIT",
+      "classification": "directly imported",
+      "kind": "file",
+      "source": "upstream/codex-multi-auth/lib/codex-manager/commands/monitor.ts",
+      "destination": "extensions/aiwrapper-admin/src/governance-bridge.mjs",
+      "incompatibility": "FastAPI cannot import the compiled TypeScript command in-process, so the existing JSON process boundary captures its original --json output without porting aggregation logic.",
+      "parityAudit": {
+        "retained": ["Original account and policy counts", "Original budget guard count", "Original project routing resolution", "Original model capability matrix", "Original quota cache counts", "Original usage summary", "Original persisted runtime snapshot"],
+        "lost": ["Human-readable terminal formatting is unnecessary because the product consumes the original JSON contract"],
+        "decision": "Import and execute runMonitorCommand unchanged with the original storage functions; the bridge only captures its machine-readable output."
+      }
+    },
+    {
+      "id": "multi-auth-monitor-fastapi-boundary",
+      "functionality": "Administrator-only FastAPI boundary for the original codex-multi-auth aggregate monitor",
+      "project": "ndycode/codex-multi-auth",
+      "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/codex-multi-auth/lib/codex-manager/commands/monitor.ts",
+      "destination": "services/codex-wrapper/app/aiwrapper/router.py",
+      "incompatibility": "The upstream monitor is a local Node command with no HTTP or AIWrapper role boundary; FastAPI must authenticate administrators and forward the unchanged JSON result.",
+      "parityAudit": {
+        "retained": ["Complete monitor JSON payload", "Original read-only behavior", "Original failure signal"],
+        "lost": ["Direct unauthenticated local CLI access through this HTTP route"],
+        "decision": "Add only an administrator admission boundary and delegate all monitor aggregation to the original command."
+      }
+    },
+    {
+      "id": "multi-auth-monitor-product-ui",
+      "functionality": "OpenCodex dashboard panel for multi-account policies, budgets, routing, capabilities, quota cache and runtime health",
+      "project": "ndycode/codex-multi-auth and lidge-jun/OpenCodex",
+      "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+      "license": "MIT / project adapter code",
+      "classification": "adapter",
+      "kind": "file",
+      "source": "upstream/opencodex/gui/src/pages/dashboard-overview-head.tsx",
+      "destination": "extensions/aiwrapper-admin/src/MultiAuthMonitorPanel.tsx",
+      "incompatibility": "codex-multi-auth provides a terminal and JSON monitor but no React UI. OpenCodex has the mature stat-row, polling, notice and dashboard composition used to render that contract without introducing another application shell.",
+      "parityAudit": {
+        "retained": ["OpenCodex dashboard stat-row composition", "OpenCodex polling resource", "OpenCodex refresh, error and empty-state conventions", "All aggregate monitor domains"],
+        "lost": ["Terminal-only text formatting", "Mutating account actions remain in the hardened upstream CLI"],
+        "decision": "Mount a read-only product panel in the existing OpenCodex dashboard and preserve the original command as the sole aggregation authority."
       }
     },
     {
@@ -510,7 +561,7 @@
       "source": "upstream/traycer/clients/gui-app/src/components/notifications/notifications-popover.tsx",
       "destination": "extensions/aiwrapper-notifications/src/NotificationsCenter.tsx",
       "incompatibility": "Traycer's component depends on its TanStack router, host notification RPCs, project/worktree graph, analytics, Radix primitives and cloud stores. Those services do not exist in the FastAPI/OpenCodex browser topology, so the full component cannot mount. The adapter retains its feed architecture and actions while replacing only data and shell boundaries.",
-      "parityAudit": { "retained": ["notification bell and unread badge", "Attention and Recent sections", "blocking-first lifecycle", "Today/Yesterday/Earlier separators", "Recent-only unread/category filters", "filter-empty reset", "mark all read", "per-row read, resolve and clear", "live-arrival Sonner toast", "N-new reveal affordance", "scroll-anchor preservation", "Escape close"], "lost": ["project/worktree navigation", "Traycer analytics events", "native operating-system notification and chime", "host-window focus suppression", "Radix popover positioning"], "decision": "Reuse the complete portable lifecycle, category, popover-state, occurrence, arrival and scroll-anchor modules and adapt the mature interaction architecture to the authenticated AIWrapper REST feed; importing the original UI would require a second proprietary application host." }
+      "parityAudit": { "retained": ["notification bell and unread badge", "Attention and Recent sections", "blocking-first lifecycle", "Today/Yesterday/Earlier separators", "Recent-only unread/category filters", "filter-empty reset", "mark all read", "per-row read, resolve and clear", "live-arrival Sonner toast", "N-new reveal affordance", "scroll-anchor preservation", "Escape close", "overlay mount outside the OpenCodex grid"], "lost": ["project/worktree navigation", "Traycer analytics events", "native operating-system notification and chime", "host-window focus suppression", "Radix popover positioning"], "decision": "Reuse the complete portable lifecycle, category, popover-state, occurrence, arrival and scroll-anchor modules and adapt the mature interaction architecture to the authenticated AIWrapper REST feed; mount its fixed shell as a sibling of the OpenCodex grid so overlay nodes cannot consume grid tracks." }
     },
     {
       "id": "traycer-notification-categories",
@@ -964,9 +1015,9 @@
       "destination": "Dockerfile.opencodex",
       "incompatibility": "OpenCodex has no upstream Dockerfile to import. Its Bun package scripts are therefore invoked unchanged from a minimal container integration file. AIWrapper's GUI modules live in a sibling extensions/ tree, so a repository-shaped build stage is required; copying only gui/ makes the original relative imports unavailable in a clean image.",
       "parityAudit": {
-        "retained": ["Pinned Bun version", "Original frozen OpenCodex package install", "Original CLI start command", "Original Vite GUI build", "Original OpenCodex runtime tree", "Single React dependency instance across GUI and extensions"],
+        "retained": ["Pinned Bun version", "Original frozen OpenCodex package install", "Original CLI start command", "Original Vite GUI build", "Original OpenCodex runtime tree", "Single React dependency instance across GUI and extensions", "Build-time public OpenCodex and AIWrapper browser endpoints"],
         "lost": [],
-        "decision": "Build the traceable GUI and extension tree in a repository-shaped stage, copy only its static dist into the unchanged OpenCodex runtime image, and keep the upstream server executable authoritative."
+        "decision": "Build the traceable GUI and extension tree in a repository-shaped stage, inject only the browser-visible endpoint values at build time, copy the static dist into the unchanged OpenCodex runtime image, and keep the upstream server executable authoritative."
       }
     },
     {

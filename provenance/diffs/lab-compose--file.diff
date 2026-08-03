@@ -1,12 +1,25 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\docker-compose.yml" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\docker-compose.yml"
-index e729bc004..c525bbaab 100644
+index e729bc004..948207327 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\Codex-Wrapper\\docker-compose.yml"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\docker-compose.yml"	
-@@ -1,24 +1,67 @@
+@@ -1,24 +1,72 @@
  services:
+-  codex-wrapper:
 +  # Full lidge-jun/OpenCodex runtime and its imported GUI.
 +  opencodex:
-+    build: { context: ., dockerfile: Dockerfile.opencodex }
+     build:
+       context: .
+-      dockerfile: Dockerfile
++      dockerfile: Dockerfile.opencodex
+       args:
+-        CODEX_UID: ${HOST_UID:-1000}
+-        CODEX_GID: ${HOST_GID:-1000}
+-    restart: unless-stopped
+-    image: codex-wrapper:latest
+-    env_file:
+-      - .env
++        VITE_API_BASE: ${VITE_API_BASE:-}
++        VITE_AIWRAPPER_API_BASE: ${VITE_AIWRAPPER_API_BASE:-http://127.0.0.1:8766}
 +    environment:
 +      OPENCODEX_API_AUTH_TOKEN: ${OPENCODEX_API_AUTH_TOKEN:?Set OPENCODEX_API_AUTH_TOKEN in .env}
 +    ports: ["127.0.0.1:8765:8765"]
@@ -22,17 +35,7 @@ index e729bc004..c525bbaab 100644
 +      start_period: 20s
 +
 +  # circlemouth/Codex-Wrapper with thin AIWrapper integration adapters.
-   codex-wrapper:
--    build:
--      context: .
--      dockerfile: Dockerfile
--      args:
--        CODEX_UID: ${HOST_UID:-1000}
--        CODEX_GID: ${HOST_GID:-1000}
--    restart: unless-stopped
--    image: codex-wrapper:latest
--    env_file:
--      - .env
++  codex-wrapper:
 +    build: { context: ., dockerfile: Dockerfile.codex-wrapper }
      environment:
 -      CODEX_HOME: /home/codex/.codex

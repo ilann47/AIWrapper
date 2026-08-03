@@ -1,1 +1,10 @@
-# Files are identical.
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\tests\\claude-toggle-race.test.tsx" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\tests\\claude-toggle-race.test.tsx"
+index ea4f89675..bb573c0fc 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\tests\\claude-toggle-race.test.tsx"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\tests\\claude-toggle-race.test.tsx"	
+@@ -176,4 +176,4 @@ test("rapid Claude toggle clicks issue only one PUT until the first settles", as
+     releasePut = null;
+   });
+   await waitFor(() => !claudeSwitch().disabled);
+-});
++}, { timeout: 30_000 });

@@ -98,6 +98,16 @@ async def admin_overview(request: Request):
     }
 
 
+@router.get("/admin/multi-auth/monitor")
+async def multi_auth_monitor(request: Request):
+    """Expose the original codex-multi-auth aggregate monitor to administrators."""
+    administrator(request)
+    try:
+        return await governance("monitor", {})
+    except (RuntimeError, ValueError) as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+
+
 _QUIET_NOTIFICATION_ACTIONS = {"auth.session.created", "auth.session.refreshed"}
 
 

@@ -216,10 +216,11 @@ def test_governance_bridge_executes_upstream_ledger_and_budget(tmp_path):
         summary = await governance("summary", {"userId": "user-1"})
         overview = await governance("overview", {})
         decision = await governance("evaluate", {"userId": "user-1", "maxTokens": 10, "window": "hour"})
-        return summary, overview, decision
+        monitor = await governance("monitor", {})
+        return summary, overview, decision, monitor
 
     try:
-        summary, overview, decision = asyncio.run(scenario())
+        summary, overview, decision, monitor = asyncio.run(scenario())
     finally:
         settings.aiwrapper_governance_bridge = original_bridge
         settings.aiwrapper_multi_auth_dir = original_dir
@@ -228,6 +229,39 @@ def test_governance_bridge_executes_upstream_ledger_and_budget(tmp_path):
     assert summary["totals"]["reasoningTokens"] == 2
     assert overview["latency"] == {"averageMs": 125, "p95Ms": 125, "measuredRequests": 1}
     assert decision["allowed"] is False
+    assert monitor["command"] == "monitor"
+    assert monitor["accounts"] == {"count": 0, "policyCount": 0}
+    assert monitor["modelMatrix"]["models"]
+    assert monitor["usage"]["totals"]["requests"] == 1
+
+
+def test_multi_auth_monitor_endpoint_is_administrator_only(tmp_path, monkeypatch):
+    repository = Path(__file__).resolve().parents[3]
+    store_module = importlib.import_module("app.aiwrapper.store")
+    auth_module = importlib.import_module("app.aiwrapper.auth")
+    router_module = importlib.import_module("app.aiwrapper.router")
+    local_store = AIWrapperStore(str(tmp_path / "monitor.db"))
+    admin = local_store.create_user("Monitor Admin", "admin", "monitor-admin", str(tmp_path / ".codex-admin"))
+    regular = local_store.create_user("Monitor User", "user", "monitor-user", str(tmp_path / ".codex-user"))
+    monkeypatch.setattr(store_module, "store", local_store)
+    monkeypatch.setattr(auth_module, "store", local_store)
+    monkeypatch.setattr(router_module, "store", local_store)
+    monkeypatch.setattr(settings, "aiwrapper_governance_bridge", str(repository / "extensions" / "aiwrapper-admin" / "src" / "governance-bridge.mjs"))
+    monkeypatch.setattr(settings, "aiwrapper_multi_auth_dir", str(tmp_path / "multi-auth"))
+    monkeypatch.setattr(settings, "aiwrapper_cors_origins", "http://127.0.0.1:8765")
+
+    origin = "http://127.0.0.1:8765"
+    client = TestClient(app)
+    admin_login = client.post("/auth/sessions", headers={"Authorization": f"Bearer {admin['apiKey']['secret']}", "Origin": origin})
+    admin_headers = {"Authorization": f"Bearer {admin_login.json()['accessToken']}", "Origin": origin}
+    response = client.get("/admin/multi-auth/monitor", headers=admin_headers)
+    assert response.status_code == 200
+    assert response.json()["command"] == "monitor"
+    assert response.json()["accounts"] == {"count": 0, "policyCount": 0}
+
+    user_login = client.post("/auth/sessions", headers={"Authorization": f"Bearer {regular['apiKey']['secret']}", "Origin": origin})
+    user_headers = {"Authorization": f"Bearer {user_login.json()['accessToken']}", "Origin": origin}
+    assert client.get("/admin/multi-auth/monitor", headers=user_headers).status_code == 403
 
 
 def test_nine_router_bridge_executes_upstream_rtk(tmp_path, monkeypatch):

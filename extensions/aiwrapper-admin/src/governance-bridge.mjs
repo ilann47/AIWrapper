@@ -11,6 +11,8 @@ import {
   summarizeUsageRows,
 } from "../../../packages/codex-multi-auth/dist/lib/usage/index.js";
 import { evaluateBudgetGuard } from "../../../packages/codex-multi-auth/dist/lib/budget-guard.js";
+import { runMonitorCommand } from "../../../packages/codex-multi-auth/dist/lib/codex-manager/commands/monitor.js";
+import { loadAccounts, setStoragePath } from "../../../packages/codex-multi-auth/dist/lib/storage.js";
 
 const operation = process.argv[2];
 const input = JSON.parse(await new Promise((resolve, reject) => {
@@ -80,6 +82,17 @@ if (operation === "append") {
     maxCostUsd: input.maxCostUsd ?? undefined,
     updatedAt: Date.now(),
   }, summary);
+} else if (operation === "monitor") {
+  const output = [];
+  const errors = [];
+  const exitCode = await runMonitorCommand(["--json"], {
+    setStoragePath,
+    loadAccounts,
+    logInfo: message => output.push(message),
+    logError: message => errors.push(message),
+  });
+  if (exitCode !== 0) throw new Error(errors.join("\n") || "codex-multi-auth monitor failed");
+  result = JSON.parse(output.join("\n"));
 } else {
   throw new Error(`Unsupported governance operation: ${operation}`);
 }

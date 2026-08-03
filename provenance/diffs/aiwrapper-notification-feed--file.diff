@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\traycer\\protocol\\src\\host\\notifications\\contracts.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"
-index f33833896..ba036af3a 100644
+index f33833896..ab9da4a0e 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\traycer\\protocol\\src\\host\\notifications\\contracts.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\services\\codex-wrapper\\app\\aiwrapper\\router.py"	
-@@ -1,9 +1,460 @@
+@@ -1,9 +1,470 @@
 -import {
 -  notificationsSubscribeV10,
 -  notificationsSubscribeV11,
@@ -110,6 +110,16 @@ index f33833896..ba036af3a 100644
 +        "throughputPerMinute": round(float(totals.get("requests", 0)) / elapsed_minutes, 3),
 +        "window": {"since": since_ms, "until": now_ms},
 +    }
++
++
++@router.get("/admin/multi-auth/monitor")
++async def multi_auth_monitor(request: Request):
++    """Expose the original codex-multi-auth aggregate monitor to administrators."""
++    administrator(request)
++    try:
++        return await governance("monitor", {})
++    except (RuntimeError, ValueError) as error:
++        raise HTTPException(status_code=503, detail=str(error)) from error
 +
 +
 +_QUIET_NOTIFICATION_ACTIONS = {"auth.session.created", "auth.session.refreshed"}

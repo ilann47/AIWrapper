@@ -1,0 +1,184 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\pages\\dashboard-overview-head.tsx" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\MultiAuthMonitorPanel.tsx"
+index 87293ae51..35eaab6a6 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\pages\\dashboard-overview-head.tsx"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\MultiAuthMonitorPanel.tsx"	
+@@ -1,126 +1,62 @@
+-import { IconAlert, IconInfo } from "../icons";
+-import { type TKey, useT } from "../i18n/shared";
+-import { formatTokens } from "../format-tokens";
+-import { formatUptime } from "../formatUptime";
+-import type { useDashboardData } from "./use-dashboard-data";
++import { useKeyedClientResource } from "../../../apps/opencodex-gui/src/client-resource";
++import { IconActivity, IconBot, IconBoxes, IconRefresh } from "../../../apps/opencodex-gui/src/icons";
++import { useT } from "../../../apps/opencodex-gui/src/i18n/shared";
++import { useAIWrapper } from "./auth";
+ 
+-type Dash = ReturnType<typeof useDashboardData>;
++interface MultiAuthMonitor {
++  command: "monitor";
++  project: { projectKey: string | null; hasProfile: boolean; budgetKey: string | null };
++  accounts: { count: number; policyCount: number };
++  runtime: null | {
++    responsesRequests: number;
++    runtimeMetrics: { failedRequests: number; accountRotations: number };
++  };
++  usage: { totals: { requests: number; totalTokens: number } };
++  budgetGuardCount: number;
++  routingProfile: null | { projectName: string; preferredTags: string[]; avoidTags: string[] };
++  modelMatrix: { models: string[]; entries: number; available: number; unavailable: number };
++  quotaCache: { byAccountId: number; byEmail: number };
++}
+ 
+-export function DashboardOverviewHead({
+-  locale,
+-  health,
+-  providers,
+-  usage30d,
+-  startupHealth,
+-  projectConfigWarnings,
+-  maMode,
+-  maBusy,
+-  maHelpTriggerRef,
+-  maHelpOpen,
+-  setMaHelpOpen,
+-  switchMaMode,
+-}: Pick<Dash, "locale" | "health" | "providers" | "usage30d" | "startupHealth" | "projectConfigWarnings" | "maMode" | "maBusy" | "maHelpTriggerRef" | "maHelpOpen" | "setMaHelpOpen" | "switchMaMode">) {
++export default function MultiAuthMonitorPanel() {
+   const t = useT();
+-  const online = health?.status === "ok";
++  const { client, principal } = useAIWrapper();
++  const isAdministrator = principal?.role === "admin" || principal?.role === "owner";
++  const monitor = useKeyedClientResource<MultiAuthMonitor>(
++    `aiwrapper-multi-auth-monitor:${principal?.userId ?? "anonymous"}`,
++    [client, principal?.userId],
++    async () => {
++      if (!client) throw new Error(t("aiw.multiAuth.notConnected"));
++      return client.get<MultiAuthMonitor>("/admin/multi-auth/monitor");
++    },
++    { enabled: Boolean(client && isAdministrator), pollMs: 15_000 },
++  );
+ 
+-  return (
+-    <>
+-      <div className="dash-overview-head">
+-        <div className="stat-row">
+-          <div className="stat">
+-            <div className="label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+-              {t("dash.multiAgent")}
+-              <button
+-                ref={maHelpTriggerRef}
+-                type="button"
+-                className="btn btn-ghost btn-sm"
+-                style={{ width: 24, height: 24, minWidth: 24, flex: "0 0 24px", padding: 0, borderRadius: "var(--radius-pill)", color: "var(--muted)" }}
+-                onClick={() => setMaHelpOpen(true)}
+-                aria-label={t("dash.multiAgent")}
+-                aria-haspopup="dialog"
+-                aria-controls="multi-agent-help-dialog"
+-                aria-expanded={maHelpOpen}
+-              >
+-                <IconInfo width={14} height={14} aria-hidden="true" />
+-              </button>
+-            </div>
+-            <div className="value" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+-              <div role="radiogroup" aria-label={t("dash.multiAgent")} style={{ display: "inline-flex", borderRadius: "var(--radius-pill)", background: "var(--surface-soft, var(--raised))", padding: 3, gap: 2 }}>
+-                {(["v1", "default", "v2"] as const).map(mode => (
+-                  <button
+-                    key={mode}
+-                    type="button"
+-                    role="radio"
+-                    aria-checked={maMode === mode}
+-                    className={`btn btn-sm text-caption${maMode === mode ? " btn-primary" : " btn-ghost"}`}
+-                    style={{ borderRadius: "var(--radius-pill)", minWidth: 36, padding: "5px 10px", border: "none", background: maMode === mode ? undefined : "transparent", color: maMode === mode ? undefined : "var(--muted)" }}
+-                    disabled={maBusy}
+-                    onClick={() => void switchMaMode(mode)}
+-                  >{t(`models.v2Mode_${mode}` as TKey)}</button>
+-                ))}
+-              </div>
+-            </div>
+-          </div>
+-          <div className="stat">
+-            <div className="label">{t("dash.status")}</div>
+-            <div className="value" style={{ display: "flex", alignItems: "center", gap: 9, color: online ? "var(--green)" : "var(--red)" }}>
+-              <span className={`dot ${online ? "dot-green" : "dot-red"}`} />{online ? t("dash.online") : t("dash.offline")}
+-            </div>
+-          </div>
+-          <div className="stat"><div className="label">{t("dash.version")}</div><div className="value mono">{health?.version ?? "—"}</div></div>
+-          <div className="stat"><div className="label">{t("dash.uptime")}</div><div className="value mono">{health ? formatUptime(health.uptime, locale) : "—"}</div></div>
+-          <div className="stat"><div className="label">{t("dash.providers")}</div><div className="value">{providers.length}</div></div>
+-          <div className="stat">
+-            <div className="label">{t("dash.tokens30d")}</div>
+-            <div className="value mono">{usage30d && usage30d.summary.requests > 0 ? formatTokens(usage30d.summary.totalTokens, locale) : "—"}</div>
+-            <div className="muted text-label dash-stat-coverage">
+-              {usage30d && usage30d.summary.requests > 0
+-                ? t("dash.coverage").replace("{pct}", `${Math.round(usage30d.summary.coverageRatio * 100)}%`)
+-                : "\u00a0"}
+-            </div>
+-          </div>
+-        </div>
++  if (!client || !isAdministrator) return null;
++  const data = monitor.data;
++  const routing = data?.routingProfile;
+ 
+-        <div className="startup-health-slot" aria-live="polite">
+-          {startupHealth ? (
+-            <a className="startup-health-bar" href="#startup">
+-              <span className={`dot ${startupHealth === "error" ? "dot-red" : startupHealth === "at-risk" ? "dot-amber" : "dot-green"}`} aria-hidden="true" />
+-              <span className="startup-health-bar__summary">
+-                {t(startupHealth === "error"
+-                  ? "startup.error"
+-                  : startupHealth === "at-risk"
+-                    ? "startup.summary.atRisk"
+-                    : startupHealth === "protected"
+-                      ? "startup.summary.protected"
+-                      : "startup.summary.native")}
+-              </span>
+-            </a>
+-          ) : (
+-            <div className="startup-health-bar startup-health-bar--pending" aria-hidden="true">
+-              <span className="dot dot-amber" />
+-              <span className="startup-health-bar__summary">&nbsp;</span>
+-            </div>
+-          )}
++  return (
++    <section className="aiw-admin-overview" aria-labelledby="aiw-multi-auth-monitor-title">
++      <div className="aiw-admin-overview__head">
++        <div>
++          <h3 id="aiw-multi-auth-monitor-title">{t("aiw.multiAuth.title")}</h3>
++          <p>{t("aiw.multiAuth.subtitle")}</p>
+         </div>
++        <button className="btn btn-sm" type="button" onClick={() => monitor.refresh()} disabled={monitor.loading}>
++          <IconRefresh /> {monitor.loading ? t("aiw.overview.refreshing") : t("aiw.overview.refresh")}
++        </button>
+       </div>
+-
+-      {projectConfigWarnings.length > 0 && (
+-        <div className="notice notice-err maintenance-notice" role="alert">
+-          <IconAlert />
+-          <div>
+-            <div className="font-semibold">{t("dash.projectConfigTitle")}</div>
+-            <div className="muted text-control" style={{ marginTop: 4 }}>{t("dash.projectConfigHint")}</div>
+-            <ul className="text-control" style={{ margin: "10px 0 0", paddingLeft: 18 }}>
+-              {projectConfigWarnings.map(g => (
+-                <li key={g.path} style={{ marginBottom: 8 }}>
+-                  <code>{g.path}</code> — {g.issues.join(", ")}
+-                  <div className="muted" style={{ marginTop: 2 }}>{g.bypass}</div>
+-                </li>
+-              ))}
+-            </ul>
+-          </div>
+-        </div>
+-      )}
+-    </>
++      {monitor.error ? <div className="notice notice-err" role="alert">{String(monitor.error)}</div> : null}
++      <div className="stat-row">
++        <div className="stat"><div className="label"><IconBot /> {t("aiw.multiAuth.accounts")}</div><div className="value">{data?.accounts.count ?? "â€”"}</div><small>{t("aiw.multiAuth.policies", { count: data?.accounts.policyCount ?? 0 })}</small></div>
++        <div className="stat"><div className="label"><IconBoxes /> {t("aiw.multiAuth.models")}</div><div className="value">{data ? `${data.modelMatrix.available}/${data.modelMatrix.entries}` : "â€”"}</div><small>{t("aiw.multiAuth.catalog", { count: data?.modelMatrix.models.length ?? 0 })}</small></div>
++        <div className="stat"><div className="label"><IconActivity /> {t("aiw.multiAuth.runtime")}</div><div className="value">{data?.runtime?.responsesRequests ?? 0}</div><small>{t("aiw.multiAuth.failures", { count: data?.runtime?.runtimeMetrics.failedRequests ?? 0 })}</small></div>
++        <div className="stat"><div className="label">{t("aiw.multiAuth.budgets")}</div><div className="value">{data?.budgetGuardCount ?? "â€”"}</div><small>{t("aiw.multiAuth.ledgerRequests", { count: data?.usage.totals.requests ?? 0 })}</small></div>
++        <div className="stat"><div className="label">{t("aiw.multiAuth.quotaCache")}</div><div className="value">{data ? data.quotaCache.byAccountId + data.quotaCache.byEmail : "â€”"}</div><small>{t("aiw.multiAuth.cachedIdentities")}</small></div>
++        <div className="stat"><div className="label">{t("aiw.multiAuth.routing")}</div><div className="value">{routing ? routing.projectName : t("aiw.multiAuth.defaultRouting")}</div><small>{data?.project.projectKey ?? "â€”"}</small></div>
++      </div>
++      {data && data.accounts.count === 0 ? <div className="notice" role="status">{t("aiw.multiAuth.empty")}</div> : null}
++    </section>
+   );
+ }

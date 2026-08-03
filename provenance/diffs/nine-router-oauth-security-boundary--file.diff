@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\providers\\registry\\gemini.js" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\.env.example"
-index 40dedaf7f..11ec22700 100644
+index 40dedaf7f..9e87a00be 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\9router\\open-sse\\providers\\registry\\gemini.js"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\.env.example"	
-@@ -1,85 +1,52 @@
+@@ -1,85 +1,57 @@
 -import { GOOGLE_OAUTH_CLIENT } from "../shared.js";
 +# AIWrapper Lab — copie para .env e ajuste somente o necessário.
 +# Nunca versione .env, auth.json, chaves individuais ou o diretório .aiwrapper.
@@ -133,6 +133,11 @@ index 40dedaf7f..11ec22700 100644
 +AIWRAPPER_OWNER_KEY=
 +AIWRAPPER_PUBLIC_BASE_URL=http://127.0.0.1:8766
 +AIWRAPPER_WEB_BASE_URL=http://127.0.0.1:8765
++
++# URLs incorporadas ao build React/Vite. Em um deploy remoto, use os enderecos
++# publicos vistos pelo navegador, nao nomes internos da rede Docker.
++VITE_API_BASE=
++VITE_AIWRAPPER_API_BASE=http://127.0.0.1:8766
 +
 +# Codex-Wrapper upstream (opcional quando as chaves individuais estão ativas)
 +PROXY_API_KEY=

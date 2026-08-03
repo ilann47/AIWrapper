@@ -1,7 +1,12 @@
 services:
   # Full lidge-jun/OpenCodex runtime and its imported GUI.
   opencodex:
-    build: { context: ., dockerfile: Dockerfile.opencodex }
+    build:
+      context: .
+      dockerfile: Dockerfile.opencodex
+      args:
+        VITE_API_BASE: ${VITE_API_BASE:-}
+        VITE_AIWRAPPER_API_BASE: ${VITE_AIWRAPPER_API_BASE:-http://127.0.0.1:8766}
     environment:
       OPENCODEX_API_AUTH_TOKEN: ${OPENCODEX_API_AUTH_TOKEN:?Set OPENCODEX_API_AUTH_TOKEN in .env}
     ports: ["127.0.0.1:8765:8765"]

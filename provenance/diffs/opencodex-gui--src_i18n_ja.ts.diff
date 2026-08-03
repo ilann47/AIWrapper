@@ -1,8 +1,8 @@
 diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ja.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ja.ts"
-index 47b1de3f0..6e8347f03 100644
+index 47b1de3f0..54235cbb2 100644
 --- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\opencodex\\gui\\src\\i18n\\ja.ts"	
 +++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\apps\\opencodex-gui\\src\\i18n\\ja.ts"	
-@@ -10,6 +10,278 @@ export const ja: Record<TKey, string> = {
+@@ -10,6 +10,294 @@ export const ja: Record<TKey, string> = {
    "nav.subagents": "サブエージェント",
    "nav.logs": "ログ & デバッグ",
    "nav.usage": "使用量",
@@ -78,6 +78,22 @@ index 47b1de3f0..6e8347f03 100644
 +  "aiw.overview.event": "イベント",
 +  "aiw.overview.target": "対象",
 +  "aiw.overview.when": "日時",
++  "aiw.multiAuth.title": "Codex multi-account governance",
++  "aiw.multiAuth.subtitle": "Live read-only aggregation from the original codex-multi-auth monitor runtime.",
++  "aiw.multiAuth.notConnected": "Connect as an administrator to inspect multi-account governance.",
++  "aiw.multiAuth.accounts": "Managed accounts",
++  "aiw.multiAuth.policies": "{count} account policies",
++  "aiw.multiAuth.models": "Available models",
++  "aiw.multiAuth.catalog": "{count} models in the capability catalog",
++  "aiw.multiAuth.runtime": "Runtime responses",
++  "aiw.multiAuth.failures": "{count} runtime failures",
++  "aiw.multiAuth.budgets": "Budget guards",
++  "aiw.multiAuth.ledgerRequests": "{count} ledger requests",
++  "aiw.multiAuth.quotaCache": "Quota cache",
++  "aiw.multiAuth.cachedIdentities": "Cached account identities",
++  "aiw.multiAuth.routing": "Project routing",
++  "aiw.multiAuth.defaultRouting": "Default",
++  "aiw.multiAuth.empty": "No codex-multi-auth accounts are configured. OpenCodex remains the active provider pool; add independent OAuth identities with the original codex-multi-auth login flow before enabling rotation.",
 +  "aiw.tokenSaver.title": "トークンセーバー",
 +  "aiw.tokenSaver.description": "9router 本来の最適化パイプラインでリクエストと応答のトークンを削減します。",
 +  "aiw.tokenSaver.rtkDescription": "大きなツール出力をモデルへ送る前に圧縮し、通常は入力トークンを60～90%削減します。",
@@ -281,7 +297,7 @@ index 47b1de3f0..6e8347f03 100644
    "common.github": "GitHub",
    "common.save": "保存",
    "common.saving": "保存中…",
-@@ -993,6 +1265,9 @@ export const ja: Record<TKey, string> = {
+@@ -993,6 +1281,9 @@ export const ja: Record<TKey, string> = {
    "nav.codexAuth": "Codex 認証",
    "nav.api": "API",
    "nav.openMenu": "メニューを開く",

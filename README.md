@@ -74,6 +74,7 @@ As cotas usam **tokens contabilizados pelo ledger interno**, pois a assinatura C
 - `GET /v1/me` e `/v1/me/usage`
 - `POST /auth/sessions`, `POST /auth/sessions/refresh` e `DELETE /auth/sessions/current`
 - `GET /admin/overview`
+- `GET /admin/multi-auth/monitor`
 - `GET /admin/audit`
 - `GET/POST /admin/backups` e `GET /admin/backups/{id}`
 - `GET/PATCH /admin/token-saver`
@@ -105,6 +106,12 @@ O botão **Download backup** no dashboard administrativo executa o algoritmo SQL
 O card **Token Saver** no dashboard controla RTK, Headroom, Caveman e Ponytail sem reiniciar os serviços. O repositório transacional original do 9router persiste as escolhas na base AIWrapper; os módulos Headroom/Caveman/Ponytail originais executam no pedido OpenAI e `AIWRAPPER_RTK_ENABLED=false` continua funcionando como trava mestra exclusiva da compressão RTK.
 
 Headroom é integrado como serviço externo: implante o proxy separadamente, informe uma URL HTTP(S) alcançável pelo `codex-wrapper` (por exemplo `http://headroom:8787` numa rede Compose) e confirme **Reachable** antes de ativar. O AIWrapper não instala pacotes Python nem inicia processos no host; o status usa o health probe original do 9router e o compressor permanece fail-open.
+
+### Governança multi-conta
+
+O card **Codex multi-account governance** executa o `monitor --json` original do codex-multi-auth e mostra policies, budget guards, perfil de roteamento do projeto, capability matrix, quota cache, ledger e runtime. Ele é deliberadamente somente leitura; a rotação só deve ser ativada depois de cadastrar duas ou mais identidades OAuth independentes.
+
+Para implantações remotas, defina `VITE_API_BASE` e `VITE_AIWRAPPER_API_BASE` com as URLs públicas vistas pelo navegador antes de construir a imagem. A imagem Docker recebe ambas como argumentos de build; nomes internos da rede Docker não devem ser enviados ao navegador.
 
 ## Validação e proveniência
 

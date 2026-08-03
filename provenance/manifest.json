@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-02T08:40:28.675Z",
+  "generatedAt": "2026-08-03T02:39:10.956Z",
   "generatorUpstream": {
     "project": "ndycode/codex-multi-auth",
     "commit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
@@ -387,9 +387,9 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "68d2ddf4ec49dae13487a4593c6ba25b906ff41f160fba96ff3e84d03ec63707",
-          "sha256": "c0b02449a13fba8f6f6663441f7fda76ebc66a99477efc98565bc418e79e5e8e",
+          "sha256": "e2df6c7ac65960cca9a44cb9bbb6f8183899aac9d969692b9aaa49457bac892b",
           "diff": "provenance/diffs/opencodex-gui--src_App.tsx.diff",
-          "diffSha256": "5e508aaf0ce26c19de682dfae3a39af0e8bd7d74c51f6569aea0840261bf3e30",
+          "diffSha256": "8bfd80f9866e2a8e7a1b5d529077811d1edc61d47f6802d2a38fcfa453209f51",
           "lines": {
             "source": 318,
             "destination": 426,
@@ -1698,16 +1698,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "3d0d5b807df91e18824f186caa190f69d146aed7cbb5a42ba12128e5ec74e480",
-          "sha256": "8bc3d487c7ca3db2454ffb310275f27eda5098f1da270a1619059f923852adf6",
+          "sha256": "9d26928e820f1794099871110fc5e470ac1491cd03bf0346cb7dc85cfbc0e8c8",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_de.ts.diff",
-          "diffSha256": "1f313e9050b8d79ab384a203489582a71f5f43269aa896017f0d7c5bb31f77c3",
+          "diffSha256": "1b184fd1908ab0ac48f51c3d5d698a61513d9de9fe988ce51c3d9f23bad457e7",
           "lines": {
             "source": 1487,
-            "destination": 1762,
+            "destination": 1778,
             "preserved": 1487,
             "changed": 0,
             "removed": 0,
-            "added": 275,
+            "added": 291,
             "reusePercent": 100
           }
         },
@@ -1717,16 +1717,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "09084a0703ed3a9adc0ac00dea9aa372a1a2a4a0f7b800affead04fea5a1afa6",
-          "sha256": "52139529559f6b46f3bbbe7b87051bd7331768bf24f1316a74949874fe85321a",
+          "sha256": "d3e1103936ad14420220d8f77de6e857ef16726cf13ff14819e93a420fc2d3d8",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_en.ts.diff",
-          "diffSha256": "d6641cde87f6bf4454ff479add04492dada91dbe34267ec3895b6338dfa10258",
+          "diffSha256": "f3bba06b436e61aa99e797917f5536a020eebd730c101e52e6aff85751b6a53e",
           "lines": {
             "source": 1514,
-            "destination": 1789,
+            "destination": 1805,
             "preserved": 1514,
             "changed": 0,
             "removed": 0,
-            "added": 275,
+            "added": 291,
             "reusePercent": 100
           }
         },
@@ -1755,16 +1755,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "d7449a464d2dc077af41b39d0c81e4d55f0b5589f58af181cbef3b34be0a54f0",
-          "sha256": "0dcd6409dba1cac42608a1ceb62b6230f05a4f9af2480efd1880cc6d7f34ad5c",
+          "sha256": "bfbf397771572cccc872c042a286887c136053215f7587594d0d42803899811d",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_ja.ts.diff",
-          "diffSha256": "7020e788a14624e818ba9d1d6ef88dd6d33ea113bd12a91f283cfef193155b48",
+          "diffSha256": "234796e81a3210a4c2648b4d29fabef7ee55c8b51c437d2e8fd97163fda01293",
           "lines": {
             "source": 1508,
-            "destination": 1783,
+            "destination": 1799,
             "preserved": 1508,
             "changed": 0,
             "removed": 0,
-            "added": 275,
+            "added": 291,
             "reusePercent": 100
           }
         },
@@ -1774,16 +1774,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "5b2b64b2cd03ffbc16d15a6bad3c4163f7007927e3f602ee20e12fb96234e6e0",
-          "sha256": "cf2f66363df486207ee946ebb192ca0d7cf1aaa69481f40c1a2387c78c8c5ae5",
+          "sha256": "58dadaad2061f51b8700cbd73be1bbf8fc27f3e618bf0f89eddf609aebde831d",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_ko.ts.diff",
-          "diffSha256": "d00b30fd96ba8e470c6b5293b027c5610dcdf44c52b9317f1b3cfd29fb3fe2e0",
+          "diffSha256": "b851a379586477aded30f235cfe3f48c0320193f87729f075306be8f44a8efe5",
           "lines": {
             "source": 1508,
-            "destination": 1783,
+            "destination": 1799,
             "preserved": 1508,
             "changed": 0,
             "removed": 0,
-            "added": 275,
+            "added": 291,
             "reusePercent": 100
           }
         },
@@ -1812,16 +1812,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "95c74a1b27980cfab1931395f5ffe800f3c0ddf9f101cb5badb360343de26e6a",
-          "sha256": "809a071b54371c3bfba2359280b355a372b46ed929b6acc0ad861cb00026adb4",
+          "sha256": "494b9675daa036cf12f1034e5bf9bc95a5e05633a7318cba208a4d46f89f8725",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_ru.ts.diff",
-          "diffSha256": "3e276d0a506689bf8f1b68f07ec03665cd7647e5ce84ffa76469bcf7ef2cbaa3",
+          "diffSha256": "dbe0a2d62ff2c508d6c0465350f06af2511737b9d0fbf9d5cfc5f0bf1f364f95",
           "lines": {
             "source": 1510,
-            "destination": 1785,
+            "destination": 1801,
             "preserved": 1510,
             "changed": 0,
             "removed": 0,
-            "added": 275,
+            "added": 291,
             "reusePercent": 100
           }
         },
@@ -1850,16 +1850,16 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "b6b8fdb362c7a8a7d29ca6cc7c34772aec34b7ddfe66ba6521087990d644893f",
-          "sha256": "d76241ca8f9ad2d553912a6e48b89cd829894cb4bfb504a44df723d12bc24b0e",
+          "sha256": "ee28159cad5988dd2cd3f37b020ea86754573587ce933d2d5e09822594cc2234",
           "diff": "provenance/diffs/opencodex-gui--src_i18n_zh.ts.diff",
-          "diffSha256": "5c5610866cf3b8ede1bc571fb86e9ed6e5d230a654f5a3ab1e82647d92e7d414",
+          "diffSha256": "9cb15dd7f2b296c1fded703b0d92f875dd1b78acdb8a8bd318ea9d8e9a12d3e4",
           "lines": {
             "source": 1508,
-            "destination": 1783,
+            "destination": 1799,
             "preserved": 1508,
             "changed": 0,
             "removed": 0,
-            "added": 275,
+            "added": 291,
             "reusePercent": 100
           }
         },
@@ -3959,17 +3959,17 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT",
           "sourceSha256": "58528c4213f0638115845911003a907846649443b3763ea249589593a9cd32ab",
-          "sha256": "58528c4213f0638115845911003a907846649443b3763ea249589593a9cd32ab",
+          "sha256": "67deb4b2a279d7d1c49958c7f19796e4cddf320fb4b96bdfab5e2935739b4513",
           "diff": "provenance/diffs/opencodex-gui--tests_claude-toggle-race.test.tsx.diff",
-          "diffSha256": "52c062977333ccbf2ab2474b0b7f507fe8174cce3a69baa43aea0236269baa92",
+          "diffSha256": "10cec546645ac9088e4d5284505ccf7fc236343febb9fe9148b0d064b4716ce2",
           "lines": {
             "source": 180,
             "destination": 180,
-            "preserved": 180,
-            "changed": 0,
+            "preserved": 179,
+            "changed": 1,
             "removed": 0,
             "added": 0,
-            "reusePercent": 100
+            "reusePercent": 99.44
           }
         },
         {
@@ -24185,16 +24185,16 @@
           "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
           "license": "MIT",
           "sourceSha256": "2d9a99f56edce2c1cd0d44a0323ee6cea0ec0a504d816afaf97cb23f05d85f3a",
-          "sha256": "380a863d13c1c07f84e3b8265949f3fc2bad88bc2cc379c491ba9d6ff1e47db1",
+          "sha256": "f435db5fd879c5666b1e1478ef6b81f8ccc48efcf84b521ab7ebb0029b16831f",
           "diff": "provenance/diffs/multi-auth-governance-adapter--file.diff",
-          "diffSha256": "e51fc3afe1e6bbcbcb15a3661e952242004ece1325af6e077708543b2c163957",
+          "diffSha256": "cfe19b3994b700510a2d0e52a65aacd397898807f47e5c2cbb9aece5525cb463",
           "lines": {
             "source": 6,
-            "destination": 88,
+            "destination": 101,
             "preserved": 2,
             "changed": 4,
             "removed": 0,
-            "added": 82,
+            "added": 95,
             "reusePercent": 33.33
           }
         }
@@ -24223,15 +24223,15 @@
           "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
           "license": "MIT",
           "sourceSha256": "da14e0070ac4643f5106eb47037d592cfa48e67239dce97c528ae309f8268059",
-          "sha256": "380a863d13c1c07f84e3b8265949f3fc2bad88bc2cc379c491ba9d6ff1e47db1",
+          "sha256": "f435db5fd879c5666b1e1478ef6b81f8ccc48efcf84b521ab7ebb0029b16831f",
           "diff": "provenance/diffs/multi-auth-budget-guard--file.diff",
-          "diffSha256": "1d36ba3065e26c30cca6fb20771d6540ec4506d3ae54b742a3ea3d7bed3004e8",
+          "diffSha256": "627490470de52164cab30ffbd18e489be208e8d850aa32b00f99a431866d2431",
           "lines": {
             "source": 262,
-            "destination": 88,
+            "destination": 101,
             "preserved": 9,
-            "changed": 79,
-            "removed": 174,
+            "changed": 92,
+            "removed": 161,
             "added": 0,
             "reusePercent": 3.44
           }
@@ -24240,17 +24240,17 @@
     },
     {
       "id": "multi-auth-account-policies",
-      "functionality": "Account policy store available for future multi-OAuth routing",
+      "functionality": "Account policy store loaded by the original aggregate governance monitor",
       "project": "ndycode/codex-multi-auth",
-      "classification": "imported-not-wired",
+      "classification": "directly imported",
       "referenceOnly": false,
-      "incompatibility": "The current laboratory topology intentionally has one shared ChatGPT OAuth account, so selecting among multiple OAuth accounts would be misleading and is not on the request path.",
+      "incompatibility": "The original store is now executed by the read-only monitor. Enforcement remains outside the request path because the current laboratory topology intentionally has one shared ChatGPT OAuth account, so selecting among multiple OAuth accounts would be misleading.",
       "parityAudit": {
         "retained": [
           "Complete upstream account policy implementation in the copied package"
         ],
         "lost": [],
-        "decision": "Keep the mature upstream module intact and label it honestly as not wired until the topology has multiple OAuth identities."
+        "decision": "Execute the intact store through runMonitorCommand for diagnostics; defer request-path enforcement until the topology has multiple independently authenticated OAuth identities."
       },
       "files": [
         {
@@ -24276,17 +24276,17 @@
     },
     {
       "id": "multi-auth-routing-profiles",
-      "functionality": "Project routing profiles available for future multi-OAuth routing",
+      "functionality": "Project routing profiles resolved by the original aggregate governance monitor",
       "project": "ndycode/codex-multi-auth",
-      "classification": "imported-not-wired",
+      "classification": "directly imported",
       "referenceOnly": false,
-      "incompatibility": "A per-user quota gateway backed by one ChatGPT OAuth account has no alternate account target to route to; activating this module would falsely suggest provider-side quota isolation.",
+      "incompatibility": "Profile resolution is now executed by the read-only monitor. Request-path routing remains inactive because a per-user quota gateway backed by one ChatGPT OAuth account has no alternate account target and would falsely suggest provider-side quota isolation.",
       "parityAudit": {
         "retained": [
           "Complete upstream routing profile store and resolution implementation"
         ],
         "lost": [],
-        "decision": "The module is preserved byte-for-byte and explicitly not wired until multiple independently authorized OAuth accounts are configured."
+        "decision": "Run the byte-identical resolver through the aggregate monitor and expose its result; activate enforcement only after multiple independently authorized OAuth accounts are configured."
       },
       "files": [
         {
@@ -24306,6 +24306,132 @@
             "removed": 0,
             "added": 0,
             "reusePercent": 100
+          }
+        }
+      ]
+    },
+    {
+      "id": "multi-auth-monitor-runtime",
+      "functionality": "Original aggregate monitor for account policies, budgets, project routing, model capabilities, quota cache, usage and runtime observability",
+      "project": "ndycode/codex-multi-auth",
+      "classification": "directly imported",
+      "referenceOnly": false,
+      "incompatibility": "FastAPI cannot import the compiled TypeScript command in-process, so the existing JSON process boundary captures its original --json output without porting aggregation logic.",
+      "parityAudit": {
+        "retained": [
+          "Original account and policy counts",
+          "Original budget guard count",
+          "Original project routing resolution",
+          "Original model capability matrix",
+          "Original quota cache counts",
+          "Original usage summary",
+          "Original persisted runtime snapshot"
+        ],
+        "lost": [
+          "Human-readable terminal formatting is unnecessary because the product consumes the original JSON contract"
+        ],
+        "decision": "Import and execute runMonitorCommand unchanged with the original storage functions; the bridge only captures its machine-readable output."
+      },
+      "files": [
+        {
+          "source": "upstream/codex-multi-auth/lib/codex-manager/commands/monitor.ts",
+          "destination": "extensions/aiwrapper-admin/src/governance-bridge.mjs",
+          "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
+          "license": "MIT",
+          "sourceSha256": "cd14f62484fc7cc33a13503ec98962846a6c7d9eeaa573d924585c51f01773dd",
+          "sha256": "f435db5fd879c5666b1e1478ef6b81f8ccc48efcf84b521ab7ebb0029b16831f",
+          "diff": "provenance/diffs/multi-auth-monitor-runtime--file.diff",
+          "diffSha256": "1023fce1b24339a647ac5eebb56da1e4c77a88ec1651ca8473585a3f753c02b2",
+          "lines": {
+            "source": 134,
+            "destination": 101,
+            "preserved": 7,
+            "changed": 94,
+            "removed": 33,
+            "added": 0,
+            "reusePercent": 5.22
+          }
+        }
+      ]
+    },
+    {
+      "id": "multi-auth-monitor-fastapi-boundary",
+      "functionality": "Administrator-only FastAPI boundary for the original codex-multi-auth aggregate monitor",
+      "project": "ndycode/codex-multi-auth",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "The upstream monitor is a local Node command with no HTTP or AIWrapper role boundary; FastAPI must authenticate administrators and forward the unchanged JSON result.",
+      "parityAudit": {
+        "retained": [
+          "Complete monitor JSON payload",
+          "Original read-only behavior",
+          "Original failure signal"
+        ],
+        "lost": [
+          "Direct unauthenticated local CLI access through this HTTP route"
+        ],
+        "decision": "Add only an administrator admission boundary and delegate all monitor aggregation to the original command."
+      },
+      "files": [
+        {
+          "source": "upstream/codex-multi-auth/lib/codex-manager/commands/monitor.ts",
+          "destination": "services/codex-wrapper/app/aiwrapper/router.py",
+          "sourceCommit": "89ca9696d0f46cce48b28fdaa64a62d4bb521874",
+          "license": "MIT / project adapter code",
+          "sourceSha256": "cd14f62484fc7cc33a13503ec98962846a6c7d9eeaa573d924585c51f01773dd",
+          "sha256": "95fc4d04537554ee727a4cadc7d5bd82111ca475b67a804a2dcb5c57329e5222",
+          "diff": "provenance/diffs/multi-auth-monitor-fastapi-boundary--file.diff",
+          "diffSha256": "eca42e1361a6edeed9fa6da17a7f8c5bfacce078f67f1a1b01833ac84d95546c",
+          "lines": {
+            "source": 134,
+            "destination": 471,
+            "preserved": 7,
+            "changed": 127,
+            "removed": 0,
+            "added": 337,
+            "reusePercent": 5.22
+          }
+        }
+      ]
+    },
+    {
+      "id": "multi-auth-monitor-product-ui",
+      "functionality": "OpenCodex dashboard panel for multi-account policies, budgets, routing, capabilities, quota cache and runtime health",
+      "project": "ndycode/codex-multi-auth and lidge-jun/OpenCodex",
+      "classification": "adapter",
+      "referenceOnly": false,
+      "incompatibility": "codex-multi-auth provides a terminal and JSON monitor but no React UI. OpenCodex has the mature stat-row, polling, notice and dashboard composition used to render that contract without introducing another application shell.",
+      "parityAudit": {
+        "retained": [
+          "OpenCodex dashboard stat-row composition",
+          "OpenCodex polling resource",
+          "OpenCodex refresh, error and empty-state conventions",
+          "All aggregate monitor domains"
+        ],
+        "lost": [
+          "Terminal-only text formatting",
+          "Mutating account actions remain in the hardened upstream CLI"
+        ],
+        "decision": "Mount a read-only product panel in the existing OpenCodex dashboard and preserve the original command as the sole aggregation authority."
+      },
+      "files": [
+        {
+          "source": "upstream/opencodex/gui/src/pages/dashboard-overview-head.tsx",
+          "destination": "extensions/aiwrapper-admin/src/MultiAuthMonitorPanel.tsx",
+          "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+          "license": "MIT / project adapter code",
+          "sourceSha256": "eef0df875931fac192496053a84247721ab83fb7d65f09e1e0f3d071ef9791ad",
+          "sha256": "5e900bd7af0d4cfd3bb2260b2718089de2c3d1665fae64542dabbe2453687b1b",
+          "diff": "provenance/diffs/multi-auth-monitor-product-ui--file.diff",
+          "diffSha256": "84ab25db69348c8412ccd9e2613a4ab4080000ff892c5d45c49537bfd1e6d1fc",
+          "lines": {
+            "source": 127,
+            "destination": 63,
+            "preserved": 10,
+            "changed": 53,
+            "removed": 64,
+            "added": 0,
+            "reusePercent": 7.87
           }
         }
       ]
@@ -24459,15 +24585,15 @@
           "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
           "license": "MIT / project adapter configuration",
           "sourceSha256": "ffcb7ba6b9a681dbbdb7e9c79f64ca2320188f7efede616735ceb4ec120113c3",
-          "sha256": "aa07ba1fa6f36f8a3aa0ed044ce16a33307e03fbaba953180cf2708b1f1a61c5",
+          "sha256": "85e599cc04f0ed2e0e7df8967c2db2bbcfba1aaa5b2723bf7256bc4a7d5b74de",
           "diff": "provenance/diffs/nine-router-oauth-security-boundary--file.diff",
-          "diffSha256": "36fbf11247f1fb471fad371c3f52c12db51a92726ac5957c2e9282ae61c7e479",
+          "diffSha256": "4b56d4ddb548484bea45790b947d4483d77d919c2efacf843f8955b6eedcb7ee",
           "lines": {
             "source": 86,
-            "destination": 53,
+            "destination": 58,
             "preserved": 2,
-            "changed": 51,
-            "removed": 33,
+            "changed": 56,
+            "removed": 28,
             "added": 0,
             "reusePercent": 2.33
           }
@@ -25115,7 +25241,8 @@
           "live-arrival Sonner toast",
           "N-new reveal affordance",
           "scroll-anchor preservation",
-          "Escape close"
+          "Escape close",
+          "overlay mount outside the OpenCodex grid"
         ],
         "lost": [
           "project/worktree navigation",
@@ -25124,7 +25251,7 @@
           "host-window focus suppression",
           "Radix popover positioning"
         ],
-        "decision": "Reuse the complete portable lifecycle, category, popover-state, occurrence, arrival and scroll-anchor modules and adapt the mature interaction architecture to the authenticated AIWrapper REST feed; importing the original UI would require a second proprietary application host."
+        "decision": "Reuse the complete portable lifecycle, category, popover-state, occurrence, arrival and scroll-anchor modules and adapt the mature interaction architecture to the authenticated AIWrapper REST feed; mount its fixed shell as a sibling of the OpenCodex grid so overlay nodes cannot consume grid tracks."
       },
       "files": [
         {
@@ -25442,16 +25569,16 @@
           "sourceCommit": "12b3bb82898af9d4eae333a7504f3005be96f577",
           "license": "MIT / project code",
           "sourceSha256": "e611d9f8f4e169e93306e2938bb9d2297432771364a9a00976e8d2541e94596a",
-          "sha256": "b11d4d746b0859df9b3fc048df65aac71f91ffca63fd2d9840cbe027d2edbb8c",
+          "sha256": "95fc4d04537554ee727a4cadc7d5bd82111ca475b67a804a2dcb5c57329e5222",
           "diff": "provenance/diffs/aiwrapper-notification-feed--file.diff",
-          "diffSha256": "c868feb5cb8107cc511435eaccfc96f9ca20fac8db70b2b303b929bb48a554c6",
+          "diffSha256": "634b6198d7959a253466caf33f6e68faf4a7d67553c1300489b0831ddf671606",
           "lines": {
             "source": 10,
-            "destination": 461,
+            "destination": 471,
             "preserved": 2,
             "changed": 8,
             "removed": 0,
-            "added": 451,
+            "added": 461,
             "reusePercent": 20
           }
         }
@@ -25688,16 +25815,16 @@
           "sourceCommit": "6fcd27337a7893642c7fe630840d0a641743f28f",
           "license": "MIT / project adapter code",
           "sourceSha256": "636902a12d97c7f45c1fc598b1faac04dc2733d39a426d0ed5ab93517cdece6a",
-          "sha256": "b11d4d746b0859df9b3fc048df65aac71f91ffca63fd2d9840cbe027d2edbb8c",
+          "sha256": "95fc4d04537554ee727a4cadc7d5bd82111ca475b67a804a2dcb5c57329e5222",
           "diff": "provenance/diffs/nine-router-token-saver-fastapi-adapter--file.diff",
-          "diffSha256": "6e8b2cf5b35cd94ed3b23ba568bbd63edc84fc1be3d4b50a02497c8e35640009",
+          "diffSha256": "0282ff9ebdb645d90e44ad2f51fcfb32f64e50603686afcc5512ce98addb197d",
           "lines": {
             "source": 119,
-            "destination": 461,
+            "destination": 471,
             "preserved": 21,
             "changed": 98,
             "removed": 0,
-            "added": 342,
+            "added": 352,
             "reusePercent": 17.65
           }
         }
@@ -26121,15 +26248,15 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT / project code",
           "sourceSha256": "842638eabe899201df1e976b6ea9f7a633cd95fac861d47abbb747424e3d8398",
-          "sha256": "380a863d13c1c07f84e3b8265949f3fc2bad88bc2cc379c491ba9d6ff1e47db1",
+          "sha256": "f435db5fd879c5666b1e1478ef6b81f8ccc48efcf84b521ab7ebb0029b16831f",
           "diff": "provenance/diffs/aiwrapper-admin-extension--src_governance-bridge.mjs.diff",
-          "diffSha256": "4323ca92f8521a6521a73fb6037ec42b75ec7859300227c57c09dfc1e5c92ccf",
+          "diffSha256": "90a07f2738d8d61ef3f61c999d4ad681326b42fadb21b3da4b7fd41ef721a1b2",
           "lines": {
             "source": 214,
-            "destination": 88,
+            "destination": 101,
             "preserved": 12,
-            "changed": 76,
-            "removed": 126,
+            "changed": 89,
+            "removed": 113,
             "added": 0,
             "reusePercent": 5.61
           }
@@ -26151,6 +26278,25 @@
             "removed": 186,
             "added": 0,
             "reusePercent": 4.21
+          }
+        },
+        {
+          "source": "upstream/opencodex/gui/src/api.ts",
+          "destination": "extensions/aiwrapper-admin/src/MultiAuthMonitorPanel.tsx",
+          "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
+          "license": "MIT / project code",
+          "sourceSha256": "842638eabe899201df1e976b6ea9f7a633cd95fac861d47abbb747424e3d8398",
+          "sha256": "5e900bd7af0d4cfd3bb2260b2718089de2c3d1665fae64542dabbe2453687b1b",
+          "diff": "provenance/diffs/aiwrapper-admin-extension--src_MultiAuthMonitorPanel.tsx.diff",
+          "diffSha256": "f0ac60c50ddf92abf77245d99df7b4ccc6b5f882d9ab6ff8a667ff0a13cba5ed",
+          "lines": {
+            "source": 214,
+            "destination": 63,
+            "preserved": 7,
+            "changed": 56,
+            "removed": 151,
+            "added": 0,
+            "reusePercent": 3.27
           }
         },
         {
@@ -26624,16 +26770,16 @@
           "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
           "license": "MIT / project code",
           "sourceSha256": "e40cdd42970dffd2148095756800d793475ee3daae61bc70fec39e7e9a3145af",
-          "sha256": "b11d4d746b0859df9b3fc048df65aac71f91ffca63fd2d9840cbe027d2edbb8c",
+          "sha256": "95fc4d04537554ee727a4cadc7d5bd82111ca475b67a804a2dcb5c57329e5222",
           "diff": "provenance/diffs/aiwrapper-fastapi-domain-extension--router.py.diff",
-          "diffSha256": "0d73098e93375c940273e1b825e02dd92c2d99b2ec0c85f6eaeb1b419f2ab59e",
+          "diffSha256": "f328dcfcbf962ec7cb48820a65584bd0d8741200c73bffe5f2e9a6447d4af2b8",
           "lines": {
             "source": 269,
-            "destination": 461,
+            "destination": 471,
             "preserved": 38,
             "changed": 231,
             "removed": 0,
-            "added": 192,
+            "added": 202,
             "reusePercent": 14.13
           }
         },
@@ -26731,10 +26877,11 @@
           "Original CLI start command",
           "Original Vite GUI build",
           "Original OpenCodex runtime tree",
-          "Single React dependency instance across GUI and extensions"
+          "Single React dependency instance across GUI and extensions",
+          "Build-time public OpenCodex and AIWrapper browser endpoints"
         ],
         "lost": [],
-        "decision": "Build the traceable GUI and extension tree in a repository-shaped stage, copy only its static dist into the unchanged OpenCodex runtime image, and keep the upstream server executable authoritative."
+        "decision": "Build the traceable GUI and extension tree in a repository-shaped stage, inject only the browser-visible endpoint values at build time, copy the static dist into the unchanged OpenCodex runtime image, and keep the upstream server executable authoritative."
       },
       "files": [
         {
@@ -26743,15 +26890,15 @@
           "sourceCommit": "d1f544bbc22d25b9b2bd3c8e776fb8e3242b4ed5",
           "license": "MIT / project code",
           "sourceSha256": "260aa3b8760e36631f920c177267caa82837ac51657d332af82860e76b155a57",
-          "sha256": "c07de77d0e361ce7bba96141a965d3c072701e60d50e84b45075ead2ae3bc078",
+          "sha256": "3bfcdd6cb3d80df6ee5dd4453c3024cd20ed61003252a3c4345705f92e33e3b0",
           "diff": "provenance/diffs/opencodex-container--file.diff",
-          "diffSha256": "a401a5ffe0514287e3eee22ce47b379b3326848093e9fb03ef5bb614b4f2b1ad",
+          "diffSha256": "a1be4587308df926d33e362e7def852a914098e1016dff9e2fd3a7b0219b68f0",
           "lines": {
             "source": 99,
-            "destination": 30,
+            "destination": 34,
             "preserved": 1,
-            "changed": 29,
-            "removed": 69,
+            "changed": 33,
+            "removed": 65,
             "added": 0,
             "reusePercent": 1.01
           }
@@ -26817,17 +26964,17 @@
           "sourceCommit": "e9353b8d29db0c00057f6c4f88e9d06fb27c61a6",
           "license": "MIT / project code",
           "sourceSha256": "e46ad7f7ed22f461f966eb98568c7023849fc802560e25c6965b12979548393e",
-          "sha256": "c01015768553371c6a272ceeb582d64fb616ef3782f164e27591612e83eac5c1",
+          "sha256": "c223cc642d8e743ef74f48d76d022e3982b8b20eb001914e5be9024c73210365",
           "diff": "provenance/diffs/lab-compose--file.diff",
-          "diffSha256": "b0a14d60cf0c2c16e1ad08f98ff5ab48cbc6f08f55e3d8fc710d6df7da906c4d",
+          "diffSha256": "82c0eb745e099071ddd66f73096dd0dd0144b4dafde302e51520d7092229efe2",
           "lines": {
             "source": 25,
-            "destination": 68,
-            "preserved": 9,
-            "changed": 16,
+            "destination": 73,
+            "preserved": 11,
+            "changed": 14,
             "removed": 0,
-            "added": 43,
-            "reusePercent": 36
+            "added": 48,
+            "reusePercent": 44
           }
         }
       ]

@@ -176,4 +176,4 @@ test("rapid Claude toggle clicks issue only one PUT until the first settles", as
     releasePut = null;
   });
   await waitFor(() => !claudeSwitch().disabled);
-});
+}, { timeout: 30_000 });

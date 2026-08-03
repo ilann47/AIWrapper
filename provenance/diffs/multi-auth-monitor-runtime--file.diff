@@ -1,0 +1,232 @@
+diff --git "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\codex-multi-auth\\lib\\codex-manager\\commands\\monitor.ts" "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\governance-bridge.mjs"
+index f49813014..23a5e4c64 100644
+--- "a/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\upstream\\codex-multi-auth\\lib\\codex-manager\\commands\\monitor.ts"	
++++ "b/C:\\Users\\ilan.wendling\\Documents\\AI Wrapper\\extensions\\aiwrapper-admin\\src\\governance-bridge.mjs"	
+@@ -1,133 +1,100 @@
+-import { loadAccountPolicyStore } from "../../account-policy.js";
+-import { loadBudgetGuardStore } from "../../budget-guard.js";
+-import { buildModelCapabilityMatrix } from "../../model-capability-matrix.js";
+-import { loadQuotaCache } from "../../quota-cache.js";
+-import { resolveProjectRoutingProfile } from "../../routing-profiles.js";
+-import { loadPersistedRuntimeObservabilitySnapshot } from "../../runtime/runtime-observability.js";
+-import type { AccountStorageV3 } from "../../storage.js";
+-import { summarizeUsageLedger } from "../../usage/index.js";
++#!/usr/bin/env node
++/**
++ * Thin process boundary for the unmodified codex-multi-auth governance modules.
++ * All ledger normalization, redaction, pricing, summarization and budget decisions
++ * below execute upstream code from packages/codex-multi-auth/dist.
++ */
++import {
++  appendUsageLedgerRow,
++  hashUsageIdentifier,
++  readUsageLedgerRows,
++  summarizeUsageRows,
++} from "../../../packages/codex-multi-auth/dist/lib/usage/index.js";
++import { evaluateBudgetGuard } from "../../../packages/codex-multi-auth/dist/lib/budget-guard.js";
++import { runMonitorCommand } from "../../../packages/codex-multi-auth/dist/lib/codex-manager/commands/monitor.js";
++import { loadAccounts, setStoragePath } from "../../../packages/codex-multi-auth/dist/lib/storage.js";
+ 
+-export interface MonitorCommandDeps {
+-	setStoragePath: (path: string | null) => void;
+-	loadAccounts: () => Promise<AccountStorageV3 | null>;
+-	loadRuntimeObservabilitySnapshot?: typeof loadPersistedRuntimeObservabilitySnapshot;
+-	loadQuotaCache?: typeof loadQuotaCache;
+-	loadAccountPolicyStore?: typeof loadAccountPolicyStore;
+-	loadBudgetGuardStore?: typeof loadBudgetGuardStore;
+-	resolveProjectRoutingProfile?: typeof resolveProjectRoutingProfile;
+-	summarizeUsageLedger?: typeof summarizeUsageLedger;
+-	logInfo?: (message: string) => void;
+-	logError?: (message: string) => void;
+-	getNow?: () => number;
+-}
++const operation = process.argv[2];
++const input = JSON.parse(await new Promise((resolve, reject) => {
++  let body = "";
++  process.stdin.setEncoding("utf8");
++  process.stdin.on("data", chunk => { body += chunk; });
++  process.stdin.on("end", () => resolve(body || "{}"));
++  process.stdin.on("error", reject);
++}));
+ 
+-function printMonitorUsage(logInfo: (message: string) => void): void {
+-	logInfo(
+-		[
+-			"Usage:",
+-			"  codex-multi-auth monitor [--json]",
+-			"",
+-			"Aggregates local runtime, usage, policy, profile, model, quota, and project context.",
+-		].join("\n"),
+-	);
++async function userSummary({ userId, since, until, by = "model" }) {
++  const accountHash = hashUsageIdentifier(userId);
++  const rows = (await readUsageLedgerRows({ since, until, includeArchives: true }))
++    .filter(row => row.account?.accountHash === accountHash);
++  return summarizeUsageRows(rows, { since, until, by });
+ }
+ 
+-export async function runMonitorCommand(
+-	args: string[],
+-	deps: MonitorCommandDeps,
+-): Promise<number> {
+-	const logInfo = deps.logInfo ?? console.log;
+-	const logError = deps.logError ?? console.error;
+-	if (args.includes("--help") || args.includes("-h")) {
+-		printMonitorUsage(logInfo);
+-		return 0;
+-	}
+-	let json = false;
+-	for (const arg of args) {
+-		if (arg === "--json" || arg === "-j") {
+-			json = true;
+-			continue;
+-		}
+-		logError(`Unknown monitor option: ${arg}`);
+-		return 1;
+-	}
+-
+-	deps.setStoragePath(null);
+-	const [
+-		storage,
+-		runtime,
+-		quotaCache,
+-		accountPolicies,
+-		budgetGuards,
+-		project,
+-		usage,
+-	] = await Promise.all([
+-		deps.loadAccounts(),
+-		(deps.loadRuntimeObservabilitySnapshot ??
+-			loadPersistedRuntimeObservabilitySnapshot)(),
+-		(deps.loadQuotaCache ?? loadQuotaCache)(),
+-		(deps.loadAccountPolicyStore ?? loadAccountPolicyStore)(),
+-		(deps.loadBudgetGuardStore ?? loadBudgetGuardStore)(),
+-		(deps.resolveProjectRoutingProfile ?? resolveProjectRoutingProfile)(),
+-		(deps.summarizeUsageLedger ?? summarizeUsageLedger)({ by: "outcome" }),
+-	]);
+-	const matrix = buildModelCapabilityMatrix({
+-		storage,
+-		quotaCache,
+-		now: deps.getNow?.() ?? Date.now(),
+-	});
+-	const payload = {
+-		command: "monitor",
+-		project: {
+-			projectKey: project.projectKey,
+-			projectRoot: project.projectRoot,
+-			hasProfile: project.profile !== null,
+-			budgetKey: project.profile?.budgetKey ?? null,
+-		},
+-		accounts: {
+-			count: storage?.accounts.length ?? 0,
+-			policyCount: Object.keys(accountPolicies.accounts).length,
+-		},
+-		runtime,
+-		usage,
+-		budgetGuardCount: Object.keys(budgetGuards.limits).length,
+-		routingProfile: project.profile,
+-		modelMatrix: {
+-			models: matrix.models,
+-			entries: matrix.entries.length,
+-			available: matrix.entries.filter((entry) => entry.available).length,
+-			unavailable: matrix.entries.filter((entry) => !entry.available).length,
+-		},
+-		quotaCache: {
+-			byAccountId: Object.keys(quotaCache.byAccountId).length,
+-			byEmail: Object.keys(quotaCache.byEmail).length,
+-		},
+-	};
+-
+-	if (json) {
+-		logInfo(JSON.stringify(payload, null, 2));
+-		return 0;
+-	}
++async function globalOverview({ since, until }) {
++  const rows = await readUsageLedgerRows({ since, until, includeArchives: true });
++  const durations = rows
++    .map(row => row.durationMs)
++    .filter(value => typeof value === "number" && Number.isFinite(value))
++    .sort((a, b) => a - b);
++  const averageMs = durations.length
++    ? Math.round(durations.reduce((total, value) => total + value, 0) / durations.length)
++    : 0;
++  const p95Ms = durations.length ? durations[Math.min(durations.length - 1, Math.ceil(durations.length * 0.95) - 1)] : 0;
++  return {
++    totals: summarizeUsageRows(rows, { since, until, by: "model" }).totals,
++    models: summarizeUsageRows(rows, { since, until, by: "model" }).buckets,
++    days: summarizeUsageRows(rows, { since, until, by: "day" }).buckets,
++    outcomes: summarizeUsageRows(rows, { since, until, by: "outcome" }).buckets,
++    latency: { averageMs, p95Ms, measuredRequests: durations.length },
++  };
++}
+ 
+-	logInfo("Local governance monitor");
+-	logInfo(`Project: ${payload.project.projectKey ?? "none"}`);
+-	logInfo(`Accounts: ${payload.accounts.count} (${payload.accounts.policyCount} policies)`);
+-	logInfo(
+-		`Usage: ${usage.totals.requests} requests, ${usage.totals.totalTokens} tokens, $${usage.totals.costUsd.toFixed(6)}`,
+-	);
+-	logInfo(`Budgets: ${payload.budgetGuardCount}`);
+-	logInfo(
+-		`Models: ${payload.modelMatrix.available}/${payload.modelMatrix.entries} available`,
+-	);
+-	logInfo(
+-		`Quota cache: ${payload.quotaCache.byAccountId} account ids, ${payload.quotaCache.byEmail} emails`,
+-	);
+-	if (runtime) {
+-		logInfo(
+-			`Runtime: responses=${runtime.responsesRequests}, refresh=${runtime.authRefreshRequests}, failures=${runtime.runtimeMetrics.failedRequests}`,
+-		);
+-	} else {
+-		logInfo("Runtime: no persisted snapshot");
+-	}
+-	return 0;
++let result;
++if (operation === "append") {
++  result = await appendUsageLedgerRow({
++    source: "local-bridge",
++    operation: input.operation ?? "responses",
++    outcome: input.outcome ?? "success",
++    model: input.model ?? null,
++    projectKey: input.projectKey ?? "aiwrapper",
++    accountId: input.userId,
++    requestId: input.requestId ?? null,
++    statusCode: input.statusCode ?? null,
++    errorCode: input.errorCode ?? null,
++    durationMs: input.durationMs ?? null,
++    inputTokens: input.inputTokens ?? 0,
++    outputTokens: input.outputTokens ?? 0,
++    cachedInputTokens: input.cachedInputTokens ?? 0,
++    reasoningTokens: input.reasoningTokens ?? 0,
++    totalTokens: input.totalTokens ?? null,
++  });
++} else if (operation === "summary") {
++  result = await userSummary(input);
++} else if (operation === "overview") {
++  result = await globalOverview(input);
++} else if (operation === "evaluate") {
++  const summary = await userSummary(input);
++  result = evaluateBudgetGuard({
++    key: `user:${input.userId}:${input.label ?? "quota"}`,
++    window: input.window ?? "hour",
++    maxRequests: input.maxRequests ?? undefined,
++    maxTokens: input.maxTokens ?? undefined,
++    maxCostUsd: input.maxCostUsd ?? undefined,
++    updatedAt: Date.now(),
++  }, summary);
++} else if (operation === "monitor") {
++  const output = [];
++  const errors = [];
++  const exitCode = await runMonitorCommand(["--json"], {
++    setStoragePath,
++    loadAccounts,
++    logInfo: message => output.push(message),
++    logError: message => errors.push(message),
++  });
++  if (exitCode !== 0) throw new Error(errors.join("\n") || "codex-multi-auth monitor failed");
++  result = JSON.parse(output.join("\n"));
++} else {
++  throw new Error(`Unsupported governance operation: ${operation}`);
+ }
++
++process.stdout.write(`${JSON.stringify(result)}\n`);
